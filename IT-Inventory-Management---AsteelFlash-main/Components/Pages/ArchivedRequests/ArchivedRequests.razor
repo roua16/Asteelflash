@@ -1,0 +1,131 @@
+﻿@page "/archived-requests-page"
+
+<AuthorizeView Roles="SuperAdmin, Admin, Purchasing">
+    <Authorized>
+        
+        <PageTitle>Archived Requests</PageTitle>
+
+        <div class="container-fluid py-4">
+            <RadzenCard class="mb-4 rz-shadow-2" Style="border-radius: 12px; border: none;">
+
+                <RadzenRow AlignItems="AlignItems.Center" class="mb-4">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenText Text="Archived Requests"
+                                    TextStyle="TextStyle.H3"
+                                    TagName="TagName.H1"
+                                    Style="margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 1px; margin-bottom:25px;" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6" Class="d-flex justify-content-md-end mt-3 mt-md-0">
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="1rem">
+                            <RadzenSplitButton ButtonStyle="ButtonStyle.Light"
+                                               Icon="download"
+                                               Text="Export"
+                                               Click="@ExportClick"
+                                               Style="border-radius: 8px;">
+                                <RadzenSplitButtonItem Text="Excel" Value="xlsx" Icon="table_view" />
+                                <RadzenSplitButtonItem Text="CSV" Value="csv" Icon="description" />
+                            </RadzenSplitButton>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenRow class="mb-4">
+                    <RadzenColumn Size="12">
+                        <div class="position-relative">
+                            <RadzenTextBox Placeholder="🔍 Search requests..." @oninput="@Search" aria-label="Search by all string columns"
+                                           Style="display: block;width: 100%;padding: 10px;border: 1px solid #ccc;border-radius: 8px;  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);" Icon="find_in_page" />
+                            <i class="rzi rzi-search position-absolute" style="left: 0.75rem; top: 50%; transform: translateY(-50%);"></i>
+                        </div>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenDataGrid @ref="grid0"
+                                AllowFiltering="true"
+                                FilterMode="FilterMode.Advanced"
+                                AllowPaging="true"
+                                AllowSorting="true"
+                                PageSize="10"
+                                ShowPagingSummary="true"
+                                PageSizeOptions="@(new int[]{5, 10, 20, 30})"
+                                Data="@requests"
+                                TItem="ITStockM.Models.ITStockManagment.Request"
+                                Style="border-radius: 10px; overflow: hidden; border: none;"
+                                EmptyText="No purchase requests found">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Employee.FullName" Title="Employee" Width="150px">
+                            <Template Context="request">
+                                <div class="d-flex align-items-center">
+                                    <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">@request.Employee.FullName</RadzenText>
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Title" Title="Title" Width="180px">
+                            <Template Context="request">
+                                <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">@request.Title</RadzenText>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Description" Title="Description" Width="200px" Visible="false">
+                            <Template Context="request">
+                                <div style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @request.Description
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Type" Title="Type" Width="120px" Visible="false" />
+
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="ProjectName" Title="Project" Width="150px" Visible="false" />
+
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="MaterialType" Title="Material" Width="120px" Visible="false" />
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Date" Title="Date" Width="120px">
+                            <Template Context="request">
+                                @request.Date.ToString("MMM dd, yyyy")
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Status" Title="Status" Width="120px">
+                            <Template Context="request">
+                                <div style="display: flex; justify-content: center; align-items: center;">
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Success"
+                                                 Shade="Shade.Lighter"
+                                                 Style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500;"
+                                                 Text="@request.Status" />
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Filterable="false" Sortable="false" Width="120px" TextAlign="TextAlign.Center" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+                            <Template Context="request">
+                                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="0.5rem">
+
+                                    <RadzenButton ButtonStyle="ButtonStyle.Info"
+                                                  Icon="info"
+                                                  Size="ButtonSize.Medium"
+                                                  Style="border-radius: 8px;"
+                                                  Shade="Shade.Lighter"
+                                                  Variant="Variant.Flat"
+                                                  Title="View Details"
+                                                  Click="@(() => RequestDetails(request.Id))" />
+                                </RadzenStack>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                    <EmptyTemplate>
+                        <div class="d-flex flex-column align-items-center justify-content-center py-5">
+                            <i class="rzi rzi-shopping-cart-2 mb-3" style="font-size: 3rem; opacity: 0.5;"></i>
+                            <RadzenText TextStyle="TextStyle.H6">No purchase requests found</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body1" class="rz-color-text-secondary">Try adjusting your search or filters</RadzenText>
+                        </div>
+                    </EmptyTemplate>
+                </RadzenDataGrid>
+            </RadzenCard>
+        </div>
+
+    </Authorized>
+    <NotAuthorized>
+        <ITStockM.Components.Pages.auth.RedirectToAccessDenied />
+    </NotAuthorized>
+</AuthorizeView>
+
+

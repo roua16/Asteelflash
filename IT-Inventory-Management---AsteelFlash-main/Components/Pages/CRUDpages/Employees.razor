@@ -1,0 +1,55 @@
+@page "/employees-super-admin"
+
+<AuthorizeView Roles="SuperAdmin">
+    <Authorized >
+<PageTitle>Employees</PageTitle>
+<RadzenStack>
+    <RadzenRow AlignItems="AlignItems.Center">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText Text="Employees" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0" />
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenSplitButton Icon="get_app" Text="Export" Click="@ExportClick" Variant="Variant.Flat" Shade="Shade.Lighter">
+                    <RadzenSplitButtonItem Text="Excel" Value="xlsx" />
+                    <RadzenSplitButtonItem Text="CSV" Value="csv" />
+                </RadzenSplitButton>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+    <RadzenTextBox Placeholder="Search ..." style="display: block; width: 100%" @oninput="@Search" aria-label="Search by all string columns" />
+    <RadzenRow>
+      <RadzenColumn SizeMD=12>
+        <RadzenDataGrid @ref="grid0" ColumnWidth="200px"   AllowFiltering="true" FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new int[]{5, 10, 20, 30})
+            Data="@(employees)" TItem="ITStockM.Models.ITStockManagment.Employee" >
+            <Columns>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="Id" Title="Id">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="FullName" Title="Full Name">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="Email" Title="Email">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="Password" Title="Password">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="Post" Title="Post">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="PhoneNumber" Title="Phone Number">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="Service" Title="Service">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
+                    
+                </RadzenDataGridColumn>
+            </Columns>
+
+        </RadzenDataGrid>
+
+    </RadzenColumn>
+  </RadzenRow>
+</RadzenStack>
+
+    </Authorized>
+    <NotAuthorized>
+        <ITStockM.Components.Pages.auth.RedirectToAccessDenied />
+    </NotAuthorized>
+</AuthorizeView>

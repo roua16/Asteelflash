@@ -1,0 +1,808 @@
+    @page "/"
+    @using System.Collections.Generic
+
+    <style>
+        .dashboard-container {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1.5rem;
+        }
+
+        .dashboard-header {
+        grid-column: span 12;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        }
+
+        .dashboard-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: var(--rz-text-title-color);
+        }
+
+        .dashboard-subtitle {
+        color: var(--rz-text-secondary-color);
+        margin-top: 0.25rem;
+        }
+
+        .dashboard-date {
+        font-size: 0.875rem;
+        color: var(--rz-text-secondary-color);
+        }
+
+        .kpi-card {
+        background-color: var(--rz-base-background-color);
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+        overflow: hidden;
+        }
+
+        .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .kpi-card-sm {
+        grid-column: span 3;
+        }
+
+        .kpi-card-md {
+        grid-column: span 6;
+        }
+
+        .kpi-card-lg {
+        grid-column: span 12;
+        }
+
+        .kpi-icon {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+        }
+
+        .kpi-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--rz-text-secondary-color);
+        margin-bottom: 0.5rem;
+        }
+
+        .kpi-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--rz-text-title-color);
+        margin-bottom: 0.5rem;
+        }
+
+        .kpi-trend {
+        display: flex;
+        align-items: center;
+        font-size: 0.75rem;
+        }
+
+        .kpi-trend-up {
+        color: var(--rz-success-dark);
+        }
+
+        .kpi-trend-down {
+        color: var(--rz-danger-dark);
+        }
+
+        .kpi-trend-icon {
+        margin-right: 0.25rem;
+        }
+
+        .chart-container {
+        height: 300px;
+        }
+
+        .activity-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--rz-base-300);
+        }
+
+        .activity-item:last-child {
+        border-bottom: none;
+        }
+
+        .activity-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+        }
+
+        .activity-content {
+        flex: 1;
+        }
+
+        .activity-title {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        }
+
+        .activity-time {
+        font-size: 0.75rem;
+        color: var(--rz-text-secondary-color);
+        }
+
+        .quick-action {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background-color: var(--rz-base-background-color);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        text-decoration: none;
+        color: var(--rz-text-color);
+        }
+
+        .quick-action:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .quick-action-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+        }
+
+        .quick-action-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-align: center;
+        }
+
+        .inventory-status {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--rz-base-300);
+        }
+
+        .inventory-status:last-child {
+        border-bottom: none;
+        }
+
+        .inventory-status-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        }
+
+        .inventory-status-content {
+        flex: 1;
+        }
+
+        .inventory-status-title {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+        }
+
+        .inventory-status-subtitle {
+        font-size: 0.75rem;
+        color: var(--rz-text-secondary-color);
+        }
+
+        .inventory-status-value {
+        font-weight: 600;
+        margin-left: auto;
+        }
+
+        .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        }
+
+        .badge-primary {
+        background-color: var(--rz-primary-lighter);
+        color: var(--rz-primary-dark);
+        }
+
+        .badge-success {
+        background-color: var(--rz-success-lighter);
+        color: var(--rz-success-dark);
+        }
+
+        .badge-warning {
+        background-color: var(--rz-warning-lighter);
+        color: var(--rz-warning-dark);
+        }
+
+        .badge-danger {
+        background-color: var(--rz-danger-lighter);
+        color: var(--rz-danger-dark);
+        }
+
+        .badge-info {
+        background-color: var(--rz-info-lighter);
+        color: var(--rz-info-dark);
+        }
+
+        .badge-secondary {
+        background-color: var(--rz-secondary-lighter);
+        color: var(--rz-secondary-dark);
+        }
+
+        .progress-container {
+        width: 100%;
+        height: 0.5rem;
+        background-color: var(--rz-base-200);
+        border-radius: 9999px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+        }
+
+        .progress-bar {
+        height: 100%;
+        border-radius: 9999px;
+        }
+
+        .progress-primary {
+        background-color: var(--rz-primary);
+        }
+
+        .progress-success {
+        background-color: var(--rz-success);
+        }
+
+        .progress-warning {
+        background-color: var(--rz-warning);
+        }
+
+        .progress-danger {
+        background-color: var(--rz-danger);
+        }
+
+        .bg-primary-light {
+        background-color: var(--rz-primary-lighter);
+        color: var(--rz-primary-dark);
+        }
+
+        .bg-success-light {
+        background-color: var(--rz-success-lighter);
+        color: var(--rz-success-dark);
+        }
+
+        .bg-warning-light {
+        background-color: var(--rz-warning-lighter);
+        color: var(--rz-warning-dark);
+        }
+
+        .bg-danger-light {
+        background-color: var(--rz-danger-lighter);
+        color: var(--rz-danger-dark);
+        }
+
+        .bg-info-light {
+        background-color: var(--rz-info-lighter);
+        color: var(--rz-info-dark);
+        }
+
+        .bg-secondary-light {
+        background-color: var(--rz-secondary-lighter);
+        color: var(--rz-secondary-dark);
+        }
+
+        .summary-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        }
+
+        .summary-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        }
+
+        .summary-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        }
+
+        .summary-title {
+        font-size: 1rem;
+        font-weight: 600;
+        }
+
+        .summary-content {
+        flex: 1;
+        }
+
+        .summary-footer {
+        margin-top: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+        }
+
+        .summary-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        }
+
+        .summary-stat-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        }
+
+        .summary-stat-label {
+        font-size: 0.75rem;
+        color: var(--rz-text-secondary-color);
+        }
+
+
+    </style>
+
+    <AuthorizeView Roles="SuperAdmin, Admin, Purchasing">
+        <Authorized>
+            <RadzenCard class="mb-4 rz-shadow-2" Style="border-radius: 12px; border: none; ">
+                <div class="dashboard-container">
+
+                    <div class="dashboard-header">
+                        <div>
+                            <h1 class="dashboard-title">IT Inventory Dashboard</h1>
+                            <p class="dashboard-subtitle">Overview of your inventory, assignments, and requests</p>
+                        </div>
+                        <div class="dashboard-date">
+                            <RadzenIcon Icon="calendar_today" /> @DateTime.Now.ToString("dddd, MMMM d, yyyy")
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-card-sm">
+                        <div class="kpi-icon bg-primary-light">
+                            <RadzenIcon Icon="inventory_2" />
+                        </div>
+                        <div class="kpi-title">Total Inventory Items</div>
+                        <div class="kpi-value">@totalMaterial</div>
+                        @if (totalMaterialAugment > 0)
+                        {
+                            <div class="kpi-trend kpi-trend-up">
+
+                                <RadzenIcon Icon="trending_up" Class="kpi-trend-icon" /> <span> @(totalMaterialAugment.ToString("F2"))% from last month</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="kpi-trend kpi-trend-down">
+                                <RadzenIcon Icon="trending_down" Class="kpi-trend-icon" /> <span>@(totalMaterialAugment.ToString("F2"))% from last month</span>
+                            </div>
+                        }
+
+
+                    </div>
+
+                    <div class="kpi-card kpi-card-sm">
+                        <div class="kpi-icon bg-success-light">
+                            <RadzenIcon Icon="assignment_turned_in" />
+                        </div>
+                        <div class="kpi-title">Active Assignments</div>
+                        <div class="kpi-value">@totalAssignments</div>
+                        @if (totalAssignmentsAugment > 0)
+                        {
+                            <div class="kpi-trend kpi-trend-up">
+                                <RadzenIcon Icon="trending_up" Class="kpi-trend-icon" /> @(totalAssignmentsAugment.ToString("F2"))% from last month
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="kpi-trend kpi-trend-down">
+                                <RadzenIcon Icon="trending_down" Class="kpi-trend-icon" /> @(totalAssignmentsAugment.ToString("F2"))% from last month
+                            </div>
+                        }
+
+                    </div>
+
+                    <div class="kpi-card kpi-card-sm">
+                        <div class="kpi-icon bg-warning-light">
+                            <RadzenIcon Icon="pending_actions" />
+                        </div>
+                        <div class="kpi-title">Pending Requests</div>
+                        <div class="kpi-value">@pendingRequests</div>
+
+                    </div>
+
+                    <div class="kpi-card kpi-card-sm">
+                        <div class="kpi-icon bg-info-light">
+                            <RadzenIcon Icon="local_shipping" />
+                        </div>
+                        <div class="kpi-title">Pending Deliveries</div>
+                        <div class="kpi-value">@pendingDeliveries</div>
+
+                    </div>
+
+                    <div class="kpi-card kpi-card-md">
+                        <div class="summary-card">
+                            <div class="summary-header" style="justify-content:space-between">
+                                <div class="summary-header">
+                                    <div class="summary-icon bg-primary-light">
+                                        <RadzenIcon Icon="category" />
+                                    </div>
+
+                                    <div class="summary-title">Inventory by Category</div>
+                                </div>
+                                <div>
+                                    Conditions :
+                                    <RadzenDropDown Data="@materialConditions"
+                                    Placeholder="Conditions"
+                                    Class="field-input"
+                                    TValue="string"
+                                    @bind-Value="@selectedMaterialCondition"
+                                    Name="Type"
+                                    Change="MaterialConditionsChange"
+                                    Style="width : 110px; border-radius:8px" />
+                                </div>
+
+                            </div>
+                            <div class="summary-content">
+                                <RadzenChart> 
+                                    <RadzenPieSeries Data="@inventoryByType" Title="available" CategoryProperty="Category" ValueProperty="Value">
+                                        <RadzenSeriesDataLabels Visible="true" />
+                                    </RadzenPieSeries>
+                                </RadzenChart>
+                            </div>
+                            <div class="summary-footer">
+                                <div class="summary-stat">
+                                    <div class="summary-stat-value">@inventoryByType.Count</div>
+                                    <div class="summary-stat-label">Categories</div>
+                                </div>
+                                <div class="summary-stat">
+                                    <div class="summary-stat-value">
+                                        @if (selectedMaterialCondition == "Good") {
+                                            @Materiels.Sum(m => m.QuantityPDRStock + m.QuantityITStock)
+                                        }
+                                        else if (selectedMaterialCondition == "Repairing")
+                                        {
+                                            @Materiels.Sum(m => m.Repairing_Quantity)
+                                        }
+                                        else
+                                        {
+                                            @Materiels.Sum(m => m.IrreparableQuantity)
+                                        }
+                                    </div>
+                                    <div class="summary-stat-label">Total Items</div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-card-md">
+                        <div class="summary-card">
+
+                            <div class="summary-header" style="justify-content:space-between">
+                                <div class="summary-header">
+                                    <div class="summary-icon bg-success-light">
+                                        <RadzenIcon Icon="insert_chart" />
+                                    </div>
+                                    <div class="summary-title">Monthly Assignments</div>
+                                </div>
+                                <RadzenDropDown Data="@materialTypes"
+                                Placeholder="Select material type"
+                                Class="field-input"
+                                TValue="string"
+                                @bind-Value="@selectedMaterialType"
+                                Name="Type"
+                                Change="AssignmentFilter"
+                                Style="width : 110px; border-radius:8px"
+                                />
+
+                            </div>
+                            <div class="summary-content">
+                                <RadzenChart>
+                                    <RadzenColumnSeries Data="@monthlyAssignments" CategoryProperty="Month" Title="Assignments" ValueProperty="Count">
+                                        <RadzenSeriesDataLabels Visible="true" />
+                                    </RadzenColumnSeries>
+                                    <RadzenColumnOptions Radius="5" />
+                                    <RadzenValueAxis>
+                                        <RadzenGridLines Visible="true" />
+                                        <RadzenAxisTitle Text="Number of Assignments" />
+                                    </RadzenValueAxis>
+                                    <RadzenCategoryAxis>
+                                        <RadzenGridLines Visible="false" />
+                                        <RadzenAxisTitle Text="Month" />
+                                    </RadzenCategoryAxis>
+                                </RadzenChart>
+                            </div>
+                            <div class="summary-footer">
+                                <div class="summary-stat">
+                                    <div class="summary-stat-value">@totalAssignmentsChart</div>
+                                    <div class="summary-stat-label">Total</div>
+                                </div>
+                                <div class="summary-stat">
+                                    <div class="summary-stat-value">@((double)monthlyAssignments.Select(massm => massm.Count).Sum() / (double)5)</div>
+                                    <div class="summary-stat-label">Monthly Avg</div>
+                                </div>
+                                <div class="summary-stat">
+                                    <div class="summary-stat-value">@growthAssignment%</div>
+                                    <div class="summary-stat-label">Growth</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-card-lg">
+                        <div class="kpi-title">Quick Actions</div>
+                        <RadzenRow Gap="1rem" Class="mt-3">
+                            <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+                                <a href="/delivery-order" class="quick-action">
+                                    <div class="quick-action-icon bg-primary-light">
+                                        <RadzenIcon Icon="add_shopping_cart" />
+                                    </div>
+                                    <div class="quick-action-title">Add Delivery Order</div>
+                                </a>
+                            </RadzenColumn>
+                            @if(userRole == "Purchasing")
+                            {
+                                <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+                                    <a href="/pending-deliveries" class="quick-action">
+                                        <div class="quick-action-icon bg-success-light">
+                                            <RadzenIcon Icon="local_shipping" />
+                                        </div>
+                                        <div class="quick-action-title">Pending Deliveries</div>
+                                    </a>
+                                </RadzenColumn>
+                            }
+                            else
+                            {
+                                <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+                                    <a href="/assignments-interface" class="quick-action">
+                                        <div class="quick-action-icon bg-success-light">
+                                            <RadzenIcon Icon="assignment" />
+                                        </div>
+                                        <div class="quick-action-title">Manage Assignments</div>
+                                    </a>
+                                </RadzenColumn>
+                            }
+
+                            <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+                                <a href="/materials-view-interface" class="quick-action">
+                                    <div class="quick-action-icon bg-warning-light">
+                                        <RadzenIcon Icon="build" />
+                                    </div>
+                                    <div class="quick-action-title">View Materials</div>
+                                </a>
+                            </RadzenColumn>
+                            @if(userRole == "Admin"){
+                                <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+                                    <a href="/infra-interface" class="quick-action">
+                                        <div class="quick-action-icon bg-info-light">
+                                            <RadzenIcon Icon="memory" />
+                                        </div>
+                                        <div class="quick-action-title">Infra Page</div>
+                                    </a>
+                                </RadzenColumn>
+                            }
+                            else
+                            {
+                                <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+                                    <a href="/purchase-page" class="quick-action">
+                                        <div class="quick-action-icon bg-info-light">
+                                            <RadzenIcon Icon="shopping_cart" />
+                                        </div>
+                                        <div class="quick-action-title">Purchase Requests</div>
+                                    </a>
+                                </RadzenColumn>
+                            }
+                    
+                </RadzenRow>
+            </div>
+
+            <div class="kpi-card kpi-card-md">
+                <div class="kpi-title">Recent Activity</div>
+                <div style="max-height: 350px; overflow-y: auto;">
+                    @foreach (var activity in recentActivity)
+                    {
+                        if (activity.AnyData is ITStockM.Models.ITStockManagment.Assignment assm)
+                        {
+
+                            <div class="activity-item">
+                                <div class="activity-icon bg-success-light">
+                                    <RadzenIcon Icon="assignment_turned_in" />
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">New Assignment Created</div>
+                                    <div class="activity-description">@(assm.Employee.FullName) assigned @assignmentText(assm) to @assm.AssignedEmployee.FullName</div>
+                                    <div class="activity-time">
+                                        @if (activity.Date.Date == DateTime.Today.Date)
+                                        {
+                                            <span>Today at @activity.Date.ToString("h:mm tt")</span>
+                                        }
+                                        else if (activity.Date.Date == DateTime.Today.AddDays(-1).Date)
+                                        {
+                                            <span>Yesterday at @activity.Date.ToString("h:mm tt")</span>
+                                        }
+                                        else
+                                        {
+                                            @activity.Date.ToString("MMM dd, yyyy h:mm tt")
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (activity.AnyData is ITStockM.Models.ITStockManagment.DeliveryOrder delOrd)
+                        {
+                            <div class="activity-item">
+                                <div class="activity-icon bg-primary-light">
+                                    <RadzenIcon Icon="inventory_2" />
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">Inventory Updated</div>
+                                    <div class="activity-description">@deliveryOrderToText(delOrd) added to inventory</div>
+                                    <div class="activity-time">
+                                        @if (activity.Date.Date == DateTime.Today.Date)
+                                        {
+                                            <span>Today at @activity.Date.ToString("h:mm tt")</span>
+                                        }
+                                        else if (activity.Date.Date == DateTime.Today.AddDays(-1).Date)
+                                        {
+                                            <span>Yesterday at @activity.Date.ToString("h:mm tt")</span>
+                                        }
+                                        else
+                                        {
+                                            @activity.Date.ToString("MMM dd, yyyy h:mm tt")
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (activity.AnyData is ITStockM.Models.ITStockManagment.Request req)
+                        {
+                            <div class="activity-item">
+                                <div class="activity-icon bg-info-light">
+                                    <RadzenIcon Icon="shopping_cart" />
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">Purchase Request Approved</div>
+                                    <div class="activity-description">Request for @req.Title approved</div>
+                                    <div class="activity-time">
+                                        @if (activity.Date.Date == DateTime.Today.Date)
+                                        {
+                                            <span>Today at @activity.Date.ToString("h:mm tt")</span>
+                                        }
+                                        else if (activity.Date.Date == DateTime.Today.AddDays(-1).Date)
+                                        {
+                                            <span>Yesterday at @activity.Date.ToString("h:mm tt")</span>
+                                        }
+                                        else
+                                        {
+                                            @activity.Date.ToString("MMM dd, yyyy h:mm tt")
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                    } 
+                
+                
+                
+                </div>
+            </div>
+
+            <div class="kpi-card kpi-card-md">
+                <div class="kpi-title">Low Stock Items</div>
+                <div style="max-height: 350px; overflow-y: auto;">
+                    @foreach (var mat in materielsList)
+                    {
+                        if (mat.Qte < 6)
+                        {
+                            <div class="inventory-status">
+                                <div class="inventory-status-icon bg-danger-light">
+                                    <RadzenIcon Icon="warning" />
+                                </div>
+                                <div class="inventory-status-content">
+                                    <div class="inventory-status-title">@mat.MatName</div>
+                                    <div class="inventory-status-subtitle">@mat.Type</div>
+                                    <div class="progress-container">
+                                        <div class="progress-bar progress-danger" style="width: @(mat.Qte*10)%"></div>
+                                    </div>
+                                </div>
+                                <div class="inventory-status-value">
+                                    <span class="badge badge-danger">@mat.Qte left</span>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="inventory-status">
+                                <div class="inventory-status-icon bg-warning-light">
+                                    <RadzenIcon Icon="warning" />
+                                </div>
+                                <div class="inventory-status-content">
+                                    <div class="inventory-status-title">@mat.MatName</div>
+                                    <div class="inventory-status-subtitle">@mat.Type</div>
+                                    <div class="progress-container">
+                                        <div class="progress-bar progress-warning" style="width: @(mat.Qte*10)%"></div>
+                                    </div>
+                                </div>
+                                <div class="inventory-status-value">
+                                    <span class="badge badge-warning">@mat.Qte left</span>
+                                </div>
+                            </div>
+                        }
+                    
+                    }
+            
+            
+           
+
+
+            </div>
+        </div>
+
+        <div class="kpi-card kpi-card-lg">
+            <div class="kpi-title">Recent Requests</div>
+                <RadzenDataGrid Data="@topRequests" TItem="ITStockM.Models.ITStockManagment.Request" >
+                <Columns>
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Title" Title="Title" />
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="MaterialType" Title="Type" />
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Employee.FullName" Title="Requested By" />
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Date" Title="Date" FormatString="{0:d}" />
+                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Status" Title="Status">
+                        <Template Context="data">
+                            <span class="badge @GetStatusBadgeClass(data.Status)">@data.Status</span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                   
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    </div>
+    
+           @*      <RadzenButton Click="sendEmail">Send email</RadzenButton>
+                <RadzenButton Disabled Click="@AddUserFromAd">Click to add Users</RadzenButton>
+             *@
+        </RadzenCard>
+        </Authorized>
+        <NotAuthorized>
+            @{
+                RedirectPDR();
+            }
+        </NotAuthorized>
+    </AuthorizeView>
+
+

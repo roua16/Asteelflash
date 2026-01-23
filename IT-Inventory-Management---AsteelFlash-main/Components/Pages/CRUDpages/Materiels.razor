@@ -1,0 +1,64 @@
+@page "/materiels-super-admin"
+<AuthorizeView Roles="SuperAdmin">
+    <Authorized >
+<PageTitle>Materiels</PageTitle>
+<RadzenStack>
+    <RadzenRow AlignItems="AlignItems.Center">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText Text="Materiels" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0" />
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenSplitButton Icon="get_app" Text="Export" Click="@ExportClick" Variant="Variant.Flat" Shade="Shade.Lighter">
+                    <RadzenSplitButtonItem Text="Excel" Value="xlsx" />
+                    <RadzenSplitButtonItem Text="CSV" Value="csv" />
+                </RadzenSplitButton>
+                <RadzenButton Icon="add_circle_outline" Text="Add" Click="@AddButtonClick" Variant="Variant.Flat" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+    <RadzenTextBox Placeholder="Search ..." style="display: block; width: 100%" @oninput="@Search" aria-label="Search by all string columns" />
+    <RadzenRow>
+      <RadzenColumn SizeMD=12>
+        <RadzenDataGrid @ref="grid0" ColumnWidth="200px"   AllowFiltering="true" FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new int[]{5, 10, 20, 30})
+            Data="@(materiels)" TItem="ITStockM.Models.ITStockManagment.Materiel" RowDoubleClick="@EditRow">
+            <Columns>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Materiel" Property="Id" Title="Id">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Materiel" Property="MaterielName" Title="Materiel Name">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Materiel" Property="Type" Title="Type">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Materiel" Property="SerialNumber" Title="Serial Number">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Materiel" Property="QuantityPdrstock" Title="Quantity Pdrstock">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Materiel" Property="Warranty" Title="Warranty">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Materiel" Property="QuantityItstock" Title="Quantity Itstock">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Materiel" Property="IrreparableQuantity" Title="Irreparable Quantity">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Materiel" Property="RepairingQuantity" Title="Repairing Quantity">
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Materiel" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
+                    <Template Context="materiel">
+
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"
+                            Shade="Shade.Lighter" Variant="Variant.Flat"
+                            Click=@(args => GridDeleteButtonClick(args, materiel)) @onclick:stopPropagation="true" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+
+        </RadzenDataGrid>
+
+    </RadzenColumn>
+  </RadzenRow>
+</RadzenStack>
+
+    </Authorized>
+    <NotAuthorized>
+        <ITStockM.Components.Pages.auth.RedirectToAccessDenied />
+    </NotAuthorized>
+</AuthorizeView>

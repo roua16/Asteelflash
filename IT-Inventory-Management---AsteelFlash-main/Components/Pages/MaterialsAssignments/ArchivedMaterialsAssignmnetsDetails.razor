@@ -1,0 +1,375 @@
+﻿<PageTitle>Materials Assignments Details</PageTitle>
+
+<style>
+    :root {
+        --primary: #4f46e5;
+        --primary-transp: #4F46E529;
+        --primary-light: #e0e7ff;
+        --success: #10b981;
+        --success-transp: #10B98130;
+        --success-light: #d1fae5;
+        --warning: #f59e0b;
+        --warning-transp: #F59E0B3B;
+        --warning-light: #fef3c7;
+        --danger: #ef4444;
+        --danger-transp: #EF44443B;
+        --danger-light: #fee2e2;
+        --gray-light: #f3f4f6;
+        --gray: #9ca3af;
+        --dark: #1f2937;
+    }
+
+    .page-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    .page-title {
+        position: relative;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        text-align: center;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+        .page-title::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background-color: var(--rz-primary);
+            border-radius: 3px;
+        }
+
+    .details-card {
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        width: 100%;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+        .details-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: var(--rz-primary);
+            border-radius: 3px 0 0 3px;
+        }
+
+    .material-card::before {
+        background: #4f46e5; 
+    }
+
+    .employee-card::before {
+        background: #0ea5e9; 
+    }
+
+    .card-header {
+        position: relative;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-header-icon {
+        position: absolute;
+        right: 0;
+        top: 0;
+        font-size: 1.5rem;
+        opacity: 0.7;
+    }
+
+    .property-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .property-item {
+        margin-bottom: 1.25rem;
+        position: relative;
+    }
+
+    .property-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.25rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--rz-text-tertiary-color);
+    }
+
+        .property-label::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 0.5rem;
+            background-color: var(--rz-primary);
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+
+    .material-property .property-label::before {
+        background-color: #4f46e5; 
+    }
+
+    .employee-property .property-label::before {
+        background-color: #0ea5e9; 
+    }
+
+    .property-value {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var(--rz-text-color);
+        padding-left: 1rem;
+    }
+
+    .assignment-connector {
+        position: relative;
+        height: 40px;
+        margin: -20px 0;
+        z-index: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .connector-line {
+        width: 2px;
+        height: 100%;
+    }
+
+    .connector-circle {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border: 2px solid #0ea5e9;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.25rem;
+    }
+
+    .description-section {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px dashed rgba(0, 0, 0, 0.1);
+    }
+
+    .description-value {
+        padding: 1rem;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+
+    .no-description {
+        font-style: italic;
+    }
+
+    .assignment-details {
+        margin-top: 1.5rem;
+        padding: 1.25rem;
+        background-color: var(--primary-light);
+        border-radius: 8px;
+        position: relative;
+    }
+
+    .assignment-details-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        color: var(--primary);
+    }
+
+        .assignment-details-header .icon {
+            margin-right: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+    .assignment-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .assignment-info-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .assignment-info-label {
+        font-size: 0.75rem;
+        color: var(--primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .assignment-info-value {
+        font-weight: 500;
+    }
+
+    .mission-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+        .mission-badge.on-mission {
+            background-color: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .mission-badge.not-on-mission {
+            background-color: var(--success-light);
+            color: var(--success);
+        }
+
+        .mission-badge .icon {
+            margin-right: 0.25rem;
+        }
+</style>
+
+<div class="page-container">
+    <h1 class="page-title">Materials Assignment Details</h1>
+
+    <div class="details-card material-card">
+        <div class="card-header">
+            <RadzenText TextStyle="TextStyle.H6" Style="margin: 0; font-weight: 600;">Material Details</RadzenText>
+            <span class="card-header-icon">
+                <RadzenIcon Icon="Inventory_2" />
+            </span>
+        </div>
+
+        <div class="property-grid">
+            <div class="property-item material-property">
+                <div class="property-label">Material Name</div>
+                <div class="property-value">@AssignmentMateriel.Materiel.MaterielName</div>
+            </div>
+
+            <div class="property-item material-property">
+                <div class="property-label">Type</div>
+                <div class="property-value">@AssignmentMateriel.Materiel.Type</div>
+            </div>
+
+            <div class="property-item material-property">
+                <div class="property-label">Warranty</div>
+                <div class="property-value">@AssignmentMateriel.Materiel.Warranty</div>
+            </div>
+
+            @if (AssignmentMateriel.Materiel.SerialNumber != null)
+            {
+                <div class="property-item material-property">
+                    <div class="property-label">Serial Number</div>
+                    <div class="property-value">@AssignmentMateriel.Materiel.SerialNumber</div>
+                </div>
+            }
+        </div>
+
+        <div class="description-section">
+            <div class="property-label material-property">Description</div>
+            <div class="property-value description-value">
+                @if (string.IsNullOrEmpty(AssignmentMateriel.Assignment.Descipriton))
+                {
+                    <span class="no-description">No description available</span>
+                }
+                else
+                {
+                    @AssignmentMateriel.Assignment.Descipriton
+                }
+            </div>
+        </div>
+
+
+    </div>
+
+    @if (AssignmentMateriel.Assignment.AssignedTo != null)
+    {
+        <div class="assignment-connector">
+            <div class="connector-line"></div>
+            <div class="connector-circle"> <RadzenIcon Icon="person" /></div>
+        </div>
+
+        <div class="details-card employee-card">
+            <div class="card-header">
+                <RadzenText TextStyle="TextStyle.H6" Style="margin: 0; font-weight: 600;">Employee Details</RadzenText>
+                <span class="card-header-icon">
+                    <RadzenIcon Icon="person" />
+                </span>
+            </div>
+
+            <div class="property-grid">
+                <div class="property-item employee-property">
+                    <div class="property-label">Full Name</div>
+                    <div class="property-value">@AssignmentMateriel.Assignment.AssignedEmployee.FullName</div>
+                </div>
+
+                @if (AssignmentMateriel.Materiel.SerialNumber != "")
+                {
+                    <div class="property-item employee-property">
+                        <div class="property-label">Email</div>
+                        <div class="property-value">@AssignmentMateriel.Assignment.AssignedEmployee.Email</div>
+                    </div>
+                }
+
+                <div class="property-item employee-property">
+                    <div class="property-label">Post</div>
+                    <div class="property-value">@AssignmentMateriel.Assignment.AssignedEmployee.Post</div>
+                </div>
+
+                <div class="property-item employee-property">
+                    <div class="property-label">Service</div>
+                    <div class="property-value">@AssignmentMateriel.Assignment.AssignedEmployee.Service</div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="assignment-connector">
+            <div class="connector-line"></div>
+            <div class="connector-circle"> <RadzenIcon Icon="Auto_Awesome_Mosaic" /></div>
+        </div>
+
+        <div class="details-card employee-card">
+            <div class="card-header">
+                <RadzenText TextStyle="TextStyle.H6" Style="margin: 0; font-weight: 600;">Project Details</RadzenText>
+                <span class="card-header-icon">
+                    <RadzenIcon Icon="Auto_Awesome_Mosaic" />
+                </span>
+            </div>
+
+            <div class="property-grid">
+                <div class="property-item employee-property">
+                    <div class="property-label">Project Name</div>
+                    <div class="property-value">@AssignmentMateriel.Assignment.Project.ProjectName</div>
+                </div>
+            </div>
+        </div>
+    }
+
+   
+</div>
+

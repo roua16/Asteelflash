@@ -1,0 +1,465 @@
+﻿@page "/login"
+
+
+<style>
+    .login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+    padding: 1rem;
+    }
+
+    .login-card {
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+    background-color: white;
+    animation: fadeIn 0.6s ease-out;
+    }
+
+    @@keyframes fadeIn {
+    from {
+    opacity: 0;
+    transform: translateY(20px);
+    }
+
+    to {
+    opacity: 1;
+    transform: translateY(0);
+    }
+    }
+
+    .login-brand-section {
+    flex: 1;
+    background: linear-gradient(135deg, #1a1f3a 0%, #2d3250 100%);
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    }
+
+    .login-brand-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJwYXR0ZXJuIiB4PSIwIiB5PSIwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiIHBhdHRlcm5UcmFuc2Zvcm09InJvdGF0ZSgzMCkiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiNmZmZmZmYiIG9wYWNpdHk9IjAuMDUiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjcGF0dGVybikiLz48L3N2Zz4=');
+    opacity: 0.8;
+    }
+
+    .brand-content {
+    position: relative;
+    z-index: 1;
+    }
+
+    .brand-logo {
+    width: 220px;
+    height: auto;
+    margin-bottom: 2rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    .brand-title {
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+    }
+
+    .brand-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+    }
+
+    .brand-features {
+    margin-top: 3rem;
+    }
+
+    .feature-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    }
+
+    .feature-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 0.75rem;
+    background: linear-gradient(135deg, #0055a4, #dc3545);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    }
+
+    .feature-icon i {
+    color: white;
+    font-size: 12px;
+    }
+
+    .brand-footer {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    margin-top: auto;
+    }
+
+    .login-form-section {
+    flex: 1;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    }
+
+    .login-header {
+    margin-bottom: 2rem;
+    text-align: center;
+    }
+
+    .login-title {
+    font-size: 2rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #0055a4, #dc3545);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+    }
+
+    .login-subtitle {
+    color: #64748b;
+    font-size: 0.95rem;
+    }
+
+    .form-group {
+    margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #334155;
+    }
+
+    .form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+    border-color: #0055a4;
+    box-shadow: 0 0 0 3px rgba(0, 85, 164, 0.1);
+    }
+
+    .validation-message {
+    color: #dc3545;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    }
+
+    .form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    }
+
+    .form-check {
+    display: flex;
+    align-items: center;
+    }
+
+    .form-check-input {
+    margin-right: 0.5rem;
+    }
+
+    .form-check-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    }
+
+    .forgot-password {
+    font-size: 0.9rem;
+    color: #0055a4;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    }
+
+    .forgot-password:hover {
+    color: #dc3545;
+    text-decoration: underline;
+    }
+
+    .login-button {
+    width: 100%;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #0055a4, #dc3545);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    }
+
+    .login-button:hover {
+    box-shadow: 0 4px 12px rgba(0, 85, 164, 0.3);
+    transform: translateY(-2px);
+    }
+
+    .login-button:active {
+    transform: translateY(0);
+    }
+
+    .login-button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+    }
+
+    .login-button:hover::after {
+    transform: translateX(100%);
+    }
+
+    .login-divider {
+    display: flex;
+    align-items: center;
+    margin: 2rem 0;
+    color: #94a3b8;
+    }
+
+    .login-divider::before,
+    .login-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: #e2e8f0;
+    }
+
+    .login-divider span {
+    padding: 0 1rem;
+    font-size: 0.9rem;
+    }
+
+    .sso-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    }
+
+    .sso-button {
+    flex: 1;
+    padding: 0.75rem;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    }
+
+    .sso-button:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    }
+
+    .sso-button i {
+    font-size: 1.25rem;
+    margin-right: 0.5rem;
+    }
+
+    .login-footer {
+    text-align: center;
+    margin-top: 2rem;
+    color: #64748b;
+    font-size: 0.9rem;
+    }
+
+    .login-footer a {
+    color: #0055a4;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    }
+
+    .login-footer a:hover {
+    color: #dc3545;
+    text-decoration: underline;
+    }
+
+    .decorative-shape {
+    position: absolute;
+    z-index: 0;
+    }
+
+    .shape-1 {
+    top: 10%;
+    right: 10%;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(135deg, rgba(0, 85, 164, 0.3), rgba(0, 85, 164, 0.1));
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    animation: float 8s ease-in-out infinite;
+    }
+
+    .shape-2 {
+    bottom: 15%;
+    left: 5%;
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.2), rgba(220, 53, 69, 0.05));
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    animation: float 10s ease-in-out infinite alternate;
+    }
+
+    @@keyframes float {
+    0% {
+    transform: translate(0, 0) rotate(0deg);
+    }
+
+    50% {
+    transform: translate(10px, 10px) rotate(5deg);
+    }
+
+    100% {
+    transform: translate(0, 0) rotate(0deg);
+    }
+    }
+
+    @@media (max-width: 992px) {
+    .login-card {
+    flex-direction: column;
+    max-width: 600px;
+    }
+
+    .login-brand-section {
+    padding: 2rem;
+    }
+
+    .login-form-section {
+    padding: 2rem;
+    }
+
+    .brand-features {
+    display: none;
+    }
+    }
+
+    @@media (max-width: 576px) {
+    .login-brand-section {
+    padding: 1.5rem;
+    }
+
+    .login-form-section {
+    padding: 1.5rem;
+    }
+
+    .brand-title {
+    font-size: 2rem;
+    }
+
+    .sso-buttons {
+    flex-direction: column;
+    }
+    }
+</style>
+@if (isChecking)
+{
+    <p>Loading ...</p>
+}
+else
+{
+    
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-brand-section">
+            <div class="decorative-shape shape-1"></div>
+            <div class="decorative-shape shape-2"></div>
+
+            <div class="brand-content">
+                <img src="images/logoAsteel.png" alt="AsteelFlash Logo" class="brand-logo" />
+                <h1 class="brand-title">IT Inventory Management System</h1>
+                <p class="brand-subtitle">Streamline your inventory processes with our comprehensive management solution.</p>
+
+
+            </div>
+
+            <div class="brand-footer">
+                Copyright Ⓒ AsteelFlash. All rights reserved.
+            </div>
+        </div>
+
+        <div class="login-form-section">
+            <div class="login-header">
+                <h2 class="login-title">Welcome Back</h2>
+                <p class="login-subtitle">Sign in to your account to continue</p>
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="false" Variant="Variant.Flat" Shade="Shade.Lighter">
+                        @errorMessage
+                    </RadzenAlert>
+                }
+            </div>
+
+            <form onsubmit="@HandleLogin">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address</label>
+
+                    <InputText id="email" type="email" @bind-Value="loginModel.Email" class="form-control" style="color:black" />
+
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+
+                    <InputText id="password" type="password" @bind-Value="loginModel.Password" class="form-control" style="color : black" />
+                </div>
+
+                <div class="form-options">
+                    
+
+                </div>
+
+                <button type="submit" class="login-button">
+                    <span>Sign In</span>
+                </button>
+
+
+
+                <div class="login-footer">
+                    Don't have an account? <a href="#">Contact administrator (still working on it)</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+}

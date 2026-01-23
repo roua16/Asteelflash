@@ -1,0 +1,382 @@
+﻿
+
+<PageTitle>Add Offer</PageTitle>
+
+<style>
+    :root {
+        --primary: #4f46e5;
+        --primary-light: #e0e7ff;
+        --success: #10b981;
+        --success-light: #d1fae5;
+        --warning: #f59e0b;
+        --warning-light: #fef3c7;
+        --danger: #ef4444;
+        --danger-light: #fee2e2;
+        --gray-light: #f3f4f6;
+        --gray: #9ca3af;
+        --dark: #1f2937;
+    }
+
+    .form-container {
+        max-width: 850px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    .form-header {
+        position: relative;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        text-align: center;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+        .form-header::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background-color: var(--primary);
+            border-radius: 3px;
+        }
+
+    .form-description {
+        text-align: center;
+        margin-bottom: 2rem;
+        color: var(--gray);
+    }
+
+    .form-section {
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+        .form-section::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            border-radius: 3px 0 0 3px;
+        }
+
+    .section-supplier::before {
+        background-color: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .section-details::before {
+        background-color: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+
+    .icon-supplier {
+        background-color: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .icon-details {
+        background-color: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .form-field {
+        margin-bottom: 1.25rem;
+    }
+
+        .form-field:last-child {
+            margin-bottom: 0;
+        }
+
+    .field-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+
+
+    .required-indicator {
+        color: var(--danger);
+        margin-left: 0.25rem;
+    }
+
+    .field-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s;
+        height: 3rem;
+    }
+
+    .field-input1 {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s;
+        height: 3.5rem;
+    }
+
+    .field-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    }
+
+    .field-helper {
+        font-size: 0.75rem;
+        color: var(--gray);
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .field-error {
+        font-size: 0.75rem;
+        color: var(--danger);
+        margin-top: 0.25rem;
+    }
+
+    .error-alert {
+        background-color: var(--danger-light);
+        color: var(--danger);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .error-icon {
+        font-size: 1.5rem;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-top: 2rem;
+    }
+
+    .btn-submit {
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+
+        .btn-submit:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+        }
+
+    .btn-cancel {
+        background-color: white;
+        color: var(--dark);
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+
+        .btn-cancel:hover {
+            background-color: var(--gray-light);
+        }
+
+    :deep(.rz-dropdown), :deep(.rz-textbox), :deep(.rz-numeric), :deep(.rz-datepicker) {
+        width: 100%;
+        border-radius: 8px !important;
+    }
+
+    :deep(.rz-dropdown:focus), :deep(.rz-textbox:focus), :deep(.rz-numeric:focus), :deep(.rz-datepicker:focus) {
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2) !important;
+    }
+
+    .helper-text {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.75rem;
+        color: var(--gray);
+        margin-top: 0.5rem;
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+        .helper-text:hover {
+            color: var(--primary);
+        }
+
+    .helper-icon {
+        font-size: 0.875rem;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <RadzenCard class="rz-shadow-2" Style="border-radius: 12px; border: none;">
+        <div class="form-container">
+            <div class="form-header">
+                <RadzenText Text="@requestTitle" TextStyle="TextStyle.H4" TagName="TagName.H1"
+                            Style="font-weight: 600; margin: 0;" />
+            </div>
+
+            @if (errorVisible)
+            {
+                <div class="error-alert">
+                    <span class="error-icon">⚠️</span>
+                    <div>
+                        <strong>Error:</strong> Cannot save offer. Please check the form for errors and try again.
+                    </div>
+                </div>
+            }
+
+            <RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.Offer" Data="@offer" Visible="@(offer != null)" Submit="@FormSubmit">
+
+                <div class="form-section section-supplier">
+                    <div class="section-title">
+                        <span class="section-icon icon-supplier"><RadzenIcon Icon="store"></RadzenIcon></span>
+                        Supplier Information
+                    </div>
+
+                    <div class="form-field">
+                        <label class="field-label">
+                            Supplier
+                            <span class="required-indicator">*</span>
+                        </label>
+                        <RadzenDropDownDataGrid Data="@suppliersForSupplierName"
+                                                TextProperty="SupplierName"
+                                                ValueProperty="SupplierName"
+                                                AllowClear="true"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                Placeholder="Select a supplier..."
+                                                Class="field-input"
+                                                @bind-Value="@offer.SupplierName"
+                                                Name="SupplierName" />
+
+                        <div class="helper-text" @onclick="AddSupplier">
+                            <RadzenIcon Icon="add_circle" Class="helper-icon" />
+                            <span>Supplier not in the list? Click here to add one.</span>
+                        </div>
+
+                        <RadzenRequiredValidator Component="SupplierName" Text="Supplier is required" Style="font-size: 0.75rem;" />
+                    </div>
+                </div>
+
+                <div class="form-section section-details">
+                    <div class="section-title">
+                        <span class="section-icon icon-details"><RadzenIcon Icon="local_offer"></RadzenIcon></span>
+                        Offer Details
+                    </div>
+
+                    <RadzenRow>
+                        <RadzenColumn SizeMD="6">
+                            <div class="form-field">
+                                <label class="field-label">
+                                    Delivery Date
+                                    <span class="required-indicator">*</span>
+                                </label>
+                                <RadzenDatePicker DateFormat="MM/dd/yyyy"
+                                                  Class="field-input1"
+                                                  @bind-Value="@offer.DeliveryDate"
+                                                  Name="DeliveryDate"
+                                                  ShowTime="false"
+                                                  ShowIcon="true"
+                                                  Min="DateTime.Now.AddDays(-1)"
+                                                  Placeholder="Select delivery date..." />
+                                <div class="field-helper">
+                                    <RadzenIcon Icon="event" Style="font-size: 0.875rem;" />
+                                    Expected date of delivery
+                                </div>
+                                <RadzenRequiredValidator Component="DeliveryDate" Text="Delivery date is required" Style="font-size: 0.75rem;" />
+                            </div>
+                        </RadzenColumn>
+                        <RadzenColumn SizeMD="6">
+                            <div class="form-field">
+                                <label class="field-label">
+                                    Price
+                                    <span class="required-indicator">*</span>
+                                </label>
+                                <RadzenNumeric Class="field-input1"
+                                               @bind-Value="@offer.Price"
+                                               Name="Price"
+                                               Placeholder="Enter price..."
+                                               Min="0"
+                                               ShowUpDown="false" />
+                                <div class="field-helper">
+                                    <RadzenIcon Icon="info" Style="font-size: 0.875rem;" />
+                                    Enter the total price including taxes
+                                </div>
+                                <RadzenRequiredValidator Component="Price" Text="Price is required" Style="font-size: 0.75rem;" />
+                            </div>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton Text="Save"
+                                  ButtonType="ButtonType.Submit"
+                                  Icon="save"
+                                  Size="ButtonSize.Medium"
+                                  ButtonStyle="ButtonStyle.Info"
+                                  Shade="Shade.Darker" Variant="Variant.Filled"
+                                  Style="border-radius: 8px; " />
+
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  Size="ButtonSize.Medium"
+                                  ButtonStyle="ButtonStyle.Danger"
+                                  Shade="Shade.Darker" Variant="Variant.Filled"
+                                  Style="border-radius: 8px;"
+                                  Click="@CancelButtonClick" />
+                </div>
+            </RadzenTemplateForm>
+        </div>
+    </RadzenCard>
+</div>

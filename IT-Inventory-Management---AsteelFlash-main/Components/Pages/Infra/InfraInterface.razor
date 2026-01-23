@@ -1,0 +1,831 @@
+﻿@page "/infra-interface"
+
+<AuthorizeView Context="authContext" Roles="SuperAdmin,Admin">
+    <Authorized>
+        <PageTitle>Infrastructure Management</PageTitle>
+
+        <style>
+            :root {
+                --primary: #4f46e5;
+                --primary-light: #e0e7ff;
+                --success: #10b981;
+                --success-light: #d1fae5;
+                --warning: #f59e0b;
+                --warning-light: #fef3c7;
+                --danger: #ef4444;
+                --danger-light: #fee2e2;
+                --gray-light: #f3f4f6;
+                --gray: #9ca3af;
+                --dark: #1f2937;
+            }
+
+            .page-container {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 1.5rem;
+            }
+
+            .page-title {
+                position: relative;
+                margin-bottom: 2.5rem;
+                padding-bottom: 1rem;
+                text-align: center;
+            }
+
+                .page-title::after {
+                    content: "";
+                    position: absolute;
+                    bottom: 0;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 80px;
+                    height: 3px;
+                    background-color: var(--primary);
+                    border-radius: 3px;
+                }
+
+            .panel {
+                border-radius: 12px;
+                margin-bottom: 1.5rem;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+                position: relative;
+                overflow: hidden;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+            }
+
+                .panel::before {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 6px;
+                    height: 100%;
+                    border-radius: 3px 0 0 3px;
+                }
+
+            .panel-form::before {
+                background-color: var(--primary-light);
+                color: var(--primary);
+            }
+
+            .panel-queue::before {
+                background-color: var(--primary-light);
+                color: var(--primary);
+            }
+
+            .panel-offers::before {
+                background-color: var(--primary-light);
+                color: var(--primary);
+            }
+
+            .panel-header {
+                padding: 1rem 1.5rem;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .panel-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                font-size: 1.25rem;
+            }
+
+            .icon-form {
+                background-color: var(--primary-light);
+                color: var(--primary);
+            }
+
+            .icon-queue {
+                background-color: var(--primary-light);
+                color: var(--primary);
+            }
+
+            .icon-offers {
+                background-color: var(--primary-light);
+                color: var(--primary);
+            }
+
+            .panel-title {
+                font-size: 1.125rem;
+                font-weight: 600;
+                margin: 0;
+            }
+
+            .panel-body {
+                padding: 1.5rem;
+            }
+
+            .form-field {
+                margin-bottom: 1.25rem;
+            }
+
+                .form-field:last-child {
+                    margin-bottom: 0;
+                }
+
+            .field-label {
+                display: block;
+                font-size: 0.875rem;
+                font-weight: 500;
+                margin-bottom: 0.5rem;
+            }
+
+            .required-indicator {
+                color: var(--danger);
+                margin-left: 0.25rem;
+            }
+
+            .field-input {
+                width: 100%;
+                height: 3rem;
+                padding: 0.75rem;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 1rem;
+                transition: all 0.2s;
+            }
+
+            .date {
+                width: 100%;
+                height: 4rem;
+                padding: 0.75rem;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 1rem;
+                transition: all 0.2s;
+            }
+
+            .field-input:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            }
+
+            .field-helper {
+                font-size: 0.75rem;
+                margin-top: 0.25rem;
+            }
+
+            .error-alert {
+                background-color: var(--danger-light);
+                color: var(--danger);
+                padding: 1rem;
+                border-radius: 8px;
+                margin-bottom: 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .error-icon {
+                font-size: 1.5rem;
+            }
+
+            .form-actions {
+                display: flex;
+                justify-content: center;
+                gap: 1rem;
+                margin-top: 1.5rem;
+            }
+
+            .btn-submit {
+                border: none;
+                border-radius: 8px;
+                padding: 0.75rem 1.5rem;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: all 0.2s;
+            }
+
+                .btn-submit:hover {
+                    transform: translateY(-2px);
+                }
+
+            .btn-reset {
+                border: none;
+                border-radius: 8px;
+                padding: 0.75rem 1.5rem;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: all 0.2s;
+            }
+
+                .btn-reset:hover {
+                    transform: translateY(-2px);
+                }
+
+            .summary-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 1rem;
+            }
+
+                .summary-table th {
+                    padding: 0.75rem;
+                    text-align: left;
+                    font-weight: 600;
+                    border-bottom: 2px solid var(--gray-light);
+                }
+
+                .summary-table td {
+                    padding: 0.75rem;
+                    text-align: left;
+                    border-bottom: 1px solid var(--gray-light);
+                }
+
+            .datagrid-container {
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+                .datagrid-container :deep(.rz-datatable-header) {
+                    padding: 1rem;
+                    border-bottom: 1px solid #e5e7eb;
+                }
+
+                .datagrid-container :deep(.rz-grid-table) {
+                    border-collapse: separate;
+                    border-spacing: 0;
+                }
+
+                .datagrid-container :deep(.rz-datatable-thead th) {
+                    font-weight: 600;
+                    padding: 0.75rem;
+                    border-bottom: 1px solid #e5e7eb;
+                }
+
+                .datagrid-container :deep(.rz-grid-table td) {
+                    padding: 0.75rem;
+                    border-bottom: 1px solid #e5e7eb;
+                }
+
+                .datagrid-container :deep(.rz-datatable-data tr:hover) {
+                }
+
+            .status-badge {
+                display: inline-block;
+                padding: 0.25rem 0.75rem;
+                border-radius: 4px;
+                font-weight: 500;
+                font-size: 0.75rem;
+                text-align: center;
+            }
+
+            .carousel-container {
+                margin-top: 1.5rem;
+                border-radius: 12px;
+                overflow: hidden;
+            }
+
+            .carousel-card {
+                max-width: 90%;
+                width: 270px;
+                margin: 0 auto;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                transition: transform 0.3s;
+                cursor: pointer;
+            }
+
+                .carousel-card:hover {
+                    transform: translateY(-5px);
+                }
+
+            .card-header {
+                padding: 1rem;
+                text-align: center;
+            }
+
+            .card-body {
+                padding: 1.5rem;
+            }
+
+            .card-label {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                margin-bottom: 0.25rem;
+            }
+
+            .card-value {
+                font-size: 1.125rem;
+                font-weight: 600;
+            }
+
+            .card-footer {
+                display: flex;
+                justify-content: space-between;
+                padding: 1rem;
+                border-top: 1px solid var(--gray-light);
+            }
+
+            .card-stat {
+                text-align: center;
+            }
+
+            :deep(.rz-dropdown), :deep(.rz-textbox), :deep(.rz-numeric), :deep(.rz-datepicker) {
+                width: 100%;
+                border-radius: 8px !important;
+            }
+
+            :deep(.rz-dropdown:focus), :deep(.rz-textbox:focus), :deep(.rz-numeric:focus), :deep(.rz-datepicker:focus) {
+                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2) !important;
+            }
+
+            :deep(.rz-carousel) {
+                border-radius: 12px;
+            }
+
+            :deep(.rz-carousel-item) {
+                padding: 1rem;
+            }
+
+
+            .empty-state {
+                text-align: center;
+                padding: 3rem;
+                border-radius: 12px;
+                margin-top: 2rem;
+            }
+
+            .empty-state-icon {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                color: var(--gray);
+            }
+
+            .empty-state-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+                margin-bottom: 0.5rem;
+            }
+
+            .empty-state-description {
+                color: var(--gray);
+                max-width: 400px;
+                margin: 0 auto;
+            }
+        </style>
+        <span id="scrollback"></span>
+        <div class="container-fluid py-4">
+            <RadzenCard class="mb-4 rz-shadow-2" Style="border-radius: 12px; border: none;">
+                <div class="page-container">
+                    <div class="page-title">
+                        <RadzenText Text="Infrastructure Management" TextStyle="TextStyle.H3" TagName="TagName.H1"
+                                    Style="text-transform: uppercase; font-weight: 600; letter-spacing: 1px;" />
+                    </div>
+
+                    <RadzenRow>
+                        <!-- Left Column: Request Form -->
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <div class="panel panel-form">
+                                <div class="panel-header">
+                                    <div class="panel-icon icon-form">
+                                        <RadzenIcon Icon="gavel" />
+                                    </div>
+                                    <h2 class="panel-title">New Infrastructure Request</h2>
+                                </div>
+                                <!-- Left Column: Request Form -->
+                                <div class="panel-body">
+
+                                    <RadzenFieldset AllowCollapse="true"
+                                                    Style="width:510px; margin: 2px auto; border-radius: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                                        <HeaderTemplate>
+                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                                <b>Collapse</b>
+                                            </RadzenStack>
+                                        </HeaderTemplate>
+
+                                        <ChildContent>
+                                            <div class="panel-body">
+                                                @if (errorVisible)
+                                                {
+                                                    <div class="error-alert">
+                                                        <span class="error-icon">⚠️</span>
+                                                        <div>
+                                                            <strong>Error:</strong> Cannot save request. Please check the form for errors and try again.
+                                                        </div>
+                                                    </div>
+                                                }
+
+                                                <RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.Request"
+                                                                    Data="@request"
+                                                                    Visible="@(request != null)"
+                                                                    Submit="@FormSubmit">
+
+                                                    <div class="form-field">
+                                                        <label class="field-label">
+                                                            Title
+                                                            <span class="required-indicator">*</span>
+                                                        </label>
+                                                        <RadzenTextBox Class="field-input"
+                                                                       @bind-Value="@request.Title"
+                                                                       Name="Title"
+                                                                       Placeholder="Enter request title" />
+                                                        <RadzenRequiredValidator Component="Title" Text="Title is required" />
+                                                    </div>
+
+                                                    <div class="form-field">
+                                                        <label class="field-label">
+                                                            Description
+                                                            <span class="required-indicator">*</span>
+                                                        </label>
+                                                        <RadzenTextArea Rows="3"
+                                                                        Class="field-input"
+                                                                        @bind-Value="@request.Description"
+                                                                        Name="Description"
+                                                                        Placeholder="Enter detailed description"
+                                                                        Style="height:100px"/>
+                                                        <RadzenRequiredValidator Component="Description" Text="Description is required" />
+                                                    </div>
+
+                                                    
+
+                                                    <div class="form-field">
+                                                        <label class="field-label">
+                                                            Project Name
+                                                            <span class="required-indicator">*</span>
+                                                        </label>
+                                                        <RadzenDropDown Data="@projectNames"
+                                                                        AllowClear="true"
+                                                                        Placeholder="Select project name"
+                                                                        Class="field-input"
+                                                                        @bind-Value="@request.ProjectName"
+                                                                        Name="ProjectName" />
+                                                        <RadzenRequiredValidator Component="ProjectName" Text="Project Name is required" />
+                                                    </div>
+
+                                                    <div class="form-field">
+                                                        <label class="field-label">
+                                                            Material Type
+                                                            <span class="required-indicator">*</span>
+                                                        </label>
+                                                        <RadzenDropDown TValue="string"
+                                                                        Data="@materialTypes"
+                                                                        Placeholder="Select a material type"
+                                                                        Class="field-input"
+                                                                        Name="MaterialType"
+                                                                        @bind-Value="@request.MaterialType" />
+                                                        <RadzenRequiredValidator Component="MaterialType" Text="Material Type is required" />
+                                                    </div>
+
+
+
+                                                    <div class="form-field">
+                                                        <label class="field-label">
+                                                            Status
+                                                            <span class="required-indicator">*</span>
+                                                        </label>
+                                                        <RadzenDropDown Data="@status"
+                                                                        AllowClear="true"
+                                                                        Placeholder="Select a status"
+                                                                        Class="field-input"
+                                                                        @bind-Value="@request.Status"
+                                                                        Name="Status" />
+                                                        <RadzenRequiredValidator Component="Status" Text="Status is required" />
+                                                    </div>
+
+                                                    <div class="form-field">
+                                                        <label class="field-label">Supporting Documents</label>
+                                                        <RadzenUpload ChooseText="Upload File"
+                                                                      Class="date"
+                                                                      Change="@OnFileUpload"
+                                                                      Style="width: 100%;" />
+
+                                                    </div>
+
+                                                    <RadzenStack Style="margin-top: 2rem;"
+                                                                 Orientation="Orientation.Horizontal"
+                                                                 AlignItems="AlignItems.Center"
+                                                                 JustifyContent="JustifyContent.Center"
+                                                                 Gap="1rem">
+                                                        <RadzenButton Text="Save" ButtonType="ButtonType.Submit" Icon="save" Size="ButtonSize.Medium" ButtonStyle="ButtonStyle.Info" Style=" border-radius: 8px;" Shade="Shade.Darker" Variant="Variant.Filled" />
+                                                        <RadzenButton Icon="highlight_off" Text="Reset" Size="ButtonSize.Medium" ButtonStyle="ButtonStyle.Danger" Style=" border-radius: 8px;" Shade="Shade.Darker" Variant="Variant.Filled" ButtonType="ButtonType.Reset" />
+                                                    </RadzenStack>
+                                                </RadzenTemplateForm>
+                                            </div>
+                                        </ChildContent>
+
+                                        <SummaryTemplate>
+                                            <RadzenCard class="rz-mt-4" Style="padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                                                <table style="width: 100%; border-collapse: collapse;">
+                                                    <thead>
+                                                        <tr style="border-bottom: 2px solid #e0e0e0;">
+                                                            <th style="padding: 12px; text-align: left; font-weight: bold;">Title</th>
+                                                            <th style="padding: 12px; text-align: left; font-weight: bold;">Material Type</th>
+                                                            <th style="padding: 12px; text-align: left; font-weight: bold;">Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr style="border-bottom: 1px solid #e0e0e0;">
+                                                            <td style="padding: 12px; text-align: left;">@request.Title</td>
+                                                            <td style="padding: 12px; text-align: left;">@request.MaterialType</td>
+                                                            <td style="padding: 12px; text-align: left;">
+                                                                <RadzenBadge BadgeStyle="@GetStatusStyle(request.Status)"
+                                                                             Shade="Shade.Lighter"
+                                                                             Style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500;"
+                                                                             Text="@request.Status" />
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </RadzenCard>
+                                        </SummaryTemplate>
+                                    </RadzenFieldset>
+                                </div>
+                            </div>
+                        </RadzenColumn>
+
+                        <!-- Right Column: Requests Queue and Offers -->
+                        <RadzenColumn Size="12" SizeMD="6">
+                            <div class="panel panel-queue">
+                                <div class="panel-header">
+                                    <div class="panel-icon icon-queue">
+                                        <RadzenIcon Icon="alarm" />
+                                    </div>
+                                    <h2 class="panel-title">Requests Queue</h2>
+                                </div>
+
+                                <div class="panel-body">
+                                    <RadzenFieldset AllowCollapse="true"
+                                                    Style="width:510px; margin: 2px auto; border-radius: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                                        <HeaderTemplate>
+                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                                <b>Collapse</b>
+                                            </RadzenStack>
+                                            
+                                        </HeaderTemplate>
+                                        <ChildContent>
+                                            <div class="datagrid-container">
+                                                <RadzenDataGrid @ref="grid0"
+                                                                AllowFiltering="true"
+                                                                FilterMode="FilterMode.Advanced"
+                                                                AllowPaging="true"
+                                                                AllowSorting="true"
+                                                                ShowPagingSummary="true"
+                                                                PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                                                                Data="@requests"
+                                                                TItem="ITStockM.Models.ITStockManagment.Request"
+                                                                RowDoubleClick="@EditRow">
+                                                    <Columns>
+                                                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request"
+                                                                              Property="Title"
+                                                                              Title="Title"
+                                                                              Width="60%">
+                                                            <Template Context="data">
+                                                                <div style="display: flex; align-items: center;">
+                                                                    <span>@data.Title</span>
+                                                                </div>
+                                                            </Template>
+                                                        </RadzenDataGridColumn>
+                                                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request"
+                                                                              Property="Status"
+                                                                              Title="Status"
+                                                                              Width="25%">
+                                                            <Template Context="data">
+                                                                <RadzenBadge BadgeStyle="@GetStatusStyles(data.Status)"
+                                                                             Shade="Shade.Lighter"
+                                                                             Style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500;"
+                                                                             Text="@data.Status" />
+                                                            </Template>
+                                                        </RadzenDataGridColumn>
+                                                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request"
+                                                                              Filterable="false"
+                                                                              Sortable="false"
+                                                                              Width="15%"
+                                                                              TextAlign="TextAlign.Center">
+                                                            <Template Context="data">
+                                                                <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                                                              Icon="delete"
+                                                                              Size="ButtonSize.Small"
+                                                                              Shade="Shade.Lighter"
+                                                                              Variant="Variant.Flat"
+                                                                              Style="border-radius: 4px;"
+                                                                              Click=@(args => GridDeleteButtonClick(args, data))
+                                                                              @onclick:stopPropagation="true" />
+                                                            </Template>
+                                                        </RadzenDataGridColumn>
+                                                    </Columns>
+                                                    <EmptyTemplate>
+                                                        <div class="empty-state">
+                                                            <div class="empty-state-icon">📭</div>
+                                                            <div class="empty-state-title">No Requests to Display </div>
+                                                            <div class="empty-state-description">There are currently no requests to display..</div>
+                                                        </div>
+                                                    </EmptyTemplate>
+                                                </RadzenDataGrid>
+                                            </div>
+                                        </ChildContent>
+
+                                        <SummaryTemplate>
+                                            @if (requests.Any())
+                                            {
+                                                <div class="carousel-container">
+                                                    <RadzenCarousel @ref="carousel"
+                                                                    @bind-SelectedIndex="@selectedIndex"
+                                                                    Auto="@auto"
+                                                                    Interval="@interval"
+                                                                    PagerOverlay="false"
+                                                                    ButtonShade="Shade.Dark"
+                                                                    Style="height: 300px;">
+                                                        <Items>
+
+
+
+                                                            @foreach (var (item, i) in requests.Select((value, index) => (value, index)))
+                                                            {
+                                                                <RadzenCarouselItem>
+
+                                                                    <div class="carousel-card" @onclick="@(() => EditCard(item.Id))">
+                                                                        <div class="card-header">
+                                                                            <RadzenText TextStyle="TextStyle.H5"
+                                                                                        Style="margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">
+                                                                                Request @(i + 1)
+                                                                            </RadzenText>
+                                                                        </div>
+                                                                        <div class="card-body">
+                                                                            <div style="text-align: center; margin-bottom: 1.5rem;">
+                                                                                <div class="card-label">Title</div>
+                                                                                <div class="card-value">@item.Title</div>
+                                                                            </div>
+                                                                            <div class="card-footer">
+                                                                                <div class="card-stat">
+                                                                                    <div class="card-label">Date</div>
+                                                                                    <div class="card-value">@item.Date.ToString("yyyy-MM-dd")</div>
+                                                                                </div>
+                                                                                <div class="card-stat">
+                                                                                    <div class="card-label">Status</div>
+                                                                                    <RadzenBadge BadgeStyle="@GetStatusStyle(item.Status)"
+                                                                                                 Shade="Shade.Lighter"
+                                                                                                 Style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500;"
+                                                                                                 Text="@item.Status" />
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </RadzenCarouselItem>
+                                                            }
+                                                        </Items>
+                                                    </RadzenCarousel>
+
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="empty-state">
+                                                    <div class="empty-state-icon">📭</div>
+                                                    <div class="empty-state-title">No Requests to Display </div>
+                                                    <div class="empty-state-description">There are currently no requests to display..</div>
+                                                </div>
+                                            }
+
+                                        </SummaryTemplate>
+
+                                    </RadzenFieldset>
+
+
+
+                                </div>
+                            </div>
+
+                            <div class="panel panel-offers">
+
+                                <div class="panel-header">
+                                    <div class="panel-icon icon-offers">
+                                        <RadzenIcon Icon="book" />
+                                    </div>
+                                    <h2 class="panel-title">Available Offers</h2>
+                                </div>
+                                <div class="panel-body">
+                                    <RadzenFieldset AllowCollapse="true"
+                                                    Style="width:510px; margin: 2px auto; border-radius: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                                        <HeaderTemplate>
+                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                                <b>Collapse</b>
+                                            </RadzenStack>
+                                        </HeaderTemplate>
+                                        <ChildContent>
+                                            <div class="datagrid-container">
+                                                <RadzenDataGrid @ref="grid1"
+                                                                AllowFiltering="true"
+                                                                FilterMode="FilterMode.Advanced"
+                                                                AllowPaging="true"
+                                                                AllowSorting="true"
+                                                                ShowPagingSummary="true"
+                                                                PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                                                                Data="@groupedOffers"
+                                                                TItem="ITStockM.Models.ViewModels.InfraViewModel"
+                                                                RowDoubleClick="@EditRowOffer">
+                                                    <Columns>
+                                                        <RadzenDataGridColumn TItem="ITStockM.Models.ViewModels.InfraViewModel"
+                                                                              Property="RequestTitle"
+                                                                              Title="Request"
+                                                                              Width="70%">
+                                                            <Template Context="data">
+                                                                <div style="display: flex; align-items: center;">
+                                                                    <span>@data.RequestTitle</span>
+                                                                </div>
+                                                            </Template>
+                                                        </RadzenDataGridColumn>
+                                                        <RadzenDataGridColumn TItem="ITStockM.Models.ViewModels.InfraViewModel"
+                                                                              Property="OffersAvai"
+                                                                              Title="Available Offers"
+                                                                              Width="30%"
+                                                                              TextAlign="TextAlign.Center">
+                                                            <Template Context="data">
+                                                                <div class="status-badge" style="background-color: var(--success-light); color: var(--success);">
+                                                                    @data.OffersAvai
+                                                                </div>
+                                                            </Template>
+                                                        </RadzenDataGridColumn>
+                                                    </Columns>
+                                                    <EmptyTemplate>
+                                                        <div class="empty-state">
+                                                            <div class="empty-state-icon">📭</div>
+                                                            <div class="empty-state-title">No Available Offers to Display </div>
+                                                            <div class="empty-state-description">There are currently no available offers to display. All procurement requests are being processed..</div>
+                                                        </div>
+                                                    </EmptyTemplate>
+                                                </RadzenDataGrid>
+                                            </div>
+                                        </ChildContent>
+                                        <SummaryTemplate>
+                                            @if (groupedOffers.Any())
+                                            {
+                                                <div class="carousel-container">
+                                                    <RadzenCarousel @ref="carousel1"
+                                                                    @bind-SelectedIndex="@selectedIndex1"
+                                                                    Auto="@auto1"
+                                                                    Interval="@interval1"
+                                                                    PagerOverlay="false"
+                                                                    ButtonShade="Shade.Dark"
+                                                                    Style="height: 300px;">
+                                                        <Items>
+                                                            @foreach (var (item, i) in groupedOffers.Select((value, index) => (value, index)))
+                                                            {
+                                                                <RadzenCarouselItem>
+                                                                    <div class="carousel-card" @onclick="@(() => EditCardOffer(item.RequestId))">
+                                                                        <div class="card-header">
+                                                                            <RadzenText TextStyle="TextStyle.H5"
+                                                                                        Style="margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">
+                                                                                Offer @(i + 1)
+                                                                            </RadzenText>
+                                                                        </div>
+                                                                        <div class="card-body">
+                                                                            <div style="text-align: center; margin-bottom: 1.5rem;">
+                                                                                <div class="card-label">Request</div>
+                                                                                <div class="card-value">@item.RequestTitle</div>
+                                                                            </div>
+                                                                            <div class="card-footer" style="justify-content: center;">
+                                                                                <div class="card-stat">
+                                                                                    <div class="card-label">Available Offers</div>
+                                                                                    <div class="card-value" style="color: var(--success);">@item.OffersAvai</div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </RadzenCarouselItem>
+                                                            }
+                                                        </Items>
+                                                    </RadzenCarousel>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="empty-state">
+                                                    <div class="empty-state-icon">📭</div>
+                                                    <div class="empty-state-title">No Available Offers to Display </div>
+                                                    <div class="empty-state-description">There are currently no available offers to display. All procurement requests are being processed..</div>
+                                                </div>
+                                            }
+                                        </SummaryTemplate>
+
+
+                                    </RadzenFieldset>
+                                </div>
+
+                            </div>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </div>
+            </RadzenCard>
+        </div>
+
+       
+
+    </Authorized>
+    <NotAuthorized>
+        <ITStockM.Components.Pages.auth.RedirectToAccessDenied />
+    </NotAuthorized>
+</AuthorizeView>
+

@@ -1,0 +1,719 @@
+﻿<style>
+    :root {
+        --primary: #0055a4;
+        --primary-transp: rgba(0, 85, 164, 0.16);
+        --primary-light: #e6f0ff;
+        --secondary: #dc3545;
+        --secondary-transp: rgba(220, 53, 69, 0.16);
+        --secondary-light: #ffebee;
+        --success: #28a745;
+        --success-transp: rgba(40, 167, 69, 0.16);
+        --success-light: #e8f5e9;
+        --warning: #ffc107;
+        --warning-transp: rgba(255, 193, 7, 0.16);
+        --warning-light: #fff8e1;
+        --danger: #dc3545;
+        --danger-transp: rgba(220, 53, 69, 0.16);
+        --danger-light: #ffebee;
+        --info: #17a2b8;
+        --info-transp: rgba(23, 162, 184, 0.16);
+        --info-light: #e0f7fa;
+        --gray-light: #f8f9fa;
+        
+    }
+
+    .page-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem;
+    }
+
+    .page-title {
+        position: relative;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+        .page-title::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 3px;
+        }
+
+    .page-title-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--primary), #003b75);
+        border-radius: 8px;
+        font-size: 1.25rem;
+    }
+
+    .panel {
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+        .panel::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            border-radius: 3px 0 0 3px;
+        }
+
+    .panel-order::before {
+        background-color: var(--primary);
+    }
+
+    .panel-materials::before {
+        background-color: var(--warning);
+    }
+
+    .panel-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background-color: rgba(0, 0, 0, 0.01);
+    }
+
+    .panel-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        font-size: 1.25rem;
+    }
+
+    .icon-order {
+        background-color: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .icon-materials {
+        background-color: var(--warning-light);
+        color: var(--warning);
+    }
+
+    .panel-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .panel-body {
+        padding: 1.5rem;
+    }
+
+    .error-alert {
+        background-color: var(--danger-light);
+        color: var(--danger);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-left: 4px solid var(--danger);
+    }
+
+    .error-icon {
+        font-size: 1.5rem;
+    }
+
+    .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: -0.75rem;
+    }
+
+    .form-col {
+        padding: 0.75rem;
+    }
+
+    .form-col-6 {
+        width: 50%;
+    }
+
+    .form-col-12 {
+        width: 100%;
+    }
+
+    .form-field {
+        margin-bottom: 1.5rem;
+    }
+
+        .form-field:last-child {
+            margin-bottom: 0;
+        }
+
+    .field-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .required-indicator {
+        color: var(--danger);
+        margin-left: 0.25rem;
+    }
+
+    .field-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s;
+        height: 3rem;
+    }
+
+        .field-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 85, 164, 0.2);
+        }
+
+    .field-input1 {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.2s;
+        height: 4rem;
+    }
+
+        .field-input1:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 85, 164, 0.2);
+        }
+
+    .field-helper {
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .supplier-link {
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+        .supplier-link:hover {
+            text-decoration: underline;
+        }
+
+    .add-material-btn {
+        display: flex;
+        justify-content: flex-end;
+        margin: 1.5rem 0;
+    }
+
+    .material-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .material-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 1.5rem;
+        border: 1px solid #e5e7eb;
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .material-card::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 6px;
+            height: 100%;
+            background-color: var(--primary);
+            opacity: 0.1;
+        }
+
+        .material-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+    .card-header {
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .card-title-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        background-color: var(--primary-light);
+        color: var(--primary);
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+
+    .warranty-container {
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin: 1.5rem 0;
+        border: 1px solid #e5e7eb;
+    }
+
+    .warranty-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .warranty-icon {
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .warranty-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+    }
+
+    .serial-number-container {
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin: 1.5rem 0;
+        border: 1px solid rgba(0, 85, 164, 0.2);
+    }
+
+    .serial-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .serial-icon {
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-actions {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+        padding-top: 1rem;
+        border-top: 1px dashed #e5e7eb;
+    }
+
+    .summary-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 1.5rem;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+        .summary-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid white;
+        }
+
+        .summary-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .summary-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .summary-table tr:hover td {
+            background-color: var(--gray-light);
+        }
+
+        .summary-table tr:last-child td {
+            font-weight: 600;
+        }
+
+    .submit-container {
+        margin-top: 2rem;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .delivery-order-selector {
+        margin-bottom: 1.5rem;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+
+        .delivery-order-selector::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 3px 0 0 3px;
+        }
+
+    .delivery-order-label {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .delivery-order-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        background-color: var(--primary-light);
+        border-radius: 6px;
+        font-size: 0.875rem;
+    }
+
+    :deep(.validation-message) {
+        color: var(--danger);
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+        :deep(.validation-message)::before {
+            content: "⚠️";
+            font-size: 0.75rem;
+        }
+
+    :deep(.rz-fieldset) {
+        border-radius: 12px !important;
+        border: 1px solid #e5e7eb !important;
+        margin-bottom: 1.5rem !important;
+    }
+
+    :deep(.rz-fieldset-legend) {
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        padding: 0 1rem !important;
+    }
+
+    :deep(.rz-fieldset-content) {
+        padding: 1.5rem !important;
+    }
+
+    @@media (max-width: 768px) {
+        .material-cards
+
+    {
+        grid-template-columns: 1fr;
+    }
+
+    .warranty-fields {
+        grid-template-columns: 1fr;
+    }
+
+    }</style>
+
+<RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.DeliveryOrder"
+                    Data="@SelectedDeliveryOrders"
+                    Visible="@(SelectedDeliveryOrders != null)"
+                    Submit="@AddDelayedMats"
+                    @ref="form">
+
+    <div class="delivery-order-selector">
+        <div class="delivery-order-label">
+            <span class="delivery-order-icon">
+                <RadzenIcon Icon="local_shipping" />
+            </span>
+            Select Delivery Order
+        </div>
+        <RadzenDropDownDataGrid Data="@DeliveryOrders"
+                                @bind-Value="@SelectedDeliveryOrders"
+                                TextProperty="DeleveryOrderNumber"
+                                Style="width: 100%; border-radius: 8px;"
+                                AllowFilteringByAllStringColumns="true"
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                Class="field-input">
+            <Columns>
+                <RadzenDropDownDataGridColumn Property="DeleveryOrderNumber" Title="Delivery Order Number" />
+                <RadzenDropDownDataGridColumn Property="OrderNumber" Title="Delivery Order Number" Visible="false" />
+            </Columns>
+        </RadzenDropDownDataGrid>
+    </div>
+
+    <div class="add-material-btn">
+        <RadzenButton Click="@(() => AddMateriel())"
+                      Text="Add Material"
+                      ButtonStyle="ButtonStyle.Light"
+
+                      Icon="add_circle"
+                      Size="ButtonSize.Medium"
+                      Shade="Shade.Lighter" Variant="Variant.Flat"
+                     
+                      Style="border-radius: 8px;" />
+    </div>
+
+    <div class="panel panel-materials">
+        <div class="panel-header">
+            <div class="panel-icon icon-materials">
+                <RadzenIcon Icon="build" />
+            </div>
+            <h2 class="panel-title">Materials</h2>
+        </div>
+
+        <div class="panel-body">
+            <RadzenFieldset AllowCollapse="true"
+                            Style="margin: 2px auto; border-radius: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                <HeaderTemplate>
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                        <RadzenIcon Icon="expand_more" />
+                        <b>Collapse/Expand Materials</b>
+                    </RadzenStack>
+                </HeaderTemplate>
+                <ChildContent>
+                    <div class="material-cards">
+                        @foreach (var (MaterialItem, i) in MaterielsList.Select((value, index) => (value, index)))
+                        {
+                            <div class="material-card">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <span class="card-title-icon">
+                                            <RadzenIcon Icon="inventory_2" />
+                                        </span>
+                                        Material @(i + 1)
+                                    </h3>
+                                    @if (i != 0)
+                                    {
+                                        <RadzenButton Click="@(() => RemoveMateriel(i))"
+                                                      Icon="delete"
+                                                      ButtonStyle="ButtonStyle.Danger"
+                                                      Size="ButtonSize.Small"
+                                                      Style="border-radius: 50%; width: 36px; height: 36px; padding: 0;"
+                                                      Title="Remove Material" />
+                                    }
+                                </div>
+
+                                <div class="form-field">
+                                    <label class="field-label">
+                                        Material Name
+                                        <span class="required-indicator">*</span>
+                                    </label>
+                                    <RadzenAutoComplete Class="field-input"
+                                                        @bind-Value="@MaterialItem.Materiel.MaterielName"
+                                                        Name='@("MaterielName"+i.ToString())'
+                                                        Data="@MaterialSuggestions"
+                                                        AllowClear="true"
+                                                        Placeholder="Type to search materials..."
+                                                        Change="@(() => UpdateMaterialType(MaterialItem.Materiel.MaterielName, i))" />
+                                    <RadzenRequiredValidator Component='@("MaterielName"+i.ToString())' Text="Material Name is required" />
+                                </div>
+
+                                <div class="form-field">
+                                    <label class="field-label">
+                                        Material Type
+                                        <span class="required-indicator">*</span>
+                                    </label>
+                                    <RadzenDropDown TValue="string"
+                                                    Data="@options"
+                                                    Placeholder="Select a material type"
+                                                    Class="field-input"
+                                                    Name='@("MaterialType"+i.ToString())'
+                                                    Change="@(()=>TypeSRChecker(i))"
+                                                    @bind-Value="@MaterialItem.Materiel.Type" />
+                                    <RadzenRequiredValidator Component='@("MaterialType"+i.ToString())' Text="Material Type is required" />
+                                </div>
+
+                                <div class="form-field">
+                                    <label class="field-label">
+                                        Quantity
+                                        <span class="required-indicator">*</span>
+                                    </label>
+                                    <input type="number" Class="field-input"
+                                           value="1"
+                                           @onchange="(args) => {MaterialItem.Materiel.QuantityPDRStock =Int32.Parse(((string)args.Value));if (MaterialItem.HaveSr){ AddSerielNumber(i,true);}}"
+                                           min="1" />
+
+                                </div>
+
+                                <div class="warranty-container">
+                                    <div class="warranty-title">
+                                        <span class="warranty-icon"><RadzenIcon Icon="schedule" /></span>
+                                        Warranty Period
+                                    </div>
+                                    <div class="warranty-fields">
+                                        <div>
+                                            <label class="field-label">Years</label>
+                                            <RadzenNumeric Class="field-input"
+                                                           @bind-Value="@MaterialItem.Year"
+                                                           Name="MaterielWarrantyYear"
+                                                           ShowUpDown="false"
+                                                           Min="0" />
+                                        </div>
+                                        <div>
+                                            <label class="field-label">Months</label>
+                                            <RadzenNumeric Class="field-input"
+                                                           @bind-Value="@MaterialItem.Month"
+                                                           Name="MaterielWarrantyMonth"
+                                                           ShowUpDown="false"
+                                                           Min="0"
+                                                           Max="12" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (MaterialItem.HaveSr)
+                                {
+                                    <div class="serial-number-container">
+                                        <div class="serial-title">
+                                            <span class="serial-icon"><RadzenIcon Icon="pin" /></span>
+                                            Serial Numbers
+                                        </div>
+                                        @foreach (var (srNumber, j) in MaterialItem.SRList.Select((value, index) => (value, index)))
+                                        {
+                                            <div class="form-field">
+                                                <label class="field-label">
+                                                    Serial Number @(j + 1)
+                                                    <span class="required-indicator">*</span>
+                                                </label>
+                                                <RadzenTextBox Class="field-input"
+                                                               @bind-Value="@srNumber.SR"
+                                                               Name='@("SerialNumber"+i.ToString()+j.ToString())'
+                                                               Placeholder="Enter serial number" />
+                                                <RadzenRequiredValidator Component='@("SerialNumber"+i.ToString()+j.ToString())' Text="Serial Number is required" />
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                <div class="card-actions">
+                                    <RadzenButton Disabled="@changeSR"
+                                                  Click="@(() => AddSerielNumber(i))"
+                                                  Text=@(MaterialItem.HaveSr ? "Remove Serial Numbers" : "Add Serial Numbers")
+                                                  Icon=@(MaterialItem.HaveSr ? "remove_circle" : "add_circle")
+                                                  Size="ButtonSize.Medium"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Style="border-radius: 8px;"
+                                                  Shade="Shade.Lighter"
+                                                  Variant="Variant.Flat" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </ChildContent>
+                <SummaryTemplate>
+                    <div style="margin-top: 1.5rem;">
+                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                            <RadzenIcon Icon="summarize" />
+                            Materials Summary
+                        </h3>
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Material Name</th>
+                                    <th>Material Type</th>
+                                    <th>Quantity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in MaterielsList)
+                                {
+                                    <tr>
+                                        <td>@item.Materiel.MaterielName</td>
+                                        <td>@item.Materiel.Type</td>
+                                        <td>@item.Materiel.QuantityPDRStock</td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <td colspan="2" style="text-align: right;">Total Items:</td>
+                                    <td>@MaterielsList.Sum(m => m.Materiel.QuantityPDRStock)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </SummaryTemplate>
+            </RadzenFieldset>
+        </div>
+    </div>
+
+    <div class="submit-container">
+        <RadzenButton ButtonType="ButtonType.Submit"
+                      Text="Save Materials"
+                      Icon="save"
+                      Size="ButtonSize.Medium"
+                      ButtonStyle="ButtonStyle.Info"
+                      Style="border-radius: 8px;   padding: 0.75rem 1.5rem;"
+                      Shade="Shade.Darker" Variant="Variant.Filled" />
+    </div>
+</RadzenTemplateForm>

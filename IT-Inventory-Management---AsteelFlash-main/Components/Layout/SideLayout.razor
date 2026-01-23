@@ -1,0 +1,501 @@
+<style>
+    /* AsteelFlash Brand Colors */
+    :root {
+    --asteel-blue: #0055a4;
+    --asteel-red: #dc3545;
+    --sidebar-bg: #1a1f3a;
+    --sidebar-hover: #252a47;
+    --sidebar-active: linear-gradient(135deg, var(--asteel-blue), var(--asteel-red));
+    --sidebar-text: #ffffff;
+    --sidebar-muted: #a0a8c7;
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --header-bg: var(--rz-body-background-color);
+    --header-border: var(--rz-border-300);
+    }
+
+    /* Header styling */
+    ::deep .rz-header {
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--header-border);
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    }
+
+    /* Sidebar styling */
+    ::deep .rz-sidebar {
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    border-right: none;
+    box-shadow: 3px 0 15px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--sidebar-muted) transparent;
+    }
+
+    ::deep .rz-sidebar::-webkit-scrollbar {
+    width: 4px;
+    }
+
+    ::deep .rz-sidebar::-webkit-scrollbar-track {
+    background: transparent;
+    }
+
+    ::deep .rz-sidebar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    }
+
+    /* Logo container */
+    .logo-container {
+    position: relative;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    }
+
+    .logo-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0, 85, 164, 0.1), rgba(220, 53, 69, 0.1));
+    z-index: 0;
+    animation: pulse-bg 8s infinite alternate;
+    }
+
+    .logo-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    width: 80%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--asteel-blue), var(--asteel-red), transparent);
+    }
+
+    @@keyframes pulse-bg {
+    0% {
+    opacity: 0.5;
+    }
+    100% {
+    opacity: 0.8;
+    }
+    }
+
+    .logo-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    }
+
+    .logo-image {
+    margin-top: -1rem;
+    width: 200px;
+    height: auto;
+    margin-bottom: 0.75rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    transition: transform 0.3s ease;
+    }
+
+    .logo-image:hover {
+    transform: scale(1.05);
+    }
+
+    .app-title {
+    color: var(--sidebar-text);
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+    margin: 0;
+    }
+
+    .title-underline {
+    height: 2px;
+    width: 40px;
+    margin-top: 0.5rem;
+    background: linear-gradient(to right, var(--asteel-blue), var(--asteel-red));
+    border-radius: 2px;
+    }
+
+    /* Menu styling */
+    ::deep .rz-panel-menu {
+    background-color: transparent;
+    padding: 1rem 0;
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item {
+    margin: 0.25rem 0.75rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item-wrapper {
+    padding: 0;
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item-link {
+    color: var(--sidebar-text);
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item-link:hover {
+    background-color: var(--sidebar-hover);
+    transform: translateX(3px);
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item-icon {
+    color: var(--sidebar-muted);
+    margin-right: 0.75rem;
+    font-size: 1.25rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item-link:hover .rz-navigation-item-icon {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item-text {
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    }
+
+    /* Active state */
+    ::deep .rz-panel-menu .rz-navigation-item.rz-state-active {
+    overflow: visible;
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item.rz-state-active::before {
+    content: '';
+    position: absolute;
+    left: -0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 60%;
+    background: linear-gradient(to bottom, var(--asteel-blue), var(--asteel-red));
+    border-radius: 0 2px 2px 0;
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item.rz-state-active .rz-navigation-item-link {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item.rz-state-active .rz-navigation-item-icon {
+    background: linear-gradient(135deg, var(--asteel-blue), var(--asteel-red));
+    color: white;
+    }
+
+    ::deep .rz-panel-menu .rz-navigation-item.rz-state-active .rz-navigation-item-text {
+    font-weight: 600;
+    }
+
+    /* Menu categories */
+    .menu-category {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--sidebar-muted);
+    font-weight: 600;
+    margin: 1.5rem 0.75rem 0.5rem 1.25rem;
+    display: flex;
+    align-items: center;
+    }
+
+    .menu-category::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: linear-gradient(135deg, var(--asteel-blue), var(--asteel-red));
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    }
+
+    /* Divider */
+    ::deep hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+    margin: 1.5rem 1rem;
+    }
+
+    /* Footer */
+    ::deep .footer-container {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.15);
+    border-top: 1px solid var(--sidebar-border);
+    }
+
+    /* Toggle button */
+    ::deep .rz-sidebar-toggle {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--sidebar-text);
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    ::deep .rz-sidebar-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+    }
+
+    /* Appearance toggle */
+    ::deep .rz-appearance-toggle {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--sidebar-text);
+    border-radius: 8px;
+    padding: 0.5rem;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    ::deep .rz-appearance-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+    }
+
+    .addd-material-btn{
+    border-radius: 8px;
+    }
+    .addd-material-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+    border-radius: 16px;
+    }
+
+    .kpi-icon {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    }
+
+    /* Badge styling */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 0.5rem;
+        margin-left: 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 11px;
+        transition: all var(--transition-normal);
+    }
+
+    .badge-danger {
+        background: rgba(220, 53, 69, 0.6);
+        color: white;
+        box-shadow: 0 2px 5px rgba(220, 53, 69, 0.4);
+        animation: pulse 1.5s infinite;
+    }
+
+    @@keyframes pulse {
+        0%
+
+    {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+    }
+
+    100%53, 69, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+
+    }</style>
+
+<RadzenHeader>
+    <RadzenRow JustifyContent="JustifyContent.Start" AlignItems="AlignItems.Center" Gap="0">
+        <RadzenColumn Size="5">
+            <RadzenSidebarToggle Click="@SidebarToggleClick"></RadzenSidebarToggle>
+        </RadzenColumn>
+        <RadzenColumn Size="7">
+            <RadzenStack AlignItems="AlignItems.Center" Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" class="rz-px-2">
+
+
+                    <RadzenButton Click="@(ChangeTheme)" ButtonStyle="ButtonStyle.Light" Shade="Shade.Lighter" Variant="Variant.Flat" Style="border-radius:8px;" class="addd-material-btn" Icon=@(theme == null || theme == "humanistic" ? "light_mode" : "dark_mode" )/>
+
+                
+
+
+                <a href="/logout">
+                    <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="logout" Size="ButtonSize.Medium"
+                    Shade="Shade.Lighter" Variant="Variant.Flat" class="addd-material-btn" />
+                </a>
+         
+
+
+            </RadzenStack> 
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenHeader>
+
+<RadzenSidebar @bind-Expanded="@sidebarExpanded" style="z-index: 2">
+    <div class="logo-container">
+        <div class="logo-content">
+            <img src="images/logoAsteel.png" class="logo-image" alt="AsteelFlash logo" />
+            <h1 class="app-title">IT Inventory</h1>
+            <div class="title-underline"></div>
+        </div>
+    </div>
+
+    <RadzenPanelMenu>
+        <!-- Overview Section -->
+        <AuthorizeView Roles="SuperAdmin, Admin, Purchasing">
+            <Authorized>
+                <div class="menu-category">Overview</div>
+                <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Path="" />
+            </Authorized>
+        </AuthorizeView>
+
+        <!-- Inventory Section -->
+        <div class="menu-category">Inventory</div>
+
+        <AuthorizeView Roles="SuperAdmin, Admin, Purchasing">
+            <Authorized>
+                <RadzenPanelMenuItem Text="Materials View" Icon="inventory_2" Path="/materials-view-interface" />
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="SuperAdmin,  PDR, Purchasing">
+            <Authorized>
+                <RadzenPanelMenuItem Text="Materials View (PDR)" Icon="inventory_2" Path="/materials-view-interface-pdr" />
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="SuperAdmin, Admin">
+            <Authorized>
+                <RadzenPanelMenuItem Text="Materials Assignments" Icon="assignment" Path="assignments-interface" />
+                <RadzenPanelMenuItem Text="Infrastructure" Icon="memory" Path="/infra-interface" />
+            </Authorized>
+        </AuthorizeView>
+
+        <!-- Purchasing Section -->
+        <AuthorizeView Roles="SuperAdmin , Purchasing, PDR">
+            <Authorized>
+                <div class="menu-category">Purchasing</div>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="SuperAdmin,  Purchasing">
+            <Authorized>
+                <RadzenPanelMenuItem Text="Purchase Requests" Icon="shopping_cart" Path="/purchase-page" />
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="SuperAdmin,  Purchasing, PDR">
+            <Authorized>
+                <RadzenPanelMenuItem Text="Suppliers" Icon="storefront" Path="suppliers" />
+                <RadzenPanelMenuItem Text="Add Delivery Orders" Icon="add_circle" Path="delivery-order" />
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="SuperAdmin,  Purchasing, PDR">
+            <Authorized>
+                <RadzenPanelMenuItem Text="Pending Deliveries" Icon="local_shipping" Path="/pending-deliveries" />
+
+                @if (orderNumbersNF == 0)
+                {
+                    <RadzenPanelMenuItem Text="Delivery Orders History" Icon="history" Path="delivery-order-history" Click="ForceRefresh" />
+                }
+                else
+                {
+                    <div class="rz-navigation-item-wrapper special-menu-item">
+                        <a tabindex="-1" href="delivery-order-history" class="rz-navigation-item-link" @onclick="ForceRefresh">
+                            <i class="notranslate rzi rz-navigation-item-icon">history</i>
+                            <span class="rz-navigation-item-text">
+                                D.O History
+                                <span class="badge badge-danger">@orderNumbersNF</span>
+                            </span>
+                        </a>
+                    </div>
+                }
+            </Authorized>
+        </AuthorizeView>
+
+        <!-- Archives Section -->
+        <AuthorizeView Roles="SuperAdmin, Admin, Purchasing">
+            <Authorized>
+                <div class="menu-category">Archives</div>
+                
+                <RadzenPanelMenuItem Text="Archived Requests" Icon="archive" Path="/archived-requests-page" />
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="SuperAdmin, Admin">
+            <Authorized>
+                <RadzenPanelMenuItem Text="Archived Assignments" Icon="archive" Path="/assignments-archive" />
+                <RadzenPanelMenuItem Text="Archived Missions" Icon="archive" Path="/archived-missions" />
+            </Authorized>
+        </AuthorizeView>
+        <AuthorizeView Roles="SuperAdmin">
+            <Authorized>
+                <div class="menu-category">Administration</div>
+                <RadzenPanelMenuItem Text="Materials" Icon="category" Path="/materiels-super-admin" />
+                <RadzenPanelMenuItem Text="Assignments" Icon="assignment_turned_in" Path="/assignments-super-admin" />
+                <RadzenPanelMenuItem Text="Assignment Materials" Icon="assignment_late" Path="/assignment-materiels-super-admin" />
+                <RadzenPanelMenuItem Text="Delivery Orders" Icon="receipt_long" Path="/delivery-orders-super-admin" />
+                <RadzenPanelMenuItem Text="Delivery Orders Mats" Icon="receipt" Path="/delivery-order-materiels-super-admin" />
+                <RadzenPanelMenuItem Text="Requests" Icon="description" Path="/requests-super-admin" />
+                <RadzenPanelMenuItem Text="Employees" Icon="people" Path="/employees-super-admin" />
+                <RadzenPanelMenuItem Text="Offers" Icon="local_offer" Path="/offers-super-admin" />
+                <RadzenPanelMenuItem Text="Projects" Icon="Work" Path="/projects-super-admin" />
+                <RadzenPanelMenuItem Text="Suppliers" Icon="store" Path="/suppliers-super-admin" />
+            </Authorized>
+        </AuthorizeView>
+    </RadzenPanelMenu>
+    
+    <div class="footer-container" style="margin-top:35px;">
+        <RadzenText Text="AsteelFlash Inventory v1.0.0" TextStyle="Radzen.Blazor.TextStyle.Caption" TagName="Radzen.Blazor.TagName.P" TextAlign="Radzen.TextAlign.Center" Style="color:white;" />
+        <RadzenText Text="Copyright ⒸAsteelFlash" TextStyle="Radzen.Blazor.TextStyle.Caption" class="rz-mb-0" TagName="Radzen.Blazor.TagName.P" TextAlign="Radzen.TextAlign.Center" Style="color:white;" />
+    </div>
+</RadzenSidebar>
+

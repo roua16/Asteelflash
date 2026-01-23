@@ -1,0 +1,95 @@
+using ITStockM.Models.ITStockManagment;
+using ITStockM.Services;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
+using Radzen;
+using Radzen.Blazor;
+
+namespace ITStockM.Components.Pages.PendingDeliveries
+{
+    public partial class PendingDeliveriesPage
+    {
+
+        [Inject]
+        protected DialogService DialogService { get; set; }
+
+        [Inject]
+        public ITStockManagmentService ITStockManagmentService { get; set; }
+
+        protected IEnumerable<Request> requests;
+
+        protected RadzenDataGrid<Request> grid0;
+
+        protected string search = "";
+
+
+        protected async Task Search(ChangeEventArgs args)
+        {
+            search = $"{args.Value}";
+
+            await grid0.GoToPage(0);
+            
+            requests = requests.Where(r => r.Title.Contains(search, StringComparison.CurrentCultureIgnoreCase) || r.ProjectName.Contains(search, StringComparison.CurrentCultureIgnoreCase) || r.MaterialType.Contains(search, StringComparison.CurrentCultureIgnoreCase) ||  r.Status.Contains(search, StringComparison.CurrentCultureIgnoreCase) || r.Employee.FullName.Contains(search, StringComparison.CurrentCultureIgnoreCase) );
+        }
+        protected override async Task OnInitializedAsync()
+        {
+            requests = await ITStockManagmentService.GetRequests(new Query
+            {
+                Filter = $@"i => i.Status == @0",
+                FilterParameters = new object[] { "Done" },
+                Expand = "Employee, Offers"
+            });
+            requests = requests.Where(request => request.Offers != null && request.Offers.Any(offer => offer.Selected != null && offer.Selected == true && offer.DeliveryDate > DateTime.Today));
+
+        }
+
+
+        protected async Task RequestDetails(int reqId)
+        {
+            var options = new DialogOptions
+            {
+                Style = "min-width: 600px;", 
+                CssClass = "dialog-animation",
+                CloseDialogOnOverlayClick = true,
+                Resizable = true,
+                Draggable = true,
+                CloseDialogOnEsc = true
+            };
+
+
+            var value = await DialogService.OpenAsync<PendingDeliveriesDetails>("", new Dictionary<string, object> { { "Id", reqId } }, options);
+
+            if (value == true)
+            {
+                OnInitializedAsync();
+            }
+        }
+
+
+        protected async Task ExportClick(RadzenSplitButtonItem args)
+        {
+
+            var query = new Query
+            {
+                Filter = "request => request.Status == \"Done\" && request.Offers != null && request.Offers.Any(offer => offer.Selected != null && offer.Selected == true && offer.DeliveryDate >  DateTime.Parse(\""+ DateTime.Today.ToString("yyyy-MM-dd") + "\")  ) )",
+                Select = "Employee.FullName, Title, Type, ProjectName, Description, MaterialType, Date, Status",
+                Expand = "Employee,Offers"
+            };
+            if (args?.Value == "csv")
+            {
+                await ITStockManagmentService.ExportRequestsToExcel(query, "Pending Deliveries");
+            }
+
+            if (args == null || args.Value == "xlsx")
+            {
+                await ITStockManagmentService.ExportRequestsToExcel(query, "Pending Deliveries");
+            }
+        }
+
+
+        
+
+    }
+
+}

@@ -1,0 +1,253 @@
+@inject Radzen.DialogService dialogService
+
+<PageTitle>Request Details</PageTitle>
+
+<style>
+  
+    :root {
+        --primary: #4f46e5;
+        --primary-transp: #4F46E529;
+        --primary-light: #e0e7ff;
+    }
+    .request-card {
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .card-section {
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .status-badge {
+        position: relative;
+        overflow: hidden;
+    }
+
+        .status-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: translateX(-100%);
+            animation: shimmer 2s infinite;
+        }
+
+    @@keyframes shimmer {
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    .header-section {
+        border-bottom: 1px solid var(--rz-base-300);
+    }
+
+    .detail-card {
+        transition: all 0.2s ease;
+        border-radius: 12px !important;
+        overflow: hidden;
+    }
+
+        .detail-card:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+
+    .info-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--rz-text-tertiary-color);
+        margin-bottom: 0.25rem;
+        font-weight: 500;
+    }
+
+    .info-value {
+        font-size: 1rem;
+        color: var(--rz-text-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .section-title {
+        font-weight: 600;
+        border-bottom: 1px solid var(--rz-base-300);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .action-button {
+        transition: all 0.2s ease;
+    }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+        }
+
+    .data-grid-enhanced {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+        .data-grid-enhanced ::deep th {
+            background-color: var(--rz-base-200);
+            font-weight: 600;
+        }
+
+        .data-grid-enhanced ::deep tr:hover td {
+            background-color: var(--rz-base-100);
+        }
+
+    .attachment-button {
+        transition: all 0.2s ease;
+        border: 1px solid var(--rz-base-300);
+        background-color: var(--rz-base-100);
+    }
+
+        .attachment-button:hover {
+            background-color: var(--rz-base-200);
+            transform: translateY(-2px);
+        }
+
+    .footer-section {
+        border-top: 1px solid var(--rz-base-300);
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <RadzenRow>
+        <RadzenColumn Size="12" SizeLG="10" OffsetLG="1">
+            <RadzenCard class="p-0 m-0 request-card" Style="border-radius: 16px; overflow: hidden;">
+                <div class="p-4 header-section card-section">
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenStack Orientation="Orientation.Vertical" JustifyContent="JustifyContent.Start" Gap="0.5rem">
+                                <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="letter-spacing: 1px;">REQUEST DETAILS</RadzenText>
+                                <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 600; margin-bottom: 0.5rem;">@request.Employee.FullName</RadzenText>
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="4" Style="text-align: right;">
+                            <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem" AlignItems="AlignItems.End">
+                                <RadzenBadge Shade="Shade.Lighter"
+                                             BadgeStyle="@GetStatusStyle(request.Status)"
+                                             Class="status-badge"
+                                             Style="border-radius: 8px; padding: 0.5rem 1rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;"
+                                             Text="@request.Status" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </div>
+
+                <div class="p-4 card-section" style="margin-top:20px;">
+                    <RadzenStack Gap="2rem" Orientation="Orientation.Vertical">
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeMD="6" class="mb-4 mb-md-0">
+                                <RadzenCard class="h-100 rz-border rz-shadow-0 detail-card" Style="border-left: 4px solid var(--rz-primary);">
+                                    <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Start" Gap="1rem">
+                                        <div class="w-100">
+                                            <div class="info-label">TITLE</div>
+                                            <div class="info-value">@request.Title</div>
+                                        </div>
+
+                                        <div class="w-100">
+                                            <div class="info-label">DESCRIPTION</div>
+                                            <div class="info-value">@request.Description</div>
+                                        </div>
+
+                                        <div class="w-100">
+                                            <div class="info-label">DATE</div>
+                                            <div class="info-value">@(request.Date.ToString("MMMM dd, yyyy"))</div>
+                                        </div>
+                                    </RadzenStack>
+                                </RadzenCard>
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenCard class="h-100 rz-border rz-shadow-0 detail-card" Style="border-left: 4px solid var(--rz-secondary);">
+                                    <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Start" Gap="1rem">
+                                       
+
+                                        <div class="w-100">
+                                            <div class="info-label">PROJECT NAME</div>
+                                            <div class="info-value">@request.ProjectName</div>
+                                        </div>
+
+                                        <div class="w-100">
+                                            <div class="info-label">MATERIAL TYPE</div>
+                                            <div class="info-value">@request.MaterialType</div>
+                                        </div>
+                                    </RadzenStack>
+                                </RadzenCard>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        <div>
+                            <RadzenText TextStyle="TextStyle.H6" Style="margin-bottom: 1rem; font-weight: 600;">Selected Offer</RadzenText>
+
+
+                            <RadzenStack Gap="1rem" Orientation="Orientation.Vertical">
+
+                                <RadzenCard class="rz-shadow-1" Style="border-radius: 12px; overflow: hidden; border-left: 4px solid var(--rz-primary); transition: transform 0.2s ease-in-out;">
+                                    <RadzenRow>
+
+                                        <RadzenColumn Size="10" SizeSM="4">
+                                            <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
+                                                <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="font-weight: 500;">SUPPLIER</RadzenText>
+                                                <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">@offer.SupplierName</RadzenText>
+                                            </RadzenStack>
+                                        </RadzenColumn>
+                                        <RadzenColumn Size="6" SizeSM="4">
+                                            <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
+                                                <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="font-weight: 500;">DELIVERY DATE</RadzenText>
+                                                <RadzenText TextStyle="TextStyle.Body1">@(offer.DeliveryDate.ToString("MMM dd, yyyy"))</RadzenText>
+                                            </RadzenStack>
+                                        </RadzenColumn>
+                                        <RadzenColumn Size="6" SizeSM="3">
+                                            <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
+                                                <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="font-weight: 500;">PRICE</RadzenText>
+                                                <RadzenText TextStyle="TextStyle.Body1" class="rz-color-primary-dark" Style="font-weight: 600;">@offer.Price.ToString()</RadzenText>
+                                            </RadzenStack>
+                                        </RadzenColumn>
+                                    </RadzenRow>
+                                </RadzenCard>
+
+                            </RadzenStack>
+
+
+
+                        </div>
+                        @if (request.File != null)
+                        {
+                            <div class="d-flex justify-content-end">
+                                <RadzenButton Click=@(() => DownloadFile(request))
+                                              ButtonStyle="ButtonStyle.Light"
+                                              Style="border-radius: 8px;"
+                                              class="rz-border rz-shadow-0">
+                                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                        <RadzenImage Path="images/attach1.png" Style="width: 20px; height: 20px;" />
+                                        <RadzenText TextStyle="TextStyle.Body1">Download Attachment : @request.FileName</RadzenText>
+                                    </RadzenStack>
+                                </RadzenButton>
+                            </div>
+                        }
+
+                    </RadzenStack>
+                </div>
+
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</div>
+
