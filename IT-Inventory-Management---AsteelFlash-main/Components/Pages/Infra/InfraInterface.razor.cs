@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Radzen;
 using Radzen.Blazor;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace ITStockM.Components.Pages.Infra
@@ -26,7 +27,7 @@ namespace ITStockM.Components.Pages.Infra
         [Inject]
         public ITStockManagmentService ITStockManagmentService { get; set; }
 
-        
+
 
         [Inject]
         public EmailService EmailService { get; set; }
@@ -51,7 +52,7 @@ namespace ITStockM.Components.Pages.Infra
 
         //Requets list
         protected IEnumerable<Models.ITStockManagment.Request> requests;
-   
+
         protected RadzenDataGrid<Models.ITStockManagment.Request> grid0;
 
 
@@ -82,25 +83,25 @@ namespace ITStockM.Components.Pages.Infra
         {
             var options = new DialogOptions
             {
-                Style = "min-width: 600px;", 
-                CssClass = "dialog-animation", 
-                Width= "900px",
+                Style = "min-width: 600px;",
+                CssClass = "dialog-animation",
+                Width = "900px",
                 CloseDialogOnOverlayClick = true,
                 Resizable = true,
                 Draggable = true,
                 CloseDialogOnEsc = true
             };
 
-            await DialogService.OpenAsync<EditRequest>("", new Dictionary<string, object> { { "Id", args.Data.Id } },options);
+            await DialogService.OpenAsync<EditRequest>("", new Dictionary<string, object> { { "Id", args.Data.Id } }, options);
         }
 
-       
+
         protected async Task EditCard(int Id)
         {
             var options = new DialogOptions
             {
-                Style = "min-width: 600px;", 
-                CssClass = "dialog-animation", 
+                Style = "min-width: 600px;",
+                CssClass = "dialog-animation",
                 Width = "900px",
                 CloseDialogOnOverlayClick = true,
                 Resizable = true,
@@ -108,7 +109,7 @@ namespace ITStockM.Components.Pages.Infra
                 CloseDialogOnEsc = true
 
             };
-            await DialogService.OpenAsync<EditRequest>("", new Dictionary<string, object> { { "Id", Id } },options);
+            await DialogService.OpenAsync<EditRequest>("", new Dictionary<string, object> { { "Id", Id } }, options);
         }
 
         protected async Task GridDeleteButtonClick(MouseEventArgs args, Models.ITStockManagment.Request request)
@@ -138,17 +139,46 @@ namespace ITStockM.Components.Pages.Infra
 
         protected override async Task OnInitializedAsync()
         {
+            // Initialize all collections to prevent null reference exceptions during rendering
+            requests = new List<Models.ITStockManagment.Request>();
+            offers = new List<Models.ITStockManagment.Offer>();
+            groupedOffers = new List<Models.ViewModels.InfraViewModel>();
+            projectNames = new List<string>();
 
+            // Load requests immediately (materialized) to avoid lifetime/deferred-execution issues
+            List<Models.ITStockManagment.Request> allRequestsList;
+            try
+            {
+                allRequestsList = await ITStockManagmentService.GetRequestsList(new Query { Expand = "Employee" });
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Warning: failed to load requests, continuing with empty list. Error: {ex.Message}");
+                allRequestsList = new List<Models.ITStockManagment.Request>();
+            }
 
-            var allRequests = await ITStockManagmentService.GetRequests(new Query {Expand = "Employee" });
+            // Get all offers and materialize safely
+            List<Models.ITStockManagment.Offer> allOffersList = null;
 
-            offers = await ITStockManagmentService.GetOffers(new Query { Filter = $@"i => i.Request.Status != @0", FilterParameters = new object[] { "Done" }, Expand = "Request,Supplier" });
+            try
+            {
+                allOffersList = await ITStockManagmentService.GetOffersList(new Query { Expand = "Request,Supplier" });
+                offers = allOffersList.Where(o => o.Request?.Status != "Done").ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Warning: failed to load offers with includes, falling back. Error: {ex.Message}");
+
+                // Fallback: get offers without includes and join in-memory with requests we already have
+                allOffersList = await ITStockManagmentService.GetOffersList();
+                offers = allOffersList.Where(o => allRequestsList.FirstOrDefault(r => r.Id == o.RequestId)?.Status != "Done").ToList();
+            }
 
 
             var requestIdsWithOffers = offers.Select(o => o.RequestId).Distinct().ToList();
 
 
-            requests = allRequests.Where(r => !requestIdsWithOffers.Contains(r.Id) && r.Status != "Done").OrderByDescending(r => r.Date);
+            requests = allRequestsList.Where(r => !requestIdsWithOffers.Contains(r.Id) && r.Status != "Done").OrderByDescending(r => r.Date).ToList();
 
             groupedOffers = offers
                 .GroupBy(o => new { o.RequestId, o.Request.Title })
@@ -160,22 +190,22 @@ namespace ITStockM.Components.Pages.Infra
                     OffersAvai = group.Select(o => o.Id).ToList().Count,
                     offers = group
 
-                }).Where( o => o.offers.All(o => o.Selected != true))
+                }).Where(group => !group.offers.Any(o => o.Selected == true))
                 .Select(group => new Models.ViewModels.InfraViewModel
-                 {
-                     RequestId = group.RequestId,
-                     RequestTitle = group.RequestTitle,
-                     OffreId = group.OffreId,
-                     OffersAvai = group.OffreId.Count
-                 }); // tw nzyd nchouf kifeh noptimizeha
+                {
+                    RequestId = group.RequestId,
+                    RequestTitle = group.RequestTitle,
+                    OffreId = group.OffreId,
+                    OffersAvai = group.OffreId.Count
+                }).ToList();
 
 
 
             request = new Models.ITStockManagment.Request();
 
-          
 
-            projectNames = (await ITStockManagmentService.GetProjects()).Select(p => p.ProjectName).ToList();
+
+            projectNames = (await ITStockManagmentService.GetProjectsList()).Select(p => p.ProjectName).ToList();
         }
 
 
@@ -395,7 +425,7 @@ namespace ITStockM.Components.Pages.Infra
                 
                 <div class=""detail-row"">
                     <span class=""detail-label"">Material Type:</span>
-                    <span class=""detail-value"">{request.MaterialType }</span>
+                    <span class=""detail-value"">{request.MaterialType}</span>
                 </div>
                
                 <div class=""detail-row"">
@@ -425,14 +455,14 @@ namespace ITStockM.Components.Pages.Infra
 </body>
 </html>";
 
-                   // EmailService.SendEmail("mortadhajouinizlatan@gmail.com", $"New Request (#{request.Id}) - {request.Employee.FullName}", htmlEmail);
-                
+                    // EmailService.SendEmail("mortadhajouinizlatan@gmail.com", $"New Request (#{request.Id}) - {request.Employee.FullName}", htmlEmail);
+
                     request = new Models.ITStockManagment.Request();
                     await grid0.Reload();
-                   
+
                     DialogService.Close();
 
-                    
+
                     await JSRuntime.InvokeVoidAsync("scrollToElement", "scrollback");
 
                     NotificationService.Notify(new NotificationMessage
@@ -444,16 +474,16 @@ namespace ITStockM.Components.Pages.Infra
                     });
 
 
-                    
-                    
+
+
 
 
                 });
                 await DialogService.OpenAsync<LoadingScreen>("", null
                , new DialogOptions() { ShowTitle = false, Style = "width:100%;height:100%;", CloseDialogOnEsc = false });
 
-               
-                
+
+
 
             }
             catch (Exception ex)
@@ -462,8 +492,8 @@ namespace ITStockM.Components.Pages.Infra
             }
         }
 
-        
-        
+
+
 
 
 
@@ -477,13 +507,13 @@ namespace ITStockM.Components.Pages.Infra
             .ToList();
             var options = new DialogOptions
             {
-                Style = "min-width: 600px;", 
-                CssClass = "dialog-animation", 
+                Style = "min-width: 600px;",
+                CssClass = "dialog-animation",
                 CloseDialogOnOverlayClick = true,
                 Resizable = true,
                 Draggable = true,
                 CloseDialogOnEsc = true
-                
+
             };
             await DialogService.OpenAsync<AvailableOffers>("", new Dictionary<string, object> { { "Id", offersIds } }, options);
             await grid1.Reload();
@@ -497,7 +527,7 @@ namespace ITStockM.Components.Pages.Infra
             .ToList();
             var options = new DialogOptions
             {
-                Style = "min-width: 600px;", 
+                Style = "min-width: 600px;",
                 CssClass = "dialog-animation",
                 CloseDialogOnOverlayClick = true,
                 Resizable = true,
@@ -528,10 +558,10 @@ namespace ITStockM.Components.Pages.Infra
         }
 
 
-        
 
 
-        
+
+
 
         BadgeStyle GetStatusStyles(string status)
         {

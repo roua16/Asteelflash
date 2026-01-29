@@ -402,26 +402,59 @@ namespace ITStockM.Services
         {
             var items = Context.DeliveryOrders.AsQueryable();
 
-            items = items.Include(i => i.Supplier);
-            items = items.Include(i => i.DeliveryOrderMateriels).ThenInclude(i => i.Materiel);
-            items = items.Include(i => i.Employee);
+            if (query != null && !string.IsNullOrEmpty(query.Expand))
+            {
+                var propertiesToExpand = query.Expand.Split(',');
+                foreach (var p in propertiesToExpand)
+                {
+                    items = items.Include(p.Trim());
+                }
+            }
+            else
+            {
+                // Only include related entities if no specific expand is requested
+                items = items.Include(i => i.Supplier);
+                items = items.Include(i => i.Employee);
+            }
+
             if (query != null)
             {
-                if (!string.IsNullOrEmpty(query.Expand))
-                {
-                    var propertiesToExpand = query.Expand.Split(',');
-                    foreach (var p in propertiesToExpand)
-                    {
-                        items = items.Include(p.Trim());
-                    }
-                }
-
                 ApplyQuery(ref items, query);
             }
 
             OnDeliveryOrdersRead(ref items);
 
             return await Task.FromResult(items);
+        }
+
+        // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
+        public async Task<List<DeliveryOrder>> GetDeliveryOrdersList(Query query = null)
+        {
+            var items = Context.DeliveryOrders.AsQueryable();
+
+            if (query != null && !string.IsNullOrEmpty(query.Expand))
+            {
+                var propertiesToExpand = query.Expand.Split(',');
+                foreach (var p in propertiesToExpand)
+                {
+                    items = items.Include(p.Trim());
+                }
+            }
+            else
+            {
+                // Only include related entities if no specific expand is requested
+                items = items.Include(i => i.Supplier);
+                items = items.Include(i => i.Employee);
+            }
+
+            if (query != null)
+            {
+                ApplyQuery(ref items, query);
+            }
+
+            OnDeliveryOrdersRead(ref items);
+
+            return await items.ToListAsync();
         }
 
         partial void OnDeliveryOrderGet(DeliveryOrder item);
@@ -787,6 +820,33 @@ namespace ITStockM.Services
             return await Task.FromResult(items);
         }
 
+        // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
+        public async Task<List<Offer>> GetOffersList(Query query = null)
+        {
+            var items = Context.Offers.AsQueryable();
+
+            items = items.Include(i => i.Request);
+            items = items.Include(i => i.Supplier);
+
+            if (query != null)
+            {
+                if (!string.IsNullOrEmpty(query.Expand))
+                {
+                    var propertiesToExpand = query.Expand.Split(',');
+                    foreach (var p in propertiesToExpand)
+                    {
+                        items = items.Include(p.Trim());
+                    }
+                }
+
+                ApplyQuery(ref items, query);
+            }
+
+            OnOffersRead(ref items);
+
+            return await items.ToListAsync();
+        }
+
         partial void OnOfferGet(Offer item);
         partial void OnGetOfferById(ref IQueryable<Offer> items);
 
@@ -937,6 +997,32 @@ namespace ITStockM.Services
             OnRequestsRead(ref items);
 
             return await Task.FromResult(items);
+        }
+
+        // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
+        public async Task<List<Request>> GetRequestsList(Query query = null)
+        {
+            var items = Context.Requests.AsQueryable();
+
+            items = items.Include(i => i.Employee);
+
+            if (query != null)
+            {
+                if (!string.IsNullOrEmpty(query.Expand))
+                {
+                    var propertiesToExpand = query.Expand.Split(',');
+                    foreach (var p in propertiesToExpand)
+                    {
+                        items = items.Include(p.Trim());
+                    }
+                }
+
+                ApplyQuery(ref items, query);
+            }
+
+            OnRequestsRead(ref items);
+
+            return await items.ToListAsync();
         }
 
         partial void OnRequestGet(Request item);
@@ -1252,6 +1338,31 @@ namespace ITStockM.Services
             OnProjectsRead(ref items);
 
             return await Task.FromResult(items);
+        }
+
+        // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
+        public async Task<List<Project>> GetProjectsList(Query query = null)
+        {
+            var items = Context.Projects.AsQueryable();
+
+
+            if (query != null)
+            {
+                if (!string.IsNullOrEmpty(query.Expand))
+                {
+                    var propertiesToExpand = query.Expand.Split(',');
+                    foreach (var p in propertiesToExpand)
+                    {
+                        items = items.Include(p.Trim());
+                    }
+                }
+
+                ApplyQuery(ref items, query);
+            }
+
+            OnProjectsRead(ref items);
+
+            return await items.ToListAsync();
         }
         public async Task<DeliveryOrder> DeleteDeliveryOrder(string deleveryordernumber)
         {

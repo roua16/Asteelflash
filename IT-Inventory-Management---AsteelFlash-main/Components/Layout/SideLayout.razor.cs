@@ -9,7 +9,7 @@ namespace ITStockM.Components.Layout
 {
     public partial class SideLayout
     {
-      
+
         [Inject]
         protected NavigationManager NavigationManager { get; set; }
 
@@ -23,37 +23,54 @@ namespace ITStockM.Components.Layout
 
         bool sidebarExpanded = true;
 
-        protected string user ;
+        protected string user;
 
         protected int orderNumbersNF = 0;
 
-        string theme ;
+        string theme;
         protected override async Task OnInitializedAsync()
         {
-            user = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.FullName;
-             orderNumbersNF = (await ITStockManagmentService.GetDeliveryOrders()).Where(dlo => dlo.OrderNumber == null).Count();
-
-              theme = (await LocalStorage.GetAsync<string>("theme")).Value;
-            if (theme != null)
+            try
             {
-                ThemeService.SetTheme(theme);
-                
+                user = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.FullName;
             }
-            else
+            catch (Exception)
             {
-               await LocalStorage.SetAsync("theme", "humanistic");
+                // Data protection key changed, clear invalid data
+                await LocalStorage.DeleteAsync("UserSession");
+                user = "Guest";
+            }
+
+            var deliveryOrders = await ITStockManagmentService.GetDeliveryOrdersList();
+            orderNumbersNF = deliveryOrders.Where(dlo => dlo.OrderNumber == null).Count();
+
+            try
+            {
+                theme = (await LocalStorage.GetAsync<string>("theme")).Value;
+                if (string.IsNullOrEmpty(theme))
+                {
+                    await LocalStorage.SetAsync("theme", "humanistic");
+                    ThemeService.SetTheme("humanistic");
+                }
+                else
+                {
+                    ThemeService.SetTheme(theme);
+                }
+            }
+            catch (Exception)
+            {
+                // Data protection key changed, set default theme
+                theme = "humanistic";
+                await LocalStorage.SetAsync("theme", "humanistic");
                 ThemeService.SetTheme("humanistic");
             }
-                
         }
-
 
         void SidebarToggleClick()
         {
             sidebarExpanded = !sidebarExpanded;
-
         }
-        
+
         async void ChangeTheme()
         {
             if (ThemeService.Theme == "humanistic")
@@ -75,8 +92,5 @@ namespace ITStockM.Components.Layout
         {
             NavigationManager.NavigateTo("delivery-order-history", forceLoad: true);
         }
-
-
-
     }
 }
