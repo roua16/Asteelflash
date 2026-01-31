@@ -28,13 +28,13 @@ namespace ITStockM.Services
         }
 
         private readonly ITStockManagmentContext context;
-        private readonly IServiceProvider serviceProvider;
+        private readonly IServiceScopeFactory scopeFactory;
         private readonly NavigationManager navigationManager;
 
-        public ITStockManagmentService(ITStockManagmentContext context, IServiceProvider serviceProvider, NavigationManager navigationManager)
+        public ITStockManagmentService(ITStockManagmentContext context, IServiceScopeFactory scopeFactory, NavigationManager navigationManager)
         {
             this.context = context;
-            this.serviceProvider = serviceProvider;
+            this.scopeFactory = scopeFactory;
             this.navigationManager = navigationManager;
         }
 
@@ -432,7 +432,7 @@ namespace ITStockM.Services
         // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
         public async Task<List<DeliveryOrder>> GetDeliveryOrdersList(Query query = null)
         {
-            using var scope = serviceProvider.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
             var items = ctx.DeliveryOrders.AsQueryable();
 
@@ -827,7 +827,7 @@ namespace ITStockM.Services
         // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
         public async Task<List<Offer>> GetOffersList(Query query = null)
         {
-            using var scope = serviceProvider.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
             var items = ctx.Offers.AsQueryable();
 
@@ -1008,7 +1008,7 @@ namespace ITStockM.Services
         // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
         public async Task<List<Request>> GetRequestsList(Query query = null)
         {
-            using var scope = serviceProvider.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
             var items = ctx.Requests.AsQueryable();
 
@@ -1361,7 +1361,7 @@ namespace ITStockM.Services
         // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
         public async Task<List<Project>> GetProjectsList(Query query = null)
         {
-            using var scope = serviceProvider.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
             var items = ctx.Projects.AsQueryable();
 

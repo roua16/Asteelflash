@@ -66,6 +66,17 @@ using (var scope = app.Services.CreateScope())
         context.Database.Migrate();
         Console.WriteLine("✔️ Migration exécutée avec succès.");
 
+        // Clear old data to avoid FK/seeding issues and reset identity seeds, but only in Development to avoid accidental data loss in production
+        if (app.Environment.IsDevelopment())
+        {
+            await ClearOldDataAsync(context);
+            Console.WriteLine("🧹 Anciennes données supprimées avec succès.");
+        }
+        else
+        {
+            Console.WriteLine("ℹ️ Skipping data clear on non-development environment. To enable, set environment to Development or add a startup flag.");
+        }
+
         // Seed data
         await SeedDataAsync(context);
         Console.WriteLine("✔️ Données de départ ajoutées avec succès.");
@@ -94,6 +105,46 @@ app.UseAntiforgery();
 app.MapControllers();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 app.Run();
+
+// Helper: Clear old data safely before seeding to avoid FK constraint errors and NULL insert issues
+static async Task ClearOldDataAsync(ITStockM.Data.ITStockManagmentContext context)
+{
+    try
+    {
+        // Use a transaction so everything is cleared atomically
+        using var tx = await context.Database.BeginTransactionAsync();
+
+        // Delete dependent / child tables first to avoid FK constraint violations
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Offer]");
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[DeliveryOrderMateriel]");
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[DeliveryOrder]");
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AssignmentMateriel]");
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Assignment]");
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Request]");
+
+        // Now delete independent tables
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Materiel]");
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Supplier]");
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Project]");
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Employee]");
+
+        // Reset identity seeds for tables that use identity columns so inserts won't conflict
+        await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Employee]', RESEED, 0)");
+        await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Project]', RESEED, 0)");
+        await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Materiel]', RESEED, 0)");
+        await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Assignment]', RESEED, 0)");
+        await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Request]', RESEED, 0)");
+        await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Offer]', RESEED, 0)");
+
+        await tx.CommitAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ Erreur lors de la suppression des anciennes données : " + ex.Message);
+        // Rethrow so startup can decide what to do (we want to fail fast if clearing fails)
+        throw;
+    }
+}
 
 async Task SeedDataAsync(ITStockM.Data.ITStockManagmentContext context)
 {
@@ -305,7 +356,8 @@ async Task SeedDataAsync(ITStockM.Data.ITStockManagmentContext context)
                     Description = "Need additional monitors for design team",
                     MaterialType = "Monitors",
                     Date = DateTime.Now.AddDays(-15),
-                    Status = "Approved"
+                    Status = "Approved",
+                    File = Array.Empty<byte>()
                 },
                 new ITStockM.Models.ITStockManagment.Request
                 {
@@ -315,7 +367,8 @@ async Task SeedDataAsync(ITStockM.Data.ITStockManagmentContext context)
                     Description = "Request for new keyboard and mouse",
                     MaterialType = "Peripherals",
                     Date = DateTime.Now.AddDays(-7),
-                    Status = "Pending"
+                    Status = "Pending",
+                    File = Array.Empty<byte>()
                 }
             };
             context.Requests.AddRange(requests);
