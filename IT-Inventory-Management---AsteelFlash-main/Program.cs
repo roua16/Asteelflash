@@ -19,6 +19,7 @@ builder.Services.AddDbContext<ITStockM.Data.ITStockManagmentContext>(options =>
 });
 
 
+
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 

@@ -28,11 +28,13 @@ namespace ITStockM.Services
         }
 
         private readonly ITStockManagmentContext context;
+        private readonly IServiceProvider serviceProvider;
         private readonly NavigationManager navigationManager;
 
-        public ITStockManagmentService(ITStockManagmentContext context, NavigationManager navigationManager)
+        public ITStockManagmentService(ITStockManagmentContext context, IServiceProvider serviceProvider, NavigationManager navigationManager)
         {
             this.context = context;
+            this.serviceProvider = serviceProvider;
             this.navigationManager = navigationManager;
         }
 
@@ -430,7 +432,9 @@ namespace ITStockM.Services
         // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
         public async Task<List<DeliveryOrder>> GetDeliveryOrdersList(Query query = null)
         {
-            var items = Context.DeliveryOrders.AsQueryable();
+            using var scope = serviceProvider.CreateScope();
+            var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
+            var items = ctx.DeliveryOrders.AsQueryable();
 
             if (query != null && !string.IsNullOrEmpty(query.Expand))
             {
@@ -823,7 +827,9 @@ namespace ITStockM.Services
         // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
         public async Task<List<Offer>> GetOffersList(Query query = null)
         {
-            var items = Context.Offers.AsQueryable();
+            using var scope = serviceProvider.CreateScope();
+            var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
+            var items = ctx.Offers.AsQueryable();
 
             items = items.Include(i => i.Request);
             items = items.Include(i => i.Supplier);
@@ -1002,7 +1008,9 @@ namespace ITStockM.Services
         // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
         public async Task<List<Request>> GetRequestsList(Query query = null)
         {
-            var items = Context.Requests.AsQueryable();
+            using var scope = serviceProvider.CreateScope();
+            var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
+            var items = ctx.Requests.AsQueryable();
 
             items = items.Include(i => i.Employee);
 
@@ -1062,6 +1070,9 @@ namespace ITStockM.Services
                 throw new Exception("Item already available");
             }
 
+            // If File isn't provided, use an empty byte array so DB insert won't fail on a non-null column
+            request.File ??= Array.Empty<byte>();
+
             try
             {
                 Context.Requests.Add(request);
@@ -1095,7 +1106,14 @@ namespace ITStockM.Services
             }
 
             var entryToUpdate = Context.Entry(itemToUpdate);
+            var existingFile = itemToUpdate.File;
             entryToUpdate.CurrentValues.SetValues(request);
+            // Preserve existing file if the incoming request does not provide a new file
+            if (request.File == null)
+            {
+                entryToUpdate.Property("File").CurrentValue = existingFile;
+                entryToUpdate.Property("File").IsModified = false;
+            }
             entryToUpdate.State = EntityState.Modified;
 
             Context.SaveChanges();
@@ -1343,7 +1361,9 @@ namespace ITStockM.Services
         // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
         public async Task<List<Project>> GetProjectsList(Query query = null)
         {
-            var items = Context.Projects.AsQueryable();
+            using var scope = serviceProvider.CreateScope();
+            var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
+            var items = ctx.Projects.AsQueryable();
 
 
             if (query != null)
