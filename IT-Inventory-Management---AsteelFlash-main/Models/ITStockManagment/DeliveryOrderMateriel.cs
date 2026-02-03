@@ -11,13 +11,13 @@ namespace ITStockM.Models.ITStockManagment
         [Required]
         public int MaterielId { get; set; }
 
-        public Materiel Materiel { get; set; }
+        public Materiel? Materiel { get; set; }
 
         [Key]
         [Required]
-        public string DeliveryOrderNumber { get; set; }
+        public string? DeliveryOrderNumber { get; set; }
 
-        public DeliveryOrder DeliveryOrder { get; set; }
+        public DeliveryOrder? DeliveryOrder { get; set; }
 
         [Required]
         public int Qte { get; set; }

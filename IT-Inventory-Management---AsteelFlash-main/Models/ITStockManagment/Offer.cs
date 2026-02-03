@@ -14,14 +14,14 @@ namespace ITStockM.Models.ITStockManagment
         [Required]
         public int RequestId { get; set; }
 
-        public Request Request { get; set; }
+        public Request? Request { get; set; }
 
         [Required]
-        public string SupplierName { get; set; }
+        public string? SupplierName { get; set; }
 
-        public Supplier Supplier { get; set; }
+        public Supplier? Supplier { get; set; }
 
-        [Column(TypeName="datetime2")]
+        [Column(TypeName = "datetime2")]
         [Required]
         public DateTime DeliveryDate { get; set; }
 

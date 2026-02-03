@@ -1,4 +1,5 @@
 ﻿using ITStockM.Services;
+using ITStockM.Services.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.Components.Web;
@@ -27,10 +28,8 @@ namespace ITStockM.Components.Pages.Infra
         [Inject]
         public ITStockManagmentService ITStockManagmentService { get; set; }
 
-
-
         [Inject]
-        public EmailService EmailService { get; set; }
+        public INotificationService AdminNotificationService { get; set; }
 
         protected bool errorVisible;
         protected List<string> requestOptions = new List<string>() { "Update project", "Existing Project" };
@@ -213,11 +212,22 @@ namespace ITStockM.Components.Pages.Infra
         {
             try
             {
-                _ = InvokeAsync(async () =>
+                await InvokeAsync(async () =>
                 {
-                    request.EmployeeId = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.Id;
+                    var session = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value;
+                    request.EmployeeId = session.Id;
                     request.Date = DateTime.Now;
                     request = await ITStockManagmentService.CreateRequest(request);
+
+                    try
+                    {
+                        await AdminNotificationService.NotifyRequestSubmittedAsync(request.Id, session.FullName);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Never block UI flow on email failures
+                        Console.Error.WriteLine($"Admin notification failed for request #{request.Id}: {ex.Message}");
+                    }
                     string htmlEmail = $@"<!DOCTYPE html>
 <html>
 <head>

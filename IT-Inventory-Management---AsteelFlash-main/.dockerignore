@@ -1,0 +1,25 @@
+# Build outputs
+**/bin/
+**/obj/
+
+# User/IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.cache
+
+# Git
+.git/
+.gitignore
+
+# Tests (not needed for runtime image)
+ITStockM.Tests/
+
+# Docs / misc
+*.md
+*.tex
+
+# OS
+Thumbs.db
+Desktop.ini

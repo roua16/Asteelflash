@@ -14,6 +14,7 @@ using ITStockM.Data;
 using ITStockM.Models.ITStockManagment;
 using System.Linq.Expressions;
 using ITStockM.Models.ViewModels;
+using ITStockM.Services.Interfaces;
 
 namespace ITStockM.Services
 {
@@ -30,12 +31,14 @@ namespace ITStockM.Services
         private readonly ITStockManagmentContext context;
         private readonly IServiceScopeFactory scopeFactory;
         private readonly NavigationManager navigationManager;
+        private readonly IOperationNotificationService? operationNotificationService;
 
-        public ITStockManagmentService(ITStockManagmentContext context, IServiceScopeFactory scopeFactory, NavigationManager navigationManager)
+        public ITStockManagmentService(ITStockManagmentContext context, IServiceScopeFactory scopeFactory, NavigationManager navigationManager, IOperationNotificationService? operationNotificationService = null)
         {
             this.context = context;
             this.scopeFactory = scopeFactory;
             this.navigationManager = navigationManager;
+            this.operationNotificationService = operationNotificationService;
         }
 
         public void Reset() => Context.ChangeTracker.Entries().Where(e => e.Entity != null).ToList().ForEach(e => e.State = EntityState.Detached);
@@ -163,6 +166,13 @@ namespace ITStockM.Services
 
             OnAfterAssignmentCreated(assignment);
 
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyAssignmentCreated(assignment);
+            });
+
             return assignment;
         }
 
@@ -191,6 +201,13 @@ namespace ITStockM.Services
             Context.SaveChanges();
 
             OnAfterAssignmentUpdated(assignment);
+
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyAssignmentUpdated(assignment);
+            });
 
             return assignment;
         }
@@ -226,6 +243,13 @@ namespace ITStockM.Services
             }
 
             OnAfterAssignmentDeleted(itemToDelete);
+
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyAssignmentDeleted(id);
+            });
 
             return itemToDelete;
         }
@@ -511,6 +535,13 @@ namespace ITStockM.Services
 
             OnAfterDeliveryOrderCreated(deliveryorder);
 
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyDeliveryOrderCreated(deliveryorder);
+            });
+
             return deliveryorder;
         }
 
@@ -538,6 +569,13 @@ namespace ITStockM.Services
             Context.SaveChanges();
 
             OnAfterDeliveryOrderUpdated(deliveryorder);
+
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyDeliveryOrderUpdated(deliveryorder);
+            });
 
             return deliveryorder;
         }
@@ -750,6 +788,13 @@ namespace ITStockM.Services
 
             OnAfterMaterielCreated(materiel);
 
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyMaterielCreated(materiel);
+            });
+
             return materiel;
         }
 
@@ -777,6 +822,13 @@ namespace ITStockM.Services
             Context.SaveChanges();
 
             OnAfterMaterielUpdated(materiel);
+
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyMaterielUpdated(materiel);
+            });
 
             return materiel;
         }
@@ -904,6 +956,13 @@ namespace ITStockM.Services
 
             OnAfterOfferCreated(offer);
 
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyOfferCreated(offer);
+            });
+
             return offer;
         }
 
@@ -928,7 +987,12 @@ namespace ITStockM.Services
 
             Context.SaveChanges();
 
-
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyOfferUpdated(offer);
+            });
 
             return offer;
         }
@@ -963,6 +1027,13 @@ namespace ITStockM.Services
             }
 
             OnAfterOfferDeleted(itemToDelete);
+
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyOfferDeleted(id);
+            });
 
             return itemToDelete;
         }
@@ -1086,6 +1157,13 @@ namespace ITStockM.Services
 
             OnAfterRequestCreated(request);
 
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyRequestCreated(request);
+            });
+
             return request;
         }
 
@@ -1119,6 +1197,13 @@ namespace ITStockM.Services
             Context.SaveChanges();
 
             OnAfterRequestUpdated(request);
+
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyRequestUpdated(request);
+            });
 
             return request;
         }
@@ -1154,6 +1239,13 @@ namespace ITStockM.Services
             }
 
             OnAfterRequestDeleted(itemToDelete);
+
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyRequestDeleted(id);
+            });
 
             return itemToDelete;
         }
@@ -1243,6 +1335,13 @@ namespace ITStockM.Services
 
             OnAfterSupplierCreated(supplier);
 
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifySupplierCreated(supplier);
+            });
+
             return supplier;
         }
 
@@ -1283,6 +1382,13 @@ namespace ITStockM.Services
 
             OnAfterSupplierUpdated(supplier);
 
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifySupplierUpdated(supplier);
+            });
+
             return supplier;
         }
 
@@ -1318,6 +1424,13 @@ namespace ITStockM.Services
             }
 
             OnAfterSupplierDeleted(itemToDelete);
+
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifySupplierDeleted(suppliername);
+            });
 
             return itemToDelete;
         }
@@ -1413,6 +1526,13 @@ namespace ITStockM.Services
             }
 
             OnAfterDeliveryOrderDeleted(itemToDelete);
+
+            // Send email notification
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyDeliveryOrderDeleted(deleveryordernumber);
+            });
 
             return itemToDelete;
         }

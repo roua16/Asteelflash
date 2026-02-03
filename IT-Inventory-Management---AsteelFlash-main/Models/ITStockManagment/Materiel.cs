@@ -19,9 +19,9 @@ namespace ITStockM.Models.ITStockManagment
         [Required]
         public string Type { get; set; }
 
-        public string SerialNumber { get; set; }
+        public string? SerialNumber { get; set; }
 
-        
+
 
         [Required]
         public int QuantityITStock { get; set; }
@@ -34,18 +34,18 @@ namespace ITStockM.Models.ITStockManagment
         [Required]
         public int Repairing_Quantity { get; set; }
 
-        [Column(TypeName="datetime2")]
+        [Column(TypeName = "datetime2")]
         [Required]
         public DateTime Warranty { get; set; }
 
-        
 
 
 
 
 
-        public ICollection<AssignmentMateriel> AssignmentMateriels { get; set; }
 
-        public ICollection<DeliveryOrderMateriel> DeliveryOrderMateriels { get; set; }
+        public ICollection<AssignmentMateriel> AssignmentMateriels { get; set; } = new List<AssignmentMateriel>();
+
+        public ICollection<DeliveryOrderMateriel> DeliveryOrderMateriels { get; set; } = new List<DeliveryOrderMateriel>();
     }
 }

@@ -14,39 +14,37 @@ namespace ITStockM.Models.ITStockManagment
         [Required]
         public int EmployeeId { get; set; }
 
-        public Employee Employee { get; set; }
+        public Employee? Employee { get; set; }
 
         [Required]
-        public string Title { get; set; }
-
-        
+        public string? Title { get; set; }
 
         [Required]
-        public string ProjectName { get; set; }
+        public string? ProjectName { get; set; }
 
         [Required]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         [Required]
-        public string MaterialType { get; set; }
+        public string? MaterialType { get; set; }
 
-        [Column("date",TypeName="datetime2")]
+        [Column("date", TypeName = "datetime2")]
         [Required]
         public DateTime Date { get; set; }
 
         [Column("status")]
         [Required]
-        public string Status { get; set; }
+        public string? Status { get; set; }
 
-        public byte[] File { get; set; }
+        public byte[]? File { get; set; }
 
-        public string FileExtension { get; set; }
+        public string? FileExtension { get; set; }
 
-        public string FileName { get; set; }
+        public string? FileName { get; set; }
 
-        [Column("approvedAt",TypeName="datetime2")]
+        [Column("approvedAt", TypeName = "datetime2")]
         public DateTime? ApprovedAt { get; set; }
 
-        public ICollection<Offer> Offers { get; set; }
+        public ICollection<Offer> Offers { get; set; } = new List<Offer>();
     }
 }

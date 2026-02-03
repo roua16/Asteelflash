@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using ITStockM.Services;
+using ITStockM.Services.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Radzen;
@@ -36,19 +37,19 @@ namespace ITStockM.Components.Pages.Infra
         }
 
         [Inject]
-        public EmailService EmailService { get; set; }
+        public IEmailService EmailService { get; set; }
 
         public async Task ChooseOffer(Models.ITStockManagment.Offer offer)
         {
 
 
-            bool? confirm = await DialogService.Confirm("Are you sure you want to choose this offer ?","Offer Selection Confirmation");
+            bool? confirm = await DialogService.Confirm("Are you sure you want to choose this offer ?", "Offer Selection Confirmation");
             if (confirm != true)
             {
                 return;
             }
             DialogService.Close(null);
-            _ = InvokeAsync(async () =>
+            await InvokeAsync(async () =>
             {
                 offer.Selected = true;
                 await ITStockManagmentService.UpdateOffer(offer.Id, offer);
@@ -62,6 +63,24 @@ namespace ITStockM.Components.Pages.Infra
                     }
                 }
                 var user = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.FullName;
+
+                await InvokeAsync(async () =>
+                {
+                    try
+                    {
+                        var details = $"Request: {offer.Request?.Title ?? "(unknown)"} (#{offer.RequestId})<br/>" +
+                                      $"Supplier: {offer.Supplier?.SupplierName ?? "(unknown)"}<br/>" +
+                                      $"Price: {offer.Price} TND<br/>" +
+                                      $"DeliveryDate: {offer.DeliveryDate}";
+
+                        await EmailService.SendAdminNotificationAsync("Offer selected", details, user);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Ignore email failures to avoid breaking the selection flow
+                        Console.Error.WriteLine($"Admin notification failed for offer #{offer.Id}: {ex.Message}");
+                    }
+                });
 
                 string htmlEmail = $@"<!DOCTYPE html>
 <html>
@@ -316,7 +335,7 @@ namespace ITStockM.Components.Pages.Infra
             
             <div class=""offer-summary"">
                 <h4>📋 Selected Offer Summary</h4>
-                <p><strong>Price:</strong> {offer.Price } TND </p>
+                <p><strong>Price:</strong> {offer.Price} TND </p>
                 <p><strong>Delivery Time:</strong> {offer.DeliveryDate} </p>
                 <p><strong>Status:</strong> Selected & Ready for Processing</p>
             </div>
@@ -331,8 +350,8 @@ namespace ITStockM.Components.Pages.Infra
 </body>
 </html>";
 
-               // EmailService.SendEmail("mortadhajouinizlatan@gmail.com", $"Offer Selection Confirmation - {user} - Request {offer.Request.Title}", htmlEmail);
-            
+                // EmailService.SendEmail("mortadhajouinizlatan@gmail.com", $"Offer Selection Confirmation - {user} - Request {offer.Request.Title}", htmlEmail);
+
 
 
                 DialogService.Close();
@@ -345,11 +364,11 @@ namespace ITStockM.Components.Pages.Infra
 
 
         }
-       
 
 
 
-        
+
+
 
     }
 

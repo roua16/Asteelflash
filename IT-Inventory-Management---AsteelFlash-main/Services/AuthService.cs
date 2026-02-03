@@ -6,7 +6,7 @@ using System.DirectoryServices;
 
 namespace ITStockM.Services
 {
-   
+
 
     public class AuthService : IAuthService
     {
@@ -22,16 +22,16 @@ namespace ITStockM.Services
             using var connection = new SqlConnection(_connectionString);
             var user = await connection.QueryFirstOrDefaultAsync<AppUser>(
                 "SELECT * FROM Employee WHERE Email = @Email", new { Email = email });
-           
+
             // ad auth to be added
 
-            if (user == null || ! (password == user.Password))
+            if (user == null || !(password == user.Password))
                 return null;
-            
+
             return user;
         }
 
-       
+
         public async Task<AppUser> GetUserByEmail(string email)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -43,62 +43,43 @@ namespace ITStockM.Services
 
         {
 
-            try
-
+            if (!OperatingSystem.IsWindows())
             {
-
-                using (var entry = new System.DirectoryServices.DirectoryEntry("LDAP://asteelflash.europe.lan", username, password))
-
-                {
-
-                    if (entry.NativeObject != null)
-
-                    {
-
-                        using (var searcher = new DirectorySearcher(entry))
-
-                        {
-
-                            searcher.Filter = $"(&(ObjectClass=user)(sAMAccountName={username}))";
-
-                            searcher.PropertiesToLoad.Add("displayName");
-
-
-
-                            SearchResult user = searcher.FindOne();
-
-                            if (user != null && user.Properties["displayName"].Count > 0)
-
-                            {
-
-                                string fullName = user.Properties["displayName"][0].ToString();
-
-                                Console.WriteLine($"Utilisateur authentifié : {fullName}");
-
-                                return true;
-
-                            }
-
-                        }
-
-                    }
-
-                }
-
+                Console.WriteLine("AD authentication is only supported on Windows.");
+                return false;
             }
 
-            catch (Exception ex)
-
+            try
             {
+                using (var entry = new DirectoryEntry("LDAP://asteelflash.europe.lan", username, password))
+                {
+                    if (entry.NativeObject != null)
+                    {
+                        using (var searcher = new DirectorySearcher(entry))
+                        {
+                            searcher.Filter = $"(&(ObjectClass=user)(sAMAccountName={username}))";
+                            searcher.PropertiesToLoad.Add("displayName");
 
+                            SearchResult user = searcher.FindOne();
+                            if (user != null && user.Properties["displayName"].Count > 0)
+                            {
+                                string fullName = user.Properties["displayName"][0].ToString();
+                                Console.WriteLine($"Utilisateur authentifié : {fullName}");
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
                 Console.WriteLine($"Erreur lors de l'authentification : {ex.Message}");
-
             }
 
 
 
             return false;
 
-        } 
+        }
     }
 }

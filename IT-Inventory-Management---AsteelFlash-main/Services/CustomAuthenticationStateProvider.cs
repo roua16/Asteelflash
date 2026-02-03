@@ -2,30 +2,33 @@
 using ITStockM.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using Microsoft.Extensions.Logging;
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {
     private readonly ProtectedLocalStorage _localStorage;
     private readonly IAuthService _authService;
+    private readonly ILogger<CustomAuthenticationStateProvider> _logger;
 
 
-    public CustomAuthenticationStateProvider(ProtectedLocalStorage localStorage, IAuthService authService)
+    public CustomAuthenticationStateProvider(ProtectedLocalStorage localStorage, IAuthService authService, ILogger<CustomAuthenticationStateProvider> logger)
     {
         _localStorage = localStorage;
         _authService = authService;
+        _logger = logger;
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
         try
         {
-            var userSessionStorageResult = await  _localStorage.GetAsync<UserSession>("UserSession");
+            var userSessionStorageResult = await _localStorage.GetAsync<UserSession>("UserSession");
             var userSession = userSessionStorageResult.Success ? userSessionStorageResult.Value : null;
 
             if (userSession == null)
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
 
-            
+
             var user = await _authService.GetUserByEmail(userSession.Email);
             if (user == null)
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
@@ -36,6 +39,8 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
                 new Claim(ClaimTypes.Role, user.Post),
                 new Claim("FullName", user.FullName)
             };
+
+            _logger?.LogInformation("AuthenticationState built for {Email} with role {Role}", user.Email, user.Post);
 
             var identity = new ClaimsIdentity(claims, "CustomAuth");
             return new AuthenticationState(new ClaimsPrincipal(identity));
@@ -52,7 +57,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
         if (userSession != null)
         {
-            await  _localStorage.SetAsync("UserSession", userSession);
+            await _localStorage.SetAsync("UserSession", userSession);
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, userSession.Email),
@@ -64,11 +69,10 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         }
         else
         {
-            await  _localStorage.DeleteAsync("UserSession");
+            await _localStorage.DeleteAsync("UserSession");
             claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
         }
-
-        NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(claimsPrincipal)));
+        _logger?.LogInformation("UpdateAuthenticationState: {Email} role={Role}", userSession?.Email, userSession?.Role); NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(claimsPrincipal)));
     }
 }
 

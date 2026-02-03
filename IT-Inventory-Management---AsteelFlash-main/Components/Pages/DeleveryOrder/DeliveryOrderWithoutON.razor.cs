@@ -27,20 +27,20 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
         private bool showValidationError = false;
 
-        private void ValidateAndUpdateDeliveryOrder()
+        private async Task ValidateAndUpdateDeliveryOrder()
         {
             showValidationError = true;
 
             if (!string.IsNullOrEmpty(DeliveryOrder.OrderNumber))
             {
-                updateDeliveryOrder();
+                await updateDeliveryOrder();
             }
             else
             {
 
             }
         }
-        protected async Task  updateDeliveryOrder()
+        protected async Task updateDeliveryOrder()
         {
 
             if (await DialogService.Confirm("Confirm OrderNumber ?") == true)
@@ -48,7 +48,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                 await ITStockManagmentService.UpdateDeliveryOrder(DeliveryOrder.DeleveryOrderNumber, DeliveryOrder);
                 DialogService.Close(null);
             }
-            
+
         }
 
         protected override async Task OnInitializedAsync()
@@ -78,7 +78,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                 {
                     var options = new DialogOptions
                     {
-                        Style = "min-width: 600px;", 
+                        Style = "min-width: 600px;",
                         CssClass = "dialog-animation",
                         CloseDialogOnOverlayClick = true,
                         Resizable = true,
@@ -121,7 +121,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
             var options = new DialogOptions
             {
-                Style = "min-width: 600px;", 
+                Style = "min-width: 600px;",
                 CssClass = "dialog-animation",
                 CloseDialogOnOverlayClick = true,
                 Resizable = true,
@@ -149,7 +149,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                 await ITStockManagmentService.UpdateDeliveryOrder(deliveryOrderMateriel.DeliveryOrder.DeleveryOrderNumber, deliveryOrderMateriel.DeliveryOrder);
 
                 await ITStockManagmentService.DeleteDeliveryOrderMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.DeliveryOrderNumber);
-                 await grid0.Reload();
+                await grid0.Reload();
 
 
             }

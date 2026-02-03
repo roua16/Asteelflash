@@ -12,27 +12,27 @@ namespace ITStockM.Models.ITStockManagment
         public int Id { get; set; }
 
         [Required]
-        public string FullName { get; set; }
+        public string? FullName { get; set; }
 
         [Required]
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         [Required]
-        public string Password { get; set; }
+        public string? Password { get; set; }
 
         [Required]
-        public string Post { get; set; }
+        public string? Post { get; set; }
 
         [Required]
-        public string PhoneNumber { get; set; }
+        public string? PhoneNumber { get; set; }
 
         [Required]
-        public string Service { get; set; }
+        public string? Service { get; set; }
 
-        public ICollection<Assignment> Assignments { get; set; }
+        public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
 
-        public ICollection<Request> Requests { get; set; }
+        public ICollection<Request> Requests { get; set; } = new List<Request>();
 
-        public ICollection<DeliveryOrder> DeliveryOrders { get; set; }
+        public ICollection<DeliveryOrder> DeliveryOrders { get; set; } = new List<DeliveryOrder>();
     }
 }

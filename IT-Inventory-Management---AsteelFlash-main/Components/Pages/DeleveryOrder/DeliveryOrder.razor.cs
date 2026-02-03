@@ -74,32 +74,32 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
         protected void TypeSRChecker(int i)
         {
-            
-                if ( MaterielsList[i].Materiel.Type == "Network device" || MaterielsList[i].Materiel.Type == "Printer" || MaterielsList[i].Materiel.Type == "Laptop" || MaterielsList[i].Materiel.Type == "Mini Pc" || MaterielsList[i].Materiel.Type == "Monitor"   )
-                {
+
+            if (MaterielsList[i].Materiel.Type == "Network device" || MaterielsList[i].Materiel.Type == "Printer" || MaterielsList[i].Materiel.Type == "Laptop" || MaterielsList[i].Materiel.Type == "Mini Pc" || MaterielsList[i].Materiel.Type == "Monitor")
+            {
                 MaterielsList[i].HaveSr = true;
-                AddSerielNumber(i,true);
-                
+                AddSerielNumber(i, true);
+
                 changeSR = true;
 
             }
-                else 
-                {
-                    MaterielsList[i].HaveSr = false;
+            else
+            {
+                MaterielsList[i].HaveSr = false;
                 changeSR = false;
 
             }
 
         }
-        
 
-        protected void AddSerielNumber(int i , bool rerender = false)
+
+        protected void AddSerielNumber(int i, bool rerender = false)
         {
             if (!rerender)
             {
                 MaterielsList[i].HaveSr = !MaterielsList[i].HaveSr;
             }
-            
+
             if (MaterielsList[i].HaveSr)
             {
                 int newSize = MaterielsList[i].Materiel.QuantityPDRStock;
@@ -128,7 +128,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
             var newMateriel = new MaterielViewModel
             {
-                Materiel = new Models.ITStockManagment.Materiel {MaterielName = "", QuantityPDRStock = 1, QuantityITStock = 0, IrreparableQuantity = 0, Repairing_Quantity = 0 },
+                Materiel = new Models.ITStockManagment.Materiel { MaterielName = "", QuantityPDRStock = 1, QuantityITStock = 0, IrreparableQuantity = 0, Repairing_Quantity = 0 },
                 HaveSr = false,
                 SRList = new List<SerialNumber>(),
                 Year = 0,
@@ -151,7 +151,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
         {
             var options = new DialogOptions
             {
-                Style = "min-width: 600px;", 
+                Style = "min-width: 600px;",
                 CssClass = "dialog-animation",
                 CloseDialogOnOverlayClick = true,
                 Resizable = true,
@@ -160,14 +160,14 @@ namespace ITStockM.Components.Pages.DeleveryOrder
             };
             var res = await DialogService.OpenAsync<ConfirmDeliveryOrder>("Confirm", new Dictionary<string, object> { { "IsDeliveryOrder", true } }, options);
 
-            if(res == null)
+            if (res == null)
             {
                 return;
             }
-            
-                
 
-            _ = InvokeAsync(async () =>
+
+
+            await InvokeAsync(async () =>
             {
                 deliveryOrder.Date = DateTime.Now;
                 deliveryOrder.HasDelayedM = res;
@@ -191,7 +191,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
                             Qte = materiel.Materiel.QuantityPDRStock
                         };
-                       
+
 
 
 
@@ -202,22 +202,22 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
                             foreach (var sr in materiel.SRList)
                             {
-                                
+
 
 
                                 var newMateriel = new Models.ITStockManagment.Materiel
                                 {
                                     MaterielName = materiel.Materiel.MaterielName,
                                     Type = materiel.Materiel.Type,
-                                    QuantityPDRStock = 1, 
+                                    QuantityPDRStock = 1,
 
-                                    
+
                                     Warranty = DateTime.Now.AddMonths((materiel.Year * 12) + materiel.Month),
                                     SerialNumber = sr.SR,
 
-                                    
-                                    Repairing_Quantity=0,
-                                    IrreparableQuantity=0,
+
+                                    Repairing_Quantity = 0,
+                                    IrreparableQuantity = 0,
                                 };
 
                                 if (newMateriel.MaterielName == "" || newMateriel.Type == "" || newMateriel.SerialNumber == "")
@@ -243,7 +243,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                             if (MaterialSuggestions.Contains(materiel.Materiel.MaterielName))
                             {
                                 Models.ITStockManagment.Materiel oldMat = await ITStockManagmentService.GetMaterielByName(materiel.Materiel.MaterielName);
-                                
+
                                 oldMat.QuantityPDRStock = oldMat.QuantityPDRStock + materiel.Materiel.QuantityPDRStock;
                                 deliveryOrderMateriel.MaterielId = oldMat.Id;
 
@@ -311,7 +311,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
                 }
 
-                
+
 
             });
 
@@ -325,8 +325,8 @@ namespace ITStockM.Components.Pages.DeleveryOrder
         {
             var options = new DialogOptions
             {
-                Style = "min-width: 600px;", 
-                CssClass = "dialog-animation", 
+                Style = "min-width: 600px;",
+                CssClass = "dialog-animation",
                 CloseDialogOnOverlayClick = true,
                 Resizable = true,
                 Draggable = true,
@@ -346,28 +346,28 @@ namespace ITStockM.Components.Pages.DeleveryOrder
         {
             if (!string.IsNullOrEmpty(materialName) && MaterialSuggestions.Contains(materialName))
             {
-                
+
                 var material = await ITStockManagmentService.GetMaterielByName(materialName);
                 if (material != null)
                 {
                     MaterielsList[index].Materiel.Type = material.Type;
                     TypeSRChecker(index);
                     StateHasChanged();
-                    
-                    
+
+
                 }
             }
             else
             {
                 MaterielsList[index].Materiel.Type = "";
                 StateHasChanged();
-            } 
+            }
 
         }
 
-      
 
-        
+
+
 
 
 

@@ -9,19 +9,19 @@ namespace ITStockM.Models.ITStockManagment
     {
         [Key]
         [Required]
-        public string SupplierName { get; set; }
+        public string? SupplierName { get; set; }
 
         [Required]
-        public string Adress { get; set; }
+        public string? Adress { get; set; }
 
         [Required]
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         [Required]
-        public string PhoneNumber { get; set; }
+        public string? PhoneNumber { get; set; }
 
-        public ICollection<DeliveryOrder> DeliveryOrders { get; set; }
+        public ICollection<DeliveryOrder> DeliveryOrders { get; set; } = new List<DeliveryOrder>();
 
-        public ICollection<Offer> Offers { get; set; }
+        public ICollection<Offer> Offers { get; set; } = new List<Offer>();
     }
 }
