@@ -61,4 +61,16 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
-  
+
+# Explicit line ending rules for repository
+*.cs     text eol=lf
+*.razor  text eol=lf
+*.html   text eol=lf
+*.css    text eol=lf
+*.js     text eol=lf
+*.json   text eol=lf
+Dockerfile text eol=lf
+*.sh     text eol=lf
+*.ps1    text eol=crlf
+*.sln    text eol=crlf
+.env.example text
