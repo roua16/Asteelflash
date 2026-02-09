@@ -1,4 +1,5 @@
 using ITStockM.Models.ITStockManagment;
+using ITStockM.Models.Constants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -81,7 +82,8 @@ namespace ITStockM.Data
                     FullName = adminFullName,
                     Email = adminEmail,
                     Password = adminPassword,
-                    Post = "Admin",
+                    Post = "Admin", // Keep for backward compatibility
+                    Role = UserRoles.Admin,
                     PhoneNumber = adminPhoneNumber,
                     Service = adminService
                 };
@@ -92,9 +94,10 @@ namespace ITStockM.Data
             }
             else
             {
-                if (!string.Equals(admin.Post, "Admin", StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(admin.Role, UserRoles.Admin, StringComparison.OrdinalIgnoreCase))
                 {
-                    admin.Post = "Admin";
+                    admin.Post = "Admin"; // Keep for backward compatibility
+                    admin.Role = UserRoles.Admin;
                     await context.SaveChangesAsync(cancellationToken);
                     logger.LogInformation("Updated existing user to Admin: {AdminEmail}", adminEmail);
                 }
@@ -116,27 +119,70 @@ namespace ITStockM.Data
                         FullName = "John Smith",
                         Email = "john.smith@asteelflash.com",
                         Password = "password123",
-                        Post = "Software Developer",
+                        Post = "PDR Manager",
+                        Role = UserRoles.PDR,
                         PhoneNumber = "+1234567891",
-                        Service = "Development"
+                        Service = "Material Management"
                     },
                     new Employee
                     {
                         FullName = "Sarah Johnson",
                         Email = "sarah.johnson@asteelflash.com",
                         Password = "password123",
-                        Post = "Project Manager",
+                        Post = "Purchasing Manager",
+                        Role = UserRoles.Purchasing,
                         PhoneNumber = "+1234567892",
-                        Service = "Management"
+                        Service = "Procurement"
                     },
                     new Employee
                     {
                         FullName = "Mike Davis",
                         Email = "mike.davis@asteelflash.com",
                         Password = "password123",
-                        Post = "IT Support",
+                        Post = "IT Support Specialist",
+                        Role = UserRoles.IT,
                         PhoneNumber = "+1234567893",
                         Service = "IT"
+                    },
+                    new Employee
+                    {
+                        FullName = "Alice Brown",
+                        Email = "alice.brown@asteelflash.com",
+                        Password = "password123",
+                        Post = "Infrastructure Manager",
+                        Role = UserRoles.Infrastructure,
+                        PhoneNumber = "+1234567894",
+                        Service = "Infrastructure"
+                    },
+                    new Employee
+                    {
+                        FullName = "Paul Green",
+                        Email = "paul.green@asteelflash.com",
+                        Password = "password123",
+                        Post = "Purchasing Officer",
+                        Role = UserRoles.Purchasing,
+                        PhoneNumber = "+1234567895",
+                        Service = "Procurement"
+                    },
+                    new Employee
+                    {
+                        FullName = "Emma White",
+                        Email = "emma.white@asteelflash.com",
+                        Password = "password123",
+                        Post = "PDR Technician",
+                        Role = UserRoles.PDR,
+                        PhoneNumber = "+1234567896",
+                        Service = "Material Management"
+                    },
+                    new Employee
+                    {
+                        FullName = "Thomas Miller",
+                        Email = "thomas.miller@asteelflash.com",
+                        Password = "password123",
+                        Post = "Employee",
+                        Role = UserRoles.Employee,
+                        PhoneNumber = "+1234567897",
+                        Service = "General"
                     }
                 };
                 context.Employees.AddRange(employees);
@@ -287,6 +333,34 @@ namespace ITStockM.Data
                         });
                         await context.SaveChangesAsync(cancellationToken);
                     }
+                }
+
+                // Add a sample assignment that simulates a partial/damaged return (for testing notifications)
+                var thomas = await context.Employees.FirstOrDefaultAsync(e => e.Email == "thomas.miller@asteelflash.com", cancellationToken);
+                var laptopMat = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Laptop", cancellationToken);
+                if (thomas != null && laptopMat != null && !await context.Assignments.AnyAsync(a => a.Descipriton.Contains("Partial return example"), cancellationToken))
+                {
+                    var problemAssignment = new Assignment
+                    {
+                        AssignedTo = thomas.Id,
+                        AssignedBy = admin != null ? admin.Id : thomas.Id,
+                        ProjectId = project.Id,
+                        Date = DateTime.Now.AddDays(-40),
+                        Descipriton = "Partial return example: 2 laptops assigned, 1 returned damaged",
+                        OnMission = false,
+                        RestoreDate = DateTime.Now.AddDays(-5),
+                        RestoreDateLimit = DateTime.Now.AddDays(-10)
+                    };
+                    context.Assignments.Add(problemAssignment);
+                    await context.SaveChangesAsync(cancellationToken);
+
+                    context.AssignmentMateriels.Add(new AssignmentMateriel
+                    {
+                        AssignmentId = problemAssignment.Id,
+                        MaterielId = laptopMat.Id,
+                        Qte = 1 // 1 still outstanding (was 2 originally)
+                    });
+                    await context.SaveChangesAsync(cancellationToken);
                 }
             }
 

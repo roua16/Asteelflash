@@ -1,6 +1,7 @@
 ﻿@page "/assignments-archive"
 
-<AuthorizeView Roles="SuperAdmin, Admin">
+@using ITStockM.Models.Constants
+<AuthorizeView Roles="@UserRoles.Admin">
     <Authorized>
 
 

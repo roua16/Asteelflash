@@ -29,6 +29,12 @@ namespace ITStockM.Models.ITStockManagment
         [Required]
         public string? Service { get; set; }
 
+        /// <summary>
+        /// User role for authorization (Admin, PDR, Purchasing, IT, Infrastructure, Employee)
+        /// </summary>
+        [Required]
+        public string? Role { get; set; }
+
         public ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
 
         public ICollection<Request> Requests { get; set; } = new List<Request>();

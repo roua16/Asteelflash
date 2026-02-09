@@ -1,4 +1,5 @@
 ﻿using ITStockM.Services;
+using ITStockM.Models.Constants;
 using Microsoft.AspNetCore.Components;
 
 namespace ITStockM.Components.Pages.auth
@@ -52,7 +53,7 @@ namespace ITStockM.Components.Pages.auth
                 await AuthStateProvider.UpdateAuthenticationState(new UserSession
                 {
                     Email = user.Email,
-                    Role = user.Post,
+                    Role = UserRoles.NormalizeRole(!string.IsNullOrWhiteSpace(user.Role) ? user.Role : user.Post),
                     Id = user.Id,
                     FullName = user.FullName
                 });

@@ -15,6 +15,9 @@ using ITStockM.Models.ITStockManagment;
 using System.Linq.Expressions;
 using ITStockM.Models.ViewModels;
 using ITStockM.Services.Interfaces;
+using ITStockM.Services.Utilities;
+using ITStockM.Services.Export;
+using ITStockM.Repositories;
 
 namespace ITStockM.Services
 {
@@ -32,88 +35,64 @@ namespace ITStockM.Services
         private readonly IServiceScopeFactory scopeFactory;
         private readonly NavigationManager navigationManager;
         private readonly IOperationNotificationService? operationNotificationService;
+        private readonly IExportService exportService;
 
-        public ITStockManagmentService(ITStockManagmentContext context, IServiceScopeFactory scopeFactory, NavigationManager navigationManager, IOperationNotificationService? operationNotificationService = null)
+        // Repositories (legacy kept for direct context access in some methods)
+        private readonly IAssignmentRepository assignmentRepository;
+        private readonly IRequestRepository requestRepository;
+        private readonly IDeliveryOrderRepository deliveryOrderRepository;
+        private readonly IMaterielRepository materielRepository;
+
+        // New domain services
+        private readonly Services.Assignments.IAssignmentService assignmentService;
+        private readonly Services.Materiels.IMaterielService materielService;
+        private readonly Services.Requests.IRequestService requestService;
+        private readonly Services.DeliveryOrders.IDeliveryOrderService deliveryOrderService;
+
+        public ITStockManagmentService(
+            ITStockManagmentContext context,
+            IServiceScopeFactory scopeFactory,
+            NavigationManager navigationManager,
+            IExportService exportService,
+            IAssignmentRepository assignmentRepository,
+            IRequestRepository requestRepository,
+            IDeliveryOrderRepository deliveryOrderRepository,
+            IMaterielRepository materielRepository,
+            Services.Assignments.IAssignmentService assignmentService,
+            Services.Requests.IRequestService requestService,
+            Services.DeliveryOrders.IDeliveryOrderService deliveryOrderService,
+            Services.Materiels.IMaterielService materielService,
+            IOperationNotificationService? operationNotificationService = null)
         {
             this.context = context;
             this.scopeFactory = scopeFactory;
             this.navigationManager = navigationManager;
             this.operationNotificationService = operationNotificationService;
+            this.exportService = exportService;
+            this.assignmentRepository = assignmentRepository;
+            this.requestRepository = requestRepository;
+            this.deliveryOrderRepository = deliveryOrderRepository;
+            this.materielRepository = materielRepository;
+            this.assignmentService = assignmentService;
+            this.requestService = requestService;
+            this.deliveryOrderService = deliveryOrderService;
+            this.materielService = materielService;
         }
 
         public void Reset() => Context.ChangeTracker.Entries().Where(e => e.Entity != null).ToList().ForEach(e => e.State = EntityState.Detached);
 
-        public void ApplyQuery<T>(ref IQueryable<T> items, Query query = null)
-        {
-            if (query != null)
-            {
-                if (!string.IsNullOrEmpty(query.Filter))
-                {
-                    if (query.FilterParameters != null)
-                    {
-                        items = items.Where(query.Filter, query.FilterParameters);
-                    }
-                    else
-                    {
-                        items = items.Where(query.Filter);
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(query.OrderBy))
-                {
-                    items = items.OrderBy(query.OrderBy);
-                }
-
-                if (query.Skip.HasValue)
-                {
-                    items = items.Skip(query.Skip.Value);
-                }
-
-                if (query.Top.HasValue)
-                {
-                    items = items.Take(query.Top.Value);
-                }
-            }
-        }
-
 
         public async Task ExportAssignmentsToExcel(Query query = null, string fileName = null)
-        {
-            navigationManager.NavigateTo(query != null ? query.ToUrl($"export/itstockmanagment/assignments/excel(fileName='{(!string.IsNullOrEmpty(fileName) ? UrlEncoder.Default.Encode(fileName) : "Export")}')") : $"export/itstockmanagment/assignments/excel(fileName='{(!string.IsNullOrEmpty(fileName) ? UrlEncoder.Default.Encode(fileName) : "Export")}')", true);
-        }
+            => await exportService.ExportToExcel("export/itstockmanagment/assignments", query, fileName);
 
         public async Task ExportAssignmentsToCSV(Query query = null, string fileName = null)
-        {
-            navigationManager.NavigateTo(query != null ? query.ToUrl($"export/itstockmanagment/assignments/csv(fileName='{(!string.IsNullOrEmpty(fileName) ? UrlEncoder.Default.Encode(fileName) : "Export")}')") : $"export/itstockmanagment/assignments/csv(fileName='{(!string.IsNullOrEmpty(fileName) ? UrlEncoder.Default.Encode(fileName) : "Export")}')", true);
-        }
+            => await exportService.ExportToCSV("export/itstockmanagment/assignments", query, fileName);
 
         partial void OnAssignmentsRead(ref IQueryable<Assignment> items);
 
         public async Task<IQueryable<Assignment>> GetAssignments(Query query = null)
         {
-            var items = Context.Assignments.AsQueryable();
-
-            items = items.Include(i => i.Employee);
-            items = items.Include(i => i.AssignedEmployee);
-            items = items.Include(i => i.Project);
-            items = items.Include(i => i.AssignmentMateriels).ThenInclude(i => i.Materiel);
-            if (query != null)
-            {
-                if (!string.IsNullOrEmpty(query.Expand))
-                {
-                    var propertiesToExpand = query.Expand.Split(',');
-                    foreach (var p in propertiesToExpand)
-                    {
-                        items = items.Include(p.Trim());
-                    }
-                }
-
-                ApplyQuery(ref items, query);
-            }
-
-            OnAssignmentsRead(ref items);
-
-            return await Task.FromResult(items);
+            return await assignmentService.GetAssignments(query);
         }
 
         partial void OnAssignmentGet(Assignment item);
@@ -122,19 +101,7 @@ namespace ITStockM.Services
 
         public async Task<Assignment> GetAssignmentById(int id)
         {
-            var items = Context.Assignments
-                              .AsNoTracking()
-                              .Where(i => i.Id == id);
-
-            items = items.Include(i => i.Employee);
-
-            OnGetAssignmentById(ref items);
-
-            var itemToReturn = items.FirstOrDefault();
-
-            OnAssignmentGet(itemToReturn);
-
-            return await Task.FromResult(itemToReturn);
+            return await assignmentService.GetAssignmentById(id) ?? throw new Exception("Item not found");
         }
 
         partial void OnAssignmentCreated(Assignment item);
@@ -143,37 +110,9 @@ namespace ITStockM.Services
         public async Task<Assignment> CreateAssignment(Assignment assignment)
         {
             OnAssignmentCreated(assignment);
-
-            var existingItem = Context.Assignments
-                              .Where(i => i.Id == assignment.Id)
-                              .FirstOrDefault();
-
-            if (existingItem != null)
-            {
-                throw new Exception("Item already available");
-            }
-
-            try
-            {
-                Context.Assignments.Add(assignment);
-                Context.SaveChanges();
-            }
-            catch
-            {
-                Context.Entry(assignment).State = EntityState.Detached;
-                throw;
-            }
-
-            OnAfterAssignmentCreated(assignment);
-
-            // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyAssignmentCreated(assignment);
-            });
-
-            return assignment;
+            var created = await assignmentService.CreateAssignment(assignment);
+            OnAfterAssignmentCreated(created);
+            return created;
         }
 
 
@@ -185,31 +124,11 @@ namespace ITStockM.Services
         {
             OnAssignmentUpdated(assignment);
 
-            var itemToUpdate = Context.Assignments
-                              .Where(i => i.Id == assignment.Id)
-                              .FirstOrDefault();
+            var updated = await assignmentService.UpdateAssignment(id, assignment);
 
-            if (itemToUpdate == null)
-            {
-                throw new Exception("Item no longer available");
-            }
+            OnAfterAssignmentUpdated(updated);
 
-            var entryToUpdate = Context.Entry(itemToUpdate);
-            entryToUpdate.CurrentValues.SetValues(assignment);
-            entryToUpdate.State = EntityState.Modified;
-
-            Context.SaveChanges();
-
-            OnAfterAssignmentUpdated(assignment);
-
-            // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyAssignmentUpdated(assignment);
-            });
-
-            return assignment;
+            return updated;
         }
 
         partial void OnAssignmentDeleted(Assignment item);
@@ -217,41 +136,10 @@ namespace ITStockM.Services
 
         public async Task<Assignment> DeleteAssignment(int id)
         {
-            var itemToDelete = Context.Assignments
-                              .Where(i => i.Id == id)
-                              .Include(i => i.AssignmentMateriels)
-                              .FirstOrDefault();
-
-            if (itemToDelete == null)
-            {
-                throw new Exception("Item no longer available");
-            }
-
-            OnAssignmentDeleted(itemToDelete);
-
-
-            Context.Assignments.Remove(itemToDelete);
-
-            try
-            {
-                Context.SaveChanges();
-            }
-            catch
-            {
-                Context.Entry(itemToDelete).State = EntityState.Unchanged;
-                throw;
-            }
-
-            OnAfterAssignmentDeleted(itemToDelete);
-
-            // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyAssignmentDeleted(id);
-            });
-
-            return itemToDelete;
+            var deleted = await assignmentService.DeleteAssignment(id);
+            OnAssignmentDeleted(deleted);
+            OnAfterAssignmentDeleted(deleted);
+            return deleted;
         }
 
         public async Task ExportAssignmentMaterielsToExcel(Query query = null, string fileName = null)
@@ -287,7 +175,7 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnAssignmentMaterielsRead(ref items);
@@ -445,7 +333,7 @@ namespace ITStockM.Services
 
             if (query != null)
             {
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnDeliveryOrdersRead(ref items);
@@ -477,7 +365,7 @@ namespace ITStockM.Services
 
             if (query != null)
             {
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnDeliveryOrdersRead(ref items);
@@ -613,7 +501,7 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnEmployeesRead(ref items);
@@ -662,65 +550,13 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnMaterielsRead(ref items);
 
             return await Task.FromResult(items);
         }
-
-
-        //    // Get all delivery order materials
-        //    var deliveryOrderMateriels = (await GetDeliveryOrderMateriels())
-        //        .ToList();
-
-        //    // Group materials by name
-        //    var groupedMats = unassignedMats
-        //        .GroupBy(m => m.MaterielName)
-        //        .Select(g => new
-        //        {
-        //            MatName = g.Key,
-        //            Materials = g.ToList(),
-        //            TotalQuantityPDRStock = g.Sum(m => m.QuantityPDRStock),
-        //            Type = g.First().Type
-        //        })
-        //        .ToList();
-
-        //    // Calculate assigned quantities for ITSTOCKM (user ID 6)
-        //    var assignedQuantities = unassignedMats
-        //        .SelectMany(m => m.AssignmentMateriels)
-        //        .Where(am => am.Assignment.AssignedTo == 6)
-        //        .GroupBy(am => am.Materiel.MaterielName)
-        //        .ToDictionary(g => g.Key, g => g.Sum(am => am.Qte));
-
-        //    // Build the final result
-        //    var result = new List<MaterialsListViewModel>();
-
-        //    foreach (var group in groupedMats)
-        //    {
-        //        assignedQuantities.TryGetValue(group.MatName, out var assignedQte);
-        //        var availableQte = group.TotalQuantityPDRStock - assignedQte;
-
-        //        if (availableQte > 0)
-        //        {
-        //            result.Add(new MaterialsListViewModel
-        //            {
-        //                MatName = group.MatName,
-        //                Qte = availableQte,
-        //                Mats = group.Materials,
-        //                Type = group.Type,
-        //                DeliveryOrders = deliveryOrderMateriels
-        //                    .Where(dlo => dlo.Materiel.MaterielName == group.MatName)
-        //                    .Select(dlo => dlo.DeliveryOrder)
-        //                    .Distinct()
-        //                    .ToList()
-        //            });
-        //        }
-        //    }
-
-        //    return result;
-        //}
 
         partial void OnMaterielGet(Materiel item);
         partial void OnGetMaterielById(ref IQueryable<Materiel> items);
@@ -798,6 +634,69 @@ namespace ITStockM.Services
             return materiel;
         }
 
+        /// <summary>
+        /// Register a material that was returned but is not part of the assignment (create if missing or update existing quantities).
+        /// Defaults: Type='Unknown', Warranty = 1 year from now.
+        /// </summary>
+        public async Task<Materiel> RegisterReturnedMaterial(string materielName, int qty, string condition)
+        {
+            if (string.IsNullOrWhiteSpace(materielName) || qty <= 0) throw new ArgumentException("Invalid material or quantity");
+
+            var existing = Context.Materiels.FirstOrDefault(m => m.MaterielName == materielName);
+            if (existing == null)
+            {
+                var newMat = new Materiel
+                {
+                    MaterielName = materielName,
+                    Type = "Unknown",
+                    QuantityITStock = 0,
+                    QuantityPDRStock = 0,
+                    IrreparableQuantity = 0,
+                    Repairing_Quantity = 0,
+                    Warranty = DateTime.UtcNow.AddYears(1)
+                };
+
+                // apply returned qty according to condition
+                if (string.Equals(condition, "Good Conditions", StringComparison.OrdinalIgnoreCase))
+                    newMat.QuantityITStock += qty;
+                else if (string.Equals(condition, "Need to be repaired", StringComparison.OrdinalIgnoreCase))
+                    newMat.Repairing_Quantity += qty;
+                else
+                    newMat.IrreparableQuantity += qty;
+
+                Context.Materiels.Add(newMat);
+                Context.SaveChanges();
+
+                // notify
+                _ = Task.Run(async () =>
+                {
+                    if (operationNotificationService != null)
+                        await operationNotificationService.NotifyMaterielCreated(newMat);
+                });
+
+                return newMat;
+            }
+            else
+            {
+                // update existing
+                if (string.Equals(condition, "Good Conditions", StringComparison.OrdinalIgnoreCase))
+                    existing.QuantityITStock += qty;
+                else if (string.Equals(condition, "Need to be repaired", StringComparison.OrdinalIgnoreCase))
+                    existing.Repairing_Quantity += qty;
+                else
+                    existing.IrreparableQuantity += qty;
+
+                Context.SaveChanges();
+
+                _ = Task.Run(async () =>
+                {
+                    if (operationNotificationService != null)
+                        await operationNotificationService.NotifyMaterielUpdated(existing);
+                });
+
+                return existing;
+            }
+        }
 
         partial void OnMaterielUpdated(Materiel item);
         partial void OnAfterMaterielUpdated(Materiel item);
@@ -816,6 +715,10 @@ namespace ITStockM.Services
             }
 
             var entryToUpdate = Context.Entry(itemToUpdate);
+
+            // capture previous totals to detect crossing threshold
+            var previousTotal = itemToUpdate.QuantityITStock + itemToUpdate.QuantityPDRStock;
+
             entryToUpdate.CurrentValues.SetValues(materiel);
             entryToUpdate.State = EntityState.Modified;
 
@@ -823,12 +726,32 @@ namespace ITStockM.Services
 
             OnAfterMaterielUpdated(materiel);
 
-            // Send email notification
+            // Send material updated notification
             _ = Task.Run(async () =>
             {
                 if (operationNotificationService != null)
                     await operationNotificationService.NotifyMaterielUpdated(materiel);
             });
+
+            // Send low-stock notification when crossing the configured threshold (default 10)
+            var threshold = int.TryParse(Environment.GetEnvironmentVariable("LOW_STOCK_THRESHOLD"), out var envThreshold) ? envThreshold : 10;
+            var newTotal = materiel.QuantityITStock + materiel.QuantityPDRStock;
+
+            if (previousTotal >= threshold && newTotal < threshold)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        if (operationNotificationService != null)
+                            await operationNotificationService.NotifyMaterielLowStock(materiel, threshold);
+                    }
+                    catch (Exception ex)
+                    {
+                        // ensure we don't break the main flow
+                    }
+                });
+            }
 
             return materiel;
         }
@@ -868,7 +791,7 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnOffersRead(ref items);
@@ -897,7 +820,7 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnOffersRead(ref items);
@@ -1052,7 +975,7 @@ namespace ITStockM.Services
 
         public async Task<IQueryable<Request>> GetRequests(Query query = null)
         {
-            var items = Context.Requests.AsQueryable();
+            IQueryable<Request> items = Context.Requests.AsQueryable();
 
             items = items.Include(i => i.Employee);
 
@@ -1068,7 +991,7 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnRequestsRead(ref items);
@@ -1081,7 +1004,7 @@ namespace ITStockM.Services
         {
             using var scope = scopeFactory.CreateScope();
             var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
-            var items = ctx.Requests.AsQueryable();
+            IQueryable<Request> items = ctx.Requests.AsQueryable();
 
             items = items.Include(i => i.Employee);
 
@@ -1096,7 +1019,7 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnRequestsRead(ref items);
@@ -1110,7 +1033,7 @@ namespace ITStockM.Services
 
         public async Task<Request> GetRequestById(int id)
         {
-            var items = Context.Requests
+            IQueryable<Request> items = Context.Requests
                               .AsNoTracking()
                               .Where(i => i.Id == id);
 
@@ -1278,7 +1201,7 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnSuppliersRead(ref items);
@@ -1463,7 +1386,7 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnProjectsRead(ref items);
@@ -1490,7 +1413,7 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnProjectsRead(ref items);
@@ -1568,7 +1491,7 @@ namespace ITStockM.Services
                     }
                 }
 
-                ApplyQuery(ref items, query);
+                items = items.ApplyQuery(query);
             }
 
             OnDeliveryOrderMaterielsRead(ref items);

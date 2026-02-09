@@ -1,0 +1,15 @@
+AsteelFlash IT Inventory - Seeded Accounts (email / password)
+
+Role | Email | Password
+Admin | admin@asteelflash.com | admin123
+PDR | john.smith@asteelflash.com | password123
+PDR | emma.white@asteelflash.com | password123
+Purchasing | sarah.johnson@asteelflash.com | password123
+Purchasing | paul.green@asteelflash.com | password123
+IT | mike.davis@asteelflash.com | password123
+Infrastructure | alice.brown@asteelflash.com | password123
+Employee | thomas.miller@asteelflash.com | password123
+
+Notes
+- Seed values come from appsettings.json (Admin*) and DatabaseInitializer.cs (demo users).
+- Seeds run only on first run when the database is empty.

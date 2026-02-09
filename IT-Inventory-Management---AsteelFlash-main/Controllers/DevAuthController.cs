@@ -31,14 +31,14 @@ namespace ITStockM.Controllers
             });
         }
 
-        [Authorize(Roles = "SuperAdmin,Admin")]
+        [Authorize(Roles = "Admin")]
         [HttpGet("admin-check")]
         public IActionResult AdminCheck()
         {
             if (!_env.IsDevelopment())
                 return NotFound();
 
-            return Ok(new { Message = "You are Admin or SuperAdmin", Name = HttpContext.User.Identity?.Name });
+            return Ok(new { Message = "You are Admin", Name = HttpContext.User.Identity?.Name });
         }
     }
 }

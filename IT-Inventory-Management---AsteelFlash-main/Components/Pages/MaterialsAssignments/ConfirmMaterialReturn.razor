@@ -243,6 +243,17 @@
             </div>
         </div>
     }
+
+    <!-- Optional: Other material returned (not part of assignment) -->
+    <div class="form-field">
+        <label class="field-label">Other material returned (optional)</label>
+        <RadzenTextBox @bind-Value="@otherName" Placeholder="Material name (leave blank if none)" Class="field-input" />
+    </div>
+    <div class="form-field">
+        <label class="field-label">Other material quantity</label>
+        <RadzenNumeric @bind-Value="@otherQty" Min="0" Style="width: 150px;" Class="field-input" />
+        <div style="font-size:0.85rem;color:var(--gray-600);margin-top:6px;">If you specify a material name, quantity &gt; 0 will be added to inventory (or created if missing).</div>
+    </div>
 </div>
 
 <div class="form-container">

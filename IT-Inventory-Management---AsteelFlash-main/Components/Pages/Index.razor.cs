@@ -1,5 +1,6 @@
 
 using ITStockM.Models.ITStockManagment;
+using ITStockM.Models.Constants;
 using ITStockM.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
@@ -57,13 +58,16 @@ namespace ITStockM.Components.Pages
 
         protected string userRole;
 
+        // id of current user (set from protected local storage UserSession)
+        protected int userId; 
+
         protected IEnumerable<Models.ViewModels.MaterialsListViewModel> materielsList;
 
         protected async void RedirectPDR()
         {
            
-            var userRole = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.Role;
-            if (userRole == "PDR")
+            var userRoleLocal = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.Role;
+            if (string.Equals(userRoleLocal, UserRoles.PDR, StringComparison.OrdinalIgnoreCase))
             {
                 NavigationManager.NavigateTo("/materials-view-interface-pdr");
             }
@@ -201,7 +205,9 @@ namespace ITStockM.Components.Pages
                                Type = g.First().Type
                            }).Where(nm => nm.Qte < 10);
 
-            userRole = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.Role;
+            var userSession = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value;
+            userRole = userSession.Role;
+            userId = userSession.Id;
 
 
 

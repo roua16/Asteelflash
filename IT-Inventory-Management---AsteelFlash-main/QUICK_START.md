@@ -7,6 +7,14 @@
 - SQL Server (LocalDB or Full)
 - Visual Studio 2022 or VS Code
 
+> macOS users: a helper script is available at `scripts/setup-macos-dotnet.sh` to install the .NET 8 SDK via Homebrew. Run:
+>
+> ```bash
+> bash scripts/setup-macos-dotnet.sh
+> ```
+>
+> Alternatively install from Microsoft: https://dotnet.microsoft.com/download/dotnet/8.0
+
 ### 1. Clone & Restore
 ```powershell
 cd IT-Inventory-Management---AsteelFlash-main

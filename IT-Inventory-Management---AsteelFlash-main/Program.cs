@@ -25,6 +25,7 @@ builder.Services.AddScoped<ITStockManagmentService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<INotificationService, ITStockM.Services.Implementation.NotificationService>();
 builder.Services.AddScoped<IOperationNotificationService, OperationNotificationService>();
+builder.Services.AddScoped<ITStockM.Services.Export.IExportService, ITStockM.Services.Export.ExportService>();
 
 // Health check and SMTP helpers
 builder.Services.AddSingleton<ITStockM.Services.Implementation.SmtpHealthChecker>();
@@ -38,9 +39,19 @@ builder.Services.AddDbContext<ITStockM.Data.ITStockManagmentContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ITStockManagmentConnection"));
 });
 
+// Application services and repositories
+builder.Services.AddApplicationServices();
+
 // Razor Pages and Blazor
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+
+// AutoMapper
+builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
+
+// Swagger/OpenAPI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // Enable detailed Blazor circuit errors in Development for easier debugging
 if (builder.Environment.IsDevelopment())
@@ -97,6 +108,10 @@ if (app.Environment.IsDevelopment())
 {
     // Developer friendly: show detailed exception page and enable Blazor circuit detailed errors
     app.UseDeveloperExceptionPage();
+
+    // Enable Swagger in Development
+    app.UseSwagger();
+    app.UseSwaggerUI();
 
     // In container/local HTTP scenarios, forcing HTTPS can break the app unless TLS is configured.
     app.UseHttpsRedirection();

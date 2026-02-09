@@ -1,0 +1,56 @@
+AsteelFlash IT Inventory — Seed roles, accessibility, and notifications
+
+Roles and default access (seeded accounts):
+
+- Admin
+  - Role constant: Admin
+  - Default seeded account: admin@asteelflash.com
+  - Access: full access to everything, administration pages, materials, assignments, employees, suppliers, projects, offers, requests.
+  - Email notifications: receives all operation notifications by default (SMTP_ADMIN_EMAIL env or AdminEmail in appsettings).
+
+- PDR
+  - Role constant: PDR
+  - Default seeded accounts: john.smith@asteelflash.com, emma.white@asteelflash.com
+  - Access: PDR-related materials view, PDR assignments, purchasing helpers.
+  - Notification recipients for returns/issues: included (PDR emails will receive assignment return issue alerts).
+
+- Purchasing
+  - Role constant: Purchasing
+  - Default seeded accounts: sarah.johnson@asteelflash.com, paul.green@asteelflash.com
+  - Access: purchase requests, suppliers, delivery orders, pending deliveries.
+
+- IT
+  - Role constant: IT
+  - Default seeded account: mike.davis@asteelflash.com
+  - Access: IT inventory, assignment management, infrastructure support; receives assignment return issue alerts.
+
+- Infrastructure
+  - Role constant: Infrastructure
+  - Default seeded account: alice.brown@asteelflash.com
+  - Access: infrastructure requests, approvals, related dashboards.
+
+- Employee
+  - Role constant: Employee
+  - Default seeded account: thomas.miller@asteelflash.com
+  - Access: limited; can request materials and return assignments via Materials Assignments UI.
+
+Email notification behavior (implemented):
+
+- Assignment creation/update/deletion: sent to admin email (existing behavior).
+- Assignment return issues (missing items, damaged / "need to be repaired", irreparable, or items remaining after return):
+  - When employee marks materials as returned (via "Confirm Material Return" dialog), the system detects missing/damaged/remaining items and sends a return-issue email to:
+    - Admin (SMTP_ADMIN_EMAIL or admin@asteelflash.com)
+    - All users with Role == PDR
+    - All users with Role == IT
+  - Recipients are gathered from seeded users (or can be provided explicitly to the notification method).
+
+How to configure test emails (local):
+- Default admin address: set env var SMTP_ADMIN_EMAIL (or use Seed:AdminEmail in appsettings)
+- Optionally set SMTP_PDR_EMAIL and SMTP_IT_EMAIL env vars to specific recipients; otherwise the system finds seeded PDR and IT users and uses their emails.
+
+Notes & usage:
+- Seed demo data is enabled in appsettings.json (Seed:Enabled=true and Seed:DemoData=true) for easier local testing. This will run only on first-run when the database is empty.
+- Sample accounts (passwords = "password123") are created for each role for quick login.
+- Example problematic assignment seeded: a partial return case for testing notifications (see DatabaseInitializer seed logic).
+
+If you want, I can also add an admin UI to view return reports and re-send alerts or export return logs.

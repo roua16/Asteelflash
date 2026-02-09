@@ -1,6 +1,7 @@
 ﻿@page "/archived-requests-page"
 
-<AuthorizeView Roles="SuperAdmin, Admin, Purchasing">
+@using ITStockM.Models.Constants
+<AuthorizeView Roles="@($"{UserRoles.Admin},{UserRoles.Purchasing}")">
     <Authorized>
         
         <PageTitle>Archived Requests</PageTitle>

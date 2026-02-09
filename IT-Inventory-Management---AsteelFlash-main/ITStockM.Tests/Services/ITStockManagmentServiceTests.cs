@@ -1,6 +1,7 @@
 using FluentAssertions;
 using ITStockM.Data;
 using ITStockM.Models.ITStockManagment;
+using ITStockM.Models.Constants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -36,6 +37,7 @@ namespace ITStockM.Tests.Services
                     Email = "john@example.com",
                     Password = "P@ssw0rd!",
                     Post = "Technician",
+                    Role = UserRoles.Employee,
                     PhoneNumber = "1111111111",
                     Service = "IT"
                 },
@@ -46,6 +48,7 @@ namespace ITStockM.Tests.Services
                     Email = "jane@example.com",
                     Password = "P@ssw0rd!",
                     Post = "Manager",
+                    Role = UserRoles.Admin,
                     PhoneNumber = "2222222222",
                     Service = "IT"
                 }
@@ -210,6 +213,7 @@ namespace ITStockM.Tests.Services
                 Email = "john@example.com",
                 Password = "P@ssw0rd!",
                 Post = "Technician",
+                Role = UserRoles.Employee,
                 PhoneNumber = "1111111111",
                 Service = "IT"
             };
@@ -221,6 +225,7 @@ namespace ITStockM.Tests.Services
                 Email = "jane@example.com",
                 Password = "P@ssw0rd!",
                 Post = "Manager",
+                Role = UserRoles.Admin,
                 PhoneNumber = "2222222222",
                 Service = "IT"
             };

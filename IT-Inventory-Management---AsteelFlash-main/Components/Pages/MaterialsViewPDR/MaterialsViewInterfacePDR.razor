@@ -1,7 +1,8 @@
 ﻿@page "/materials-view-interface-pdr"
 
 
-<AuthorizeView Roles="SuperAdmin, Purchasing, PDR">
+@using ITStockM.Models.Constants
+<AuthorizeView Roles="@($"{UserRoles.Admin},{UserRoles.Purchasing},{UserRoles.PDR}")">
     <Authorized>
         <PageTitle>Materials View</PageTitle>
 

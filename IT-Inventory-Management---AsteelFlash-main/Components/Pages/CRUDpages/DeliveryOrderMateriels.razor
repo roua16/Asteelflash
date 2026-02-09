@@ -1,5 +1,6 @@
 @page "/delivery-order-materiels-super-admin"
-<AuthorizeView Roles="SuperAdmin">
+@using ITStockM.Models.Constants
+<AuthorizeView Roles="@UserRoles.Admin">
     <Authorized >
 <PageTitle>DeliveryOrderMateriels</PageTitle>
 <RadzenStack>

@@ -377,8 +377,144 @@
 
     </style>
 
-    <AuthorizeView Roles="SuperAdmin, Admin, Purchasing">
+    <AuthorizeView Roles="Admin,PDR,Purchasing,IT,Infrastructure,Employee">
         <Authorized>
+        @if (userRole == "Employee")
+        {
+            <RadzenCard class="mb-4 rz-shadow-2" Style="border-radius: 12px; border: none;">
+                <div class="dashboard-container">
+                    <div class="dashboard-header">
+                        <div>
+                            <h1 class="dashboard-title">Employee Dashboard</h1>
+                            <p class="dashboard-subtitle">Overview of your assignments and requests</p>
+                        </div>
+                        <div class="dashboard-date">
+                            <RadzenIcon Icon="calendar_today" /> @DateTime.Now.ToString("dddd, MMMM d, yyyy")
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-card-sm">
+                        <div class="kpi-icon bg-primary-light">
+                            <RadzenIcon Icon="assignment_turned_in" />
+                        </div>
+                        <div class="kpi-title">Your Active Assignments</div>
+                        <div class="kpi-value">@(AssignmentMateriel?.Where(a => a.Assignment?.AssignedTo == userId && a.Assignment?.RestoreDate == null).Sum(a => a.Qte) ?? 0)</div>
+                    </div>
+
+                    <div class="kpi-card kpi-card-sm">
+                        <div class="kpi-icon bg-warning-light">
+                            <RadzenIcon Icon="shopping_cart" />
+                        </div>
+                        <div class="kpi-title">Your Pending Requests</div>
+                        <div class="kpi-value">@(topRequests?.Where(r => r.Employee?.Id == userId && r.Status != "Done").Count() ?? 0)</div>
+                    </div>
+
+                    <div class="kpi-card kpi-card-md">
+                        <div class="kpi-title">Recent Activity</div>
+                        <div style="max-height: 350px; overflow-y: auto;">
+                            @foreach (var activity in recentActivity.Where(a =>
+                                (a.AnyData is ITStockM.Models.ITStockManagment.Assignment ea && ea.AssignedTo == userId)
+                                || (a.AnyData is ITStockM.Models.ITStockManagment.Request er && er.Employee?.Id == userId)
+                            ))
+                            {
+                                if (activity.AnyData is ITStockM.Models.ITStockManagment.Assignment ea2)
+                                {
+                                    <div class="activity-item">
+                                        <div class="activity-icon bg-success-light">
+                                            <RadzenIcon Icon="assignment_turned_in" />
+                                        </div>
+                                        <div class="activity-content">
+                                            <div class="activity-title">Assignment</div>
+                                            <div class="activity-description">@assignmentText(ea2)</div>
+                                            <div class="activity-time">
+                                                @if (activity.Date.Date == DateTime.Today.Date)
+                                                {
+                                                    <span>Today at @activity.Date.ToString("h:mm tt")</span>
+                                                }
+                                                else if (activity.Date.Date == DateTime.Today.AddDays(-1).Date)
+                                                {
+                                                    <span>Yesterday at @activity.Date.ToString("h:mm tt")</span>
+                                                }
+                                                else
+                                                {
+                                                    @activity.Date.ToString("MMM dd, yyyy h:mm tt")
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else if (activity.AnyData is ITStockM.Models.ITStockManagment.Request er2)
+                                {
+                                    <div class="activity-item">
+                                        <div class="activity-icon bg-info-light">
+                                            <RadzenIcon Icon="shopping_cart" />
+                                        </div>
+                                        <div class="activity-content">
+                                            <div class="activity-title">Request: @er2.Title</div>
+                                            <div class="activity-description">Status: @er2.Status</div>
+                                            <div class="activity-time">
+                                                @if (activity.Date.Date == DateTime.Today.Date)
+                                                {
+                                                    <span>Today at @activity.Date.ToString("h:mm tt")</span>
+                                                }
+                                                else if (activity.Date.Date == DateTime.Today.AddDays(-1).Date)
+                                                {
+                                                    <span>Yesterday at @activity.Date.ToString("h:mm tt")</span>
+                                                }
+                                                else
+                                                {
+                                                    @activity.Date.ToString("MMM dd, yyyy h:mm tt")
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="kpi-card kpi-card-lg">
+                        <div class="kpi-title">Your Recent Requests</div>
+                        <RadzenDataGrid Data="@(topRequests?.Where(r => r.Employee?.Id == userId) ?? Enumerable.Empty<ITStockM.Models.ITStockManagment.Request>())" TItem="ITStockM.Models.ITStockManagment.Request">
+                            <Columns>
+                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Title" Title="Title" />
+                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="MaterialType" Title="Type" />
+                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Date" Title="Date" FormatString="{0:d}" />
+                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Status" Title="Status">
+                                    <Template Context="data">
+                                        <span class="badge @GetStatusBadgeClass(data.Status ?? "")">@data.Status</span>
+                                    </Template>
+                                </RadzenDataGridColumn>
+                            </Columns>
+                        </RadzenDataGrid>
+                    </div>
+
+                    <div class="kpi-card kpi-card-lg">
+                        <div class="kpi-title">Quick Actions</div>
+                        <RadzenRow Gap="1rem" Class="mt-3">
+                            <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
+                                <a href="/assignments-interface" class="quick-action">
+                                    <div class="quick-action-icon bg-success-light">
+                                        <RadzenIcon Icon="assignment" />
+                                    </div>
+                                    <div class="quick-action-title">My Assignments</div>
+                                </a>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6" SizeLG="4">
+                                <a href="/mission-interface" class="quick-action">
+                                    <div class="quick-action-icon bg-primary-light">
+                                        <RadzenIcon Icon="assignment_return" />
+                                    </div>
+                                    <div class="quick-action-title">Return Materials</div>
+                                </a>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </div>
+                </div>
+            </RadzenCard>
+        }
+        else
+        {
             <RadzenCard class="mb-4 rz-shadow-2" Style="border-radius: 12px; border: none; ">
                 <div class="dashboard-container">
 
@@ -606,7 +742,7 @@
                                     <div class="quick-action-title">View Materials</div>
                                 </a>
                             </RadzenColumn>
-                            @if(userRole == "Admin"){
+@if(userRole == "Admin" || userRole == "Infrastructure"){ 
                                 <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
                                     <a href="/infra-interface" class="quick-action">
                                         <div class="quick-action-icon bg-info-light">
@@ -797,6 +933,7 @@
                 <RadzenButton Disabled Click="@AddUserFromAd">Click to add Users</RadzenButton>
              *@
         </RadzenCard>
+        }
         </Authorized>
         <NotAuthorized>
             @{

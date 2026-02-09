@@ -46,6 +46,8 @@ docker logs itstockm-app --tail 50
 ### ✅ Configuration Updates
 - **appsettings.Development.json**: Added `EmailSettings` section for local `dotnet run`
 - **.env file**: Configured for smtp4dev (`SMTP_SERVER=smtpdev`, `SMTP_PORT=25`)
+
+- **Low stock notifications**: The system will send a low-stock email when a material's total quantity (IT + PDR) drops below a configurable threshold. Set `LOW_STOCK_THRESHOLD` (default 10) to change the threshold. Recipients are taken from `SMTP_PDR_EMAIL` / `SMTP_IT_EMAIL` if set; otherwise seeded users with roles `PDR`, `IT`, or `Admin` will be used.
 - **EmailService.cs**: Dynamic SSL/TLS based on port (465=SSL, 587=STARTTLS, 25=None)
 
 ### ✅ Docker Corrections

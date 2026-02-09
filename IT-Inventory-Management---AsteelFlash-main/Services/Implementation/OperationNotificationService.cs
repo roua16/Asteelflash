@@ -12,13 +12,16 @@ namespace ITStockM.Services.Implementation
         private readonly IEmailService _emailService;
         private readonly ILogger<OperationNotificationService> _logger;
         private readonly string _adminEmail;
+        private readonly Data.ITStockManagmentContext _context;
 
         public OperationNotificationService(
             IEmailService emailService,
-            ILogger<OperationNotificationService> logger)
+            ILogger<OperationNotificationService> logger,
+            Data.ITStockManagmentContext context)
         {
             _emailService = emailService;
             _logger = logger;
+            _context = context;
             _adminEmail = Environment.GetEnvironmentVariable("SMTP_ADMIN_EMAIL") ?? "admin@asteelflash.com";
         }
 
@@ -121,29 +124,116 @@ namespace ITStockM.Services.Implementation
             }
         }
 
+        public async Task NotifyMaterielDeleted(Materiel materiel, string? performedBy = null)
+        {
+            try
+            {
+                var subject = "🗑️ Material Deleted";
+                var body = BuildDeleteEmail("Material", materiel.Id.ToString(), performedBy);
+                await SendNotificationAsync(subject, body, "Materiel Deleted", materiel.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send materiel deleted notification for MaterielId={Id}", materiel.Id);
+            }
+        }
+
         private string BuildMaterielEmail(string action, Materiel materiel, string? performedBy)
         {
             return $@"
             <html>
             <body style='font-family: Arial, sans-serif; padding: 20px;'>
                 <div style='max-width: 600px; margin: 0 auto; background: #f9f9f9; border-radius: 10px; padding: 20px;'>
-                    <h2 style='color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px;'>
+                    <h2 style='color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;'>
                         Material {action.ToUpper()}
                     </h2>
                     <table style='width: 100%; border-collapse: collapse;'>
                         <tr><td style='padding: 8px; font-weight: bold;'>Material ID:</td><td style='padding: 8px;'>{materiel.Id}</td></tr>
-                        <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Name:</td><td style='padding: 8px;'>{materiel.MaterielName}</td></tr>
+                        <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Name:</td><td style='padding: 8px;'>{System.Net.WebUtility.HtmlEncode(materiel.MaterielName)}</td></tr>
                         <tr><td style='padding: 8px; font-weight: bold;'>Type:</td><td style='padding: 8px;'>{materiel.Type}</td></tr>
                         <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Serial Number:</td><td style='padding: 8px;'>{materiel.SerialNumber ?? "N/A"}</td></tr>
                         <tr><td style='padding: 8px; font-weight: bold;'>IT Stock Qty:</td><td style='padding: 8px;'>{materiel.QuantityITStock}</td></tr>
                         <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>PDR Stock Qty:</td><td style='padding: 8px;'>{materiel.QuantityPDRStock}</td></tr>
-                        <tr><td style='padding: 8px; font-weight: bold;'>Warranty Until:</td><td style='padding: 8px;'>{materiel.Warranty:yyyy-MM-dd}</td></tr>
+                        <tr><td style='padding: 8px; font-weight: bold;'>Irreparable Qty:</td><td style='padding: 8px;'>{materiel.IrreparableQuantity}</td></tr>
+                        <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Repairing Qty:</td><td style='padding: 8px;'>{materiel.Repairing_Quantity}</td></tr>
+                        <tr><td style='padding: 8px; font-weight: bold;'>Warranty:</td><td style='padding: 8px;'>{materiel.Warranty:yyyy-MM-dd}</td></tr>
                     </table>
                     {GetPerformedBySection(performedBy)}
                     {GetFooter()}
                 </div>
             </body>
             </html>";
+        }
+
+
+        // New low stock notifier
+        public async Task NotifyMaterielLowStock(Materiel materiel, int threshold, string? performedBy = null)
+        {
+            try
+            {
+                var subject = $"⚠️ Low Stock Alert: {materiel.MaterielName}";
+                var body = BuildLowStockEmail(materiel, threshold, performedBy);
+
+                // Build recipient list from env vars or seeded employees
+                var recipientsList = new List<string>();
+                var pdrEmail = Environment.GetEnvironmentVariable("SMTP_PDR_EMAIL");
+                var itEmail = Environment.GetEnvironmentVariable("SMTP_IT_EMAIL");
+
+                if (!string.IsNullOrWhiteSpace(pdrEmail)) recipientsList.Add(pdrEmail);
+                if (!string.IsNullOrWhiteSpace(itEmail)) recipientsList.Add(itEmail);
+
+                if (!recipientsList.Any())
+                {
+                    // Query seeded employees with roles PDR/IT/Admin
+                    var employees = _context.Employees.Where(e => e.Role == Models.Constants.UserRoles.PDR || e.Role == Models.Constants.UserRoles.IT || e.Role == Models.Constants.UserRoles.Admin)
+                                        .Select(e => e.Email)
+                                        .Where(e => !string.IsNullOrWhiteSpace(e))
+                                        .Distinct()
+                                        .ToList();
+
+                    recipientsList.AddRange(employees);
+                }
+
+                if (!recipientsList.Any())
+                {
+                    recipientsList.Add(_adminEmail);
+                }
+
+                recipientsList = recipientsList.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+                _logger.LogInformation("Sending low stock notification to: {Recipients} for MaterielId={MaterielId}", string.Join(',', recipientsList), materiel.Id);
+                await _emailService.SendEmailToMultipleAsync(recipientsList, subject, body);
+                _logger.LogInformation("Low stock notification sent successfully for MaterielId={MaterielId}", materiel.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send low stock notification for MaterielId={Id}", materiel.Id);
+            }
+        }
+
+        private string BuildLowStockEmail(Materiel materiel, int threshold, string? performedBy)
+        {
+            var total = materiel.QuantityITStock + materiel.QuantityPDRStock;
+            return $@"
+                <html>
+                <body style='font-family: Arial, sans-serif; padding: 20px;'>
+                    <div style='max-width: 600px; margin: 0 auto; background: #fff9e6; border-radius: 10px; padding: 20px;'>
+                        <h2 style='color: #e67e22; border-bottom: 2px solid #e67e22; padding-bottom: 10px;'>
+                            Low Stock Alert: {System.Net.WebUtility.HtmlEncode(materiel.MaterielName)}
+                        </h2>
+                        <table style='width: 100%; border-collapse: collapse;'>
+                            <tr><td style='padding: 8px; font-weight: bold;'>Material ID:</td><td style='padding: 8px;'>{materiel.Id}</td></tr>
+                            <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Name:</td><td style='padding: 8px;'>{System.Net.WebUtility.HtmlEncode(materiel.MaterielName)}</td></tr>
+                            <tr><td style='padding: 8px; font-weight: bold;'>IT Stock Qty:</td><td style='padding: 8px;'>{materiel.QuantityITStock}</td></tr>
+                            <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>PDR Stock Qty:</td><td style='padding: 8px;'>{materiel.QuantityPDRStock}</td></tr>
+                            <tr><td style='padding: 8px; font-weight: bold;'>Total Available:</td><td style='padding: 8px;'>{total}</td></tr>
+                            <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Threshold:</td><td style='padding: 8px;'>{threshold}</td></tr>
+                        </table>
+                        {GetPerformedBySection(performedBy)}
+                        {GetFooter()}
+                    </div>
+                </body>
+                </html>";
         }
 
         #endregion
@@ -483,6 +573,67 @@ namespace ITStockM.Services.Implementation
             _logger.LogInformation("Sending operation notification: {Operation} for EntityId={EntityId}", operation, entityId);
             await _emailService.SendEmailAsync(_adminEmail, subject, body);
             _logger.LogInformation("Operation notification sent successfully: {Operation}", operation);
+        }
+
+        /// <summary>
+        /// Notify a list of recipients about an assignment return issue (missing/damaged materials, etc.)
+        /// </summary>
+        public async Task NotifyAssignmentReturnIssue(Assignment assignment, string issueDetails, IEnumerable<string>? recipients = null)
+        {
+            try
+            {
+                var subject = "⚠️ Assignment Return Issue - Action Required";
+
+                var body = $@"
+                <html>
+                <body style='font-family: Arial, sans-serif; padding: 20px;'>
+                    <div style='max-width: 600px; margin: 0 auto; background: #fff; border-radius: 10px; padding: 20px;'>
+                        <h2 style='color: #e74c3c; border-bottom: 2px solid #e74c3c; padding-bottom: 10px;'>
+                            Assignment Return Issue
+                        </h2>
+                        <table style='width: 100%; border-collapse: collapse;'>
+                            <tr><td style='padding: 8px; font-weight: bold;'>Assignment ID:</td><td style='padding: 8px;'>{assignment.Id}</td></tr>
+                            <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Assigned To (ID):</td><td style='padding: 8px;'>{assignment.AssignedTo}</td></tr>
+                            <tr><td style='padding: 8px; font-weight: bold;'>Date:</td><td style='padding: 8px;'>{assignment.Date:yyyy-MM-dd HH:mm}</td></tr>
+                            <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Description:</td><td style='padding: 8px;'>{assignment.Descipriton ?? "N/A"}</td></tr>
+                        </table>
+                        <div style='margin-top:15px; padding: 10px; background: #fff; border-left: 4px solid #e74c3c;'>
+                            <strong>Issue Details:</strong>
+                            <pre style='white-space: pre-wrap; font-family: inherit; background: #fafafa; padding: 10px; border-radius: 6px;'>{System.Net.WebUtility.HtmlEncode(issueDetails)}</pre>
+                        </div>
+                        {GetFooter()}
+                    </div>
+                </body>
+                </html>";
+
+                // Build final recipient list: explicit recipients + env fallback
+                var recipientsList = new List<string>();
+
+                if (recipients != null)
+                    recipientsList.AddRange(recipients.Where(r => !string.IsNullOrWhiteSpace(r)));
+
+                var pdrEmail = Environment.GetEnvironmentVariable("SMTP_PDR_EMAIL");
+                var itEmail = Environment.GetEnvironmentVariable("SMTP_IT_EMAIL");
+
+                if (!string.IsNullOrWhiteSpace(pdrEmail)) recipientsList.Add(pdrEmail);
+                if (!string.IsNullOrWhiteSpace(itEmail)) recipientsList.Add(itEmail);
+
+                // Ensure at least admin is included
+                if (!recipientsList.Any())
+                {
+                    recipientsList.Add(_adminEmail);
+                }
+
+                recipientsList = recipientsList.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+                _logger.LogInformation("Sending assignment return issue notification to: {Recipients}", string.Join(',', recipientsList));
+                await _emailService.SendEmailToMultipleAsync(recipientsList, subject, body);
+                _logger.LogInformation("Assignment return issue notifications sent successfully for AssignmentId={AssignmentId}", assignment.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send assignment return issue notification for AssignmentId={Id}", assignment.Id);
+            }
         }
 
         #endregion

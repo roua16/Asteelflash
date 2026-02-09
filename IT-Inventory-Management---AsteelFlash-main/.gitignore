@@ -363,3 +363,31 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# LaTeX build artifacts and generated outputs
+# Ignore compiled and auxiliary files created by LaTeX toolchains
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.nav
+*.snm
+*.vrb
+*.bbl
+*.blg
+*.run.xml
+*.tex~
+*.pdf
+
+# LaTeX build directories
+_build/
+latex-build/
+
+# Ignore minted/pygments generated dirs
+_minted-
+

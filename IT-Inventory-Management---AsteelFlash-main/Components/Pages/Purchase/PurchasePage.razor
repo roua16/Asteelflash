@@ -1,6 +1,7 @@
 ﻿@page "/purchase-page"
 
-<AuthorizeView Roles="SuperAdmin,  Purchasing">
+@using ITStockM.Models.Constants
+<AuthorizeView Roles="@($"{UserRoles.Admin},{UserRoles.Purchasing}")">
     <Authorized>
 
 

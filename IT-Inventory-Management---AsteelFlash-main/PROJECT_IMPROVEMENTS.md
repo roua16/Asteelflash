@@ -3,6 +3,13 @@
 ## Overview
 This document summarizes all improvements made to the IT Stock Management system to enhance code quality, scalability, and maintainability.
 
+**Recent changes included:**
+- Added a `global.json` to pin .NET SDK to 8.0.100 ✅
+- Added a GitHub Actions workflow to build & test on .NET 8 ✅
+- Added `scripts/setup-macos-dotnet.sh` to simplify SDK setup on macOS ✅
+- Introduced a generic `IRepository<T>` + `EfRepository<T>` and a sample `IMaterielRepository` implementation ✅
+
+
 ## 📁 Project Structure Improvements
 
 ### Clean Architecture Implementation

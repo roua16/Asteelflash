@@ -1,0 +1,15 @@
+using System;
+
+namespace ITStockM.DTOs
+{
+    public class DeliveryOrderDto
+    {
+        public string DeleveryOrderNumber { get; set; }
+        public string? OrderNumber { get; set; }
+        public string? Descriptoin { get; set; }
+        public string? SupplierName { get; set; }
+        public DateTime Date { get; set; }
+        public DateTime? DeliveryDate { get; set; }
+        public int EmployeeId { get; set; }
+    }
+}

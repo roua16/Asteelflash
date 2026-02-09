@@ -15,6 +15,7 @@ namespace ITStockM.Services.Interfaces
         // Materiel notifications
         Task NotifyMaterielCreated(Materiel materiel, string? performedBy = null);
         Task NotifyMaterielUpdated(Materiel materiel, string? performedBy = null);
+        Task NotifyMaterielDeleted(Materiel materiel, string? performedBy = null);
 
         // DeliveryOrder notifications
         Task NotifyDeliveryOrderCreated(DeliveryOrder deliveryOrder, string? performedBy = null);
@@ -35,5 +36,11 @@ namespace ITStockM.Services.Interfaces
         Task NotifySupplierCreated(Supplier supplier, string? performedBy = null);
         Task NotifySupplierUpdated(Supplier supplier, string? performedBy = null);
         Task NotifySupplierDeleted(string supplierName, string? performedBy = null);
+
+        // Assignment return issue notification (e.g., missing/damaged returns)
+        Task NotifyAssignmentReturnIssue(Assignment assignment, string issueDetails, IEnumerable<string>? recipients = null);
+
+        // Low stock notification
+        Task NotifyMaterielLowStock(Materiel materiel, int threshold, string? performedBy = null);
     }
 }

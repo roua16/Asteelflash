@@ -7,6 +7,7 @@ using Moq;
 using System.Net;
 using System.Net.Mail;
 using Xunit;
+using MimeKit;
 
 using EmailServiceImpl = ITStockM.Services.Implementation.EmailService;
 
@@ -58,17 +59,38 @@ namespace ITStockM.Tests.Services
         public async Task SendAdminNotificationAsync_ShouldFormatEmailCorrectly()
         {
             // Arrange
-            _mockEmailSettings.Setup(x => x["AdminEmail"]).Returns("not-an-email");
+            var originalAdmin = Environment.GetEnvironmentVariable("SMTP_ADMIN_EMAIL");
+            var originalFrom = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL");
+            var originalPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
+            var originalServer = Environment.GetEnvironmentVariable("SMTP_SERVER");
+            var originalPort = Environment.GetEnvironmentVariable("SMTP_PORT");
 
-            var service = new EmailServiceImpl(_mockConfiguration.Object, _mockLogger.Object);
-            var action = "Test Action";
-            var details = "Test Details";
-            var performedBy = "Test User";
+            Environment.SetEnvironmentVariable("SMTP_ADMIN_EMAIL", "not-an-email@@");
+            Environment.SetEnvironmentVariable("SMTP_FROM_EMAIL", "test@example.com");
+            Environment.SetEnvironmentVariable("SMTP_PASSWORD", "");
+            Environment.SetEnvironmentVariable("SMTP_SERVER", "localhost");
+            Environment.SetEnvironmentVariable("SMTP_PORT", "25");
 
-            // Act & Assert
-            // Force a fast failure before any SMTP/network activity by using an invalid admin email.
-            await Assert.ThrowsAsync<FormatException>(() =>
-                service.SendAdminNotificationAsync(action, details, performedBy));
+            try
+            {
+                var service = new EmailServiceImpl(_mockConfiguration.Object, _mockLogger.Object);
+                var action = "Test Action";
+                var details = "Test Details";
+                var performedBy = "Test User";
+
+                // Act & Assert
+                // Force a fast failure before any SMTP/network activity by using an invalid admin email.
+                await Assert.ThrowsAsync<ParseException>(() =>
+                    service.SendAdminNotificationAsync(action, details, performedBy));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("SMTP_ADMIN_EMAIL", originalAdmin);
+                Environment.SetEnvironmentVariable("SMTP_FROM_EMAIL", originalFrom);
+                Environment.SetEnvironmentVariable("SMTP_PASSWORD", originalPassword);
+                Environment.SetEnvironmentVariable("SMTP_SERVER", originalServer);
+                Environment.SetEnvironmentVariable("SMTP_PORT", originalPort);
+            }
         }
     }
 }

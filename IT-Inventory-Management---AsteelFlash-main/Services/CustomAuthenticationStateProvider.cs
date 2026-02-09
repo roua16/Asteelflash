@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using ITStockM.Models.Constants;
 using ITStockM.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
@@ -33,14 +34,28 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
             if (user == null)
                 return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
 
+            var roleCandidate = !string.IsNullOrWhiteSpace(user.Role) ? user.Role : user.Post;
+            var role = UserRoles.NormalizeRole(roleCandidate);
+
+            // Some pages read the stored session role directly; keep it normalized.
+            if (!string.Equals(userSession.Role, role, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(userSession.FullName, user.FullName, StringComparison.Ordinal) ||
+                userSession.Id != user.Id)
+            {
+                userSession.Role = role;
+                userSession.FullName = user.FullName;
+                userSession.Id = user.Id;
+                await _localStorage.SetAsync("UserSession", userSession);
+            }
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Email),
-                new Claim(ClaimTypes.Role, user.Post),
+                new Claim(ClaimTypes.Role, role),
                 new Claim("FullName", user.FullName)
             };
 
-            _logger?.LogInformation("AuthenticationState built for {Email} with role {Role}", user.Email, user.Post);
+            _logger?.LogInformation("AuthenticationState built for {Email} with role {Role}", user.Email, role);
 
             var identity = new ClaimsIdentity(claims, "CustomAuth");
             return new AuthenticationState(new ClaimsPrincipal(identity));
@@ -58,10 +73,12 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         if (userSession != null)
         {
             await _localStorage.SetAsync("UserSession", userSession);
+
+            var normalizedRole = UserRoles.NormalizeRole(userSession.Role);
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, userSession.Email),
-                new Claim(ClaimTypes.Role, userSession.Role),
+                new Claim(ClaimTypes.Role, normalizedRole),
                 new Claim("FullName", userSession.FullName)
 
             };
@@ -72,7 +89,9 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
             await _localStorage.DeleteAsync("UserSession");
             claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
         }
-        _logger?.LogInformation("UpdateAuthenticationState: {Email} role={Role}", userSession?.Email, userSession?.Role); NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(claimsPrincipal)));
+
+        _logger?.LogInformation("UpdateAuthenticationState: {Email} role={Role}", userSession?.Email, userSession?.Role);
+        NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(claimsPrincipal)));
     }
 }
 

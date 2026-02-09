@@ -389,7 +389,7 @@
 
     <RadzenPanelMenu>
         <!-- Overview Section -->
-        <AuthorizeView Roles="SuperAdmin, Admin, Purchasing">
+        <AuthorizeView Roles="Admin,PDR,Purchasing,IT,Infrastructure,Employee">
             <Authorized>
                 <div class="menu-category">Overview</div>
                 <RadzenPanelMenuItem Text="Dashboard" Icon="dashboard" Path="" />
@@ -399,46 +399,51 @@
         <!-- Inventory Section -->
         <div class="menu-category">Inventory</div>
 
-        <AuthorizeView Roles="SuperAdmin, Admin, Purchasing">
+        <AuthorizeView Roles="Admin,Purchasing,IT">
             <Authorized>
                 <RadzenPanelMenuItem Text="Materials View" Icon="inventory_2" Path="/materials-view-interface" />
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView Roles="SuperAdmin,  PDR, Purchasing">
+        <AuthorizeView Roles="Admin,PDR,Purchasing">
             <Authorized>
                 <RadzenPanelMenuItem Text="Materials View (PDR)" Icon="inventory_2" Path="/materials-view-interface-pdr" />
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView Roles="SuperAdmin, Admin">
+        <AuthorizeView Roles="Admin,IT,Infrastructure,Employee">
             <Authorized>
                 <RadzenPanelMenuItem Text="Materials Assignments" Icon="assignment" Path="assignments-interface" />
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Admin,IT,Infrastructure">
+            <Authorized>
                 <RadzenPanelMenuItem Text="Infrastructure" Icon="memory" Path="/infra-interface" />
             </Authorized>
         </AuthorizeView>
 
         <!-- Purchasing Section -->
-        <AuthorizeView Roles="SuperAdmin , Purchasing, PDR">
+        <AuthorizeView Roles="Admin,Purchasing,PDR">
             <Authorized>
                 <div class="menu-category">Purchasing</div>
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView Roles="SuperAdmin,  Purchasing">
+        <AuthorizeView Roles="Admin,Purchasing">
             <Authorized>
                 <RadzenPanelMenuItem Text="Purchase Requests" Icon="shopping_cart" Path="/purchase-page" />
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView Roles="SuperAdmin,  Purchasing, PDR">
+        <AuthorizeView Roles="Admin,Purchasing,PDR">
             <Authorized>
                 <RadzenPanelMenuItem Text="Suppliers" Icon="storefront" Path="suppliers" />
                 <RadzenPanelMenuItem Text="Add Delivery Orders" Icon="add_circle" Path="delivery-order" />
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView Roles="SuperAdmin,  Purchasing, PDR">
+        <AuthorizeView Roles="Admin,Purchasing,PDR">
             <Authorized>
                 <RadzenPanelMenuItem Text="Pending Deliveries" Icon="local_shipping" Path="/pending-deliveries" />
 
@@ -462,7 +467,7 @@
         </AuthorizeView>
 
         <!-- Archives Section -->
-        <AuthorizeView Roles="SuperAdmin, Admin, Purchasing">
+        <AuthorizeView Roles="Admin,Purchasing">
             <Authorized>
                 <div class="menu-category">Archives</div>
                 
@@ -470,13 +475,13 @@
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView Roles="SuperAdmin, Admin">
+        <AuthorizeView Roles="Admin">
             <Authorized>
                 <RadzenPanelMenuItem Text="Archived Assignments" Icon="archive" Path="/assignments-archive" />
                 <RadzenPanelMenuItem Text="Archived Missions" Icon="archive" Path="/archived-missions" />
             </Authorized>
         </AuthorizeView>
-        <AuthorizeView Roles="SuperAdmin">
+        <AuthorizeView Roles="Admin">
             <Authorized>
                 <div class="menu-category">Administration</div>
                 <RadzenPanelMenuItem Text="Materials" Icon="category" Path="/materiels-super-admin" />

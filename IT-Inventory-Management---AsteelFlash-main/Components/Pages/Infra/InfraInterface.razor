@@ -1,7 +1,7 @@
 ﻿@page "/infra-interface"
-@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "SuperAdmin,Admin")]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,IT,Infrastructure")]
 
-<AuthorizeView Context="authContext" Roles="SuperAdmin,Admin">
+<AuthorizeView Context="authContext" Roles="Admin,IT,Infrastructure">
     <Authorized>
         <PageTitle>Infrastructure Management</PageTitle>
 
@@ -534,19 +534,26 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <tr style="border-bottom: 1px solid #e0e0e0;">
-                                                            <td style="padding: 12px; text-align: left;">@request.Title
-                                                            </td>
-                                                            <td style="padding: 12px; text-align: left;">
-                                                                @request.MaterialType</td>
-                                                            <td style="padding: 12px; text-align: left;">
-                                                                <RadzenBadge
-                                                                    BadgeStyle="@GetStatusStyle(request.Status)"
-                                                                    Shade="Shade.Lighter"
-                                                                    Style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500;"
-                                                                    Text="@request.Status" />
-                                                            </td>
-                                                        </tr>
+                                                        @if (request != null)
+                                                        {
+                                                            <tr style="border-bottom: 1px solid #e0e0e0;">
+                                                                <td style="padding: 12px; text-align: left;">@request.Title</td>
+                                                                <td style="padding: 12px; text-align: left;">@request.MaterialType</td>
+                                                                <td style="padding: 12px; text-align: left;">
+                                                                    <RadzenBadge
+                                                                        BadgeStyle="@GetStatusStyle(request.Status)"
+                                                                        Shade="Shade.Lighter"
+                                                                        Style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500;"
+                                                                        Text="@request.Status" />
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                        else
+                                                        {
+                                                            <tr>
+                                                                <td colspan="3" style="padding: 12px; text-align: left; color: #64748b;">No request selected.</td>
+                                                            </tr>
+                                                        }
                                                     </tbody>
                                                 </table>
                                             </RadzenCard>

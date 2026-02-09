@@ -26,6 +26,8 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         protected int qte = 1;
 
         protected string description;
+        protected string otherName;
+        protected int otherQty;
 
         public async  void Submit()
         {
@@ -35,7 +37,9 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             {
                 { "selectedOption", selectedOption },
                 { "qte",  qte },
-                { "description", description }
+                { "description", description },
+                { "otherName", otherName },
+                { "otherQty", otherQty }
             };
            
             DialogService.Close(result);

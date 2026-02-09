@@ -1,6 +1,7 @@
 ﻿@page "/assignments-interface"
 
-<AuthorizeView Roles="SuperAdmin, Admin">
+@using ITStockM.Models.Constants
+<AuthorizeView Roles="Admin,IT,Infrastructure,Employee">
     <Authorized>
         <PageTitle>Assignments Interface</PageTitle>
 

@@ -58,7 +58,7 @@ namespace ITStockM.Components.Pages.Infra
         //Offers
         protected RadzenDataGrid<Models.ViewModels.InfraViewModel> grid1;
 
-        protected Models.ITStockManagment.Request request;
+        protected Models.ITStockManagment.Request request = new();
         protected IEnumerable<Models.ITStockManagment.Offer> offers;
 
         protected IEnumerable<Models.ViewModels.InfraViewModel> groupedOffers;
