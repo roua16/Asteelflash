@@ -14,6 +14,9 @@ public class AssignmentService : IAssignmentService
     private readonly IAssignmentRepository assignmentRepository;
     private readonly IOperationNotificationService? operationNotificationService;
 
+    // Semaphore to serialize access to repository/DbContext to avoid concurrent EF operations in Blazor Server
+    private readonly System.Threading.SemaphoreSlim dbSemaphore = new System.Threading.SemaphoreSlim(1, 1);
+
     public AssignmentService(IAssignmentRepository assignmentRepository, IOperationNotificationService? operationNotificationService = null)
     {
         this.assignmentRepository = assignmentRepository;
@@ -43,20 +46,36 @@ public class AssignmentService : IAssignmentService
 
     public async Task<Assignment?> GetAssignmentById(int id)
     {
-        var item = await assignmentRepository.GetByIdWithRelatedAsync(id);
-        return item;
+        await dbSemaphore.WaitAsync();
+        try
+        {
+            var item = await assignmentRepository.GetByIdWithRelatedAsync(id);
+            return item;
+        }
+        finally
+        {
+            dbSemaphore.Release();
+        }
     }
 
     public async Task<Assignment> CreateAssignment(Assignment assignment)
     {
-        var existingItem = assignmentRepository.Query().FirstOrDefault(i => i.Id == assignment.Id);
-        if (existingItem != null)
+        await dbSemaphore.WaitAsync();
+        try
         {
-            throw new Exception("Item already available");
-        }
+            var existingItem = assignmentRepository.Query().FirstOrDefault(i => i.Id == assignment.Id);
+            if (existingItem != null)
+            {
+                throw new Exception("Item already available");
+            }
 
-        await assignmentRepository.AddAsync(assignment);
-        await assignmentRepository.SaveChangesAsync();
+            await assignmentRepository.AddAsync(assignment);
+            await assignmentRepository.SaveChangesAsync();
+        }
+        finally
+        {
+            dbSemaphore.Release();
+        }
 
         _ = Task.Run(async () =>
         {
@@ -69,17 +88,25 @@ public class AssignmentService : IAssignmentService
 
     public async Task<Assignment> UpdateAssignment(int id, Assignment assignment)
     {
+        await dbSemaphore.WaitAsync();
+        try
+        {
             var itemToUpdate = assignmentRepository.Query().FirstOrDefault(i => i.Id == assignment.Id);
 
-        var entryToUpdate = assignmentRepository is EfRepository<Assignment> ef ? ef.Query().FirstOrDefault(i => i.Id == assignment.Id) : itemToUpdate;
+            var entryToUpdate = assignmentRepository is EfRepository<Assignment> ef ? ef.Query().FirstOrDefault(i => i.Id == assignment.Id) : itemToUpdate;
 
-        // Use repository's context to update values
-        var ctx = (assignmentRepository as dynamic)?._context as Microsoft.EntityFrameworkCore.DbContext;
-        var entry = ctx.Entry(itemToUpdate);
-        entry.CurrentValues.SetValues(assignment);
-        entry.State = EntityState.Modified;
+            // Use repository's context to update values
+            var ctx = (assignmentRepository as dynamic)?._context as Microsoft.EntityFrameworkCore.DbContext;
+            var entry = ctx.Entry(itemToUpdate);
+            entry.CurrentValues.SetValues(assignment);
+            entry.State = EntityState.Modified;
 
-        await assignmentRepository.SaveChangesAsync();
+            await assignmentRepository.SaveChangesAsync();
+        }
+        finally
+        {
+            dbSemaphore.Release();
+        }
 
         _ = Task.Run(async () =>
         {
@@ -92,17 +119,25 @@ public class AssignmentService : IAssignmentService
 
     public async Task<Assignment> DeleteAssignment(int id)
     {
+        await dbSemaphore.WaitAsync();
+        try
+        {
             var itemToDelete = assignmentRepository.QueryWithIncludes().FirstOrDefault(i => i.Id == id);
 
-        assignmentRepository.Remove(itemToDelete);
-        await assignmentRepository.SaveChangesAsync();
+            assignmentRepository.Remove(itemToDelete);
+            await assignmentRepository.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
+            _ = Task.Run(async () =>
+            {
+                if (operationNotificationService != null)
+                    await operationNotificationService.NotifyAssignmentDeleted(id);
+            });
+
+            return itemToDelete;
+        }
+        finally
         {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyAssignmentDeleted(id);
-        });
-
-        return itemToDelete;
+            dbSemaphore.Release();
+        }
     }
 }

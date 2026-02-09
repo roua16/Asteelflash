@@ -23,6 +23,9 @@ namespace ITStockM.Services
 {
     public partial class ITStockManagmentService
     {
+        // Short-term: protect shared DbContext access with an async semaphore to prevent concurrent EF operations in Blazor Server.
+        private readonly System.Threading.SemaphoreSlim dbSemaphore = new System.Threading.SemaphoreSlim(1, 1);
+
         ITStockManagmentContext Context
         {
             get
@@ -156,31 +159,39 @@ namespace ITStockM.Services
 
         public async Task<IQueryable<AssignmentMateriel>> GetAssignmentMateriels(Query query = null)
         {
-            var items = Context.AssignmentMateriels.AsQueryable();
-
-            items = items.Include(i => i.Assignment);
-            items = items.Include(i => i.Materiel);
-            items = items.Include(i => i.Assignment.Employee);
-            items = items.Include(i => i.Assignment.Project);
-            items = items.Include(i => i.Assignment.AssignedEmployee);
-
-            if (query != null)
+            await dbSemaphore.WaitAsync();
+            try
             {
-                if (!string.IsNullOrEmpty(query.Expand))
+                var items = Context.AssignmentMateriels.AsQueryable();
+
+                items = items.Include(i => i.Assignment);
+                items = items.Include(i => i.Materiel);
+                items = items.Include(i => i.Assignment.Employee);
+                items = items.Include(i => i.Assignment.Project);
+                items = items.Include(i => i.Assignment.AssignedEmployee);
+
+                if (query != null)
                 {
-                    var propertiesToExpand = query.Expand.Split(',');
-                    foreach (var p in propertiesToExpand)
+                    if (!string.IsNullOrEmpty(query.Expand))
                     {
-                        items = items.Include(p.Trim());
+                        var propertiesToExpand = query.Expand.Split(',');
+                        foreach (var p in propertiesToExpand)
+                        {
+                            items = items.Include(p.Trim());
+                        }
                     }
+
+                    items = items.ApplyQuery(query);
                 }
 
-                items = items.ApplyQuery(query);
+                OnAssignmentMaterielsRead(ref items);
+
+                return await Task.FromResult(items);
             }
-
-            OnAssignmentMaterielsRead(ref items);
-
-            return await Task.FromResult(items);
+            finally
+            {
+                dbSemaphore.Release();
+            }
         }
 
         partial void OnAssignmentMaterielGet(AssignmentMateriel item);
@@ -212,24 +223,32 @@ namespace ITStockM.Services
         {
             OnAssignmentMaterielCreated(assignmentmateriel);
 
-            var existingItem = Context.AssignmentMateriels
-                              .Where(i => i.MaterielId == assignmentmateriel.MaterielId && i.AssignmentId == assignmentmateriel.AssignmentId)
-                              .FirstOrDefault();
-
-            if (existingItem != null)
-            {
-                throw new Exception("Item already available");
-            }
-
+            await dbSemaphore.WaitAsync();
             try
             {
-                Context.AssignmentMateriels.Add(assignmentmateriel);
-                Context.SaveChanges();
+                var existingItem = Context.AssignmentMateriels
+                                  .Where(i => i.MaterielId == assignmentmateriel.MaterielId && i.AssignmentId == assignmentmateriel.AssignmentId)
+                                  .FirstOrDefault();
+
+                if (existingItem != null)
+                {
+                    throw new Exception("Item already available");
+                }
+
+                try
+                {
+                    Context.AssignmentMateriels.Add(assignmentmateriel);
+                    Context.SaveChanges();
+                }
+                catch
+                {
+                    Context.Entry(assignmentmateriel).State = EntityState.Detached;
+                    throw;
+                }
             }
-            catch
+            finally
             {
-                Context.Entry(assignmentmateriel).State = EntityState.Detached;
-                throw;
+                dbSemaphore.Release();
             }
 
             OnAfterAssignmentMaterielCreated(assignmentmateriel);
@@ -246,20 +265,28 @@ namespace ITStockM.Services
         {
             OnAssignmentMaterielUpdated(assignmentmateriel);
 
-            var itemToUpdate = Context.AssignmentMateriels
-                              .Where(i => i.MaterielId == assignmentmateriel.MaterielId && i.AssignmentId == assignmentmateriel.AssignmentId)
-                              .FirstOrDefault();
-
-            if (itemToUpdate == null)
+            await dbSemaphore.WaitAsync();
+            try
             {
-                throw new Exception("Item no longer available");
+                var itemToUpdate = Context.AssignmentMateriels
+                                  .Where(i => i.MaterielId == assignmentmateriel.MaterielId && i.AssignmentId == assignmentmateriel.AssignmentId)
+                                  .FirstOrDefault();
+
+                if (itemToUpdate == null)
+                {
+                    throw new Exception("Item no longer available");
+                }
+
+                var entryToUpdate = Context.Entry(itemToUpdate);
+                entryToUpdate.CurrentValues.SetValues(assignmentmateriel);
+                entryToUpdate.State = EntityState.Modified;
+
+                Context.SaveChanges();
             }
-
-            var entryToUpdate = Context.Entry(itemToUpdate);
-            entryToUpdate.CurrentValues.SetValues(assignmentmateriel);
-            entryToUpdate.State = EntityState.Modified;
-
-            Context.SaveChanges();
+            finally
+            {
+                dbSemaphore.Release();
+            }
 
             OnAfterAssignmentMaterielUpdated(assignmentmateriel);
 
@@ -271,35 +298,42 @@ namespace ITStockM.Services
 
         public async Task<AssignmentMateriel> DeleteAssignmentMateriel(int materielid, int assignmentid)
         {
-            var itemToDelete = Context.AssignmentMateriels
-                              .Where(i => i.MaterielId == materielid && i.AssignmentId == assignmentid)
-                              .FirstOrDefault();
-
-            if (itemToDelete == null)
-            {
-                throw new Exception("Item no longer available");
-            }
-
-            OnAssignmentMaterielDeleted(itemToDelete);
-
-
-            Context.AssignmentMateriels.Remove(itemToDelete);
-
+            await dbSemaphore.WaitAsync();
             try
             {
-                Context.SaveChanges();
+                var itemToDelete = Context.AssignmentMateriels
+                                  .Where(i => i.MaterielId == materielid && i.AssignmentId == assignmentid)
+                                  .FirstOrDefault();
+
+                if (itemToDelete == null)
+                {
+                    throw new Exception("Item no longer available");
+                }
+
+                OnAssignmentMaterielDeleted(itemToDelete);
+
+
+                Context.AssignmentMateriels.Remove(itemToDelete);
+
+                try
+                {
+                    Context.SaveChanges();
+                }
+                catch
+                {
+                    Context.Entry(itemToDelete).State = EntityState.Unchanged;
+                    throw;
+                }
+
+                OnAfterAssignmentMaterielDeleted(itemToDelete);
+
+                return itemToDelete;
             }
-            catch
+            finally
             {
-                Context.Entry(itemToDelete).State = EntityState.Unchanged;
-                throw;
+                dbSemaphore.Release();
             }
-
-            OnAfterAssignmentMaterielDeleted(itemToDelete);
-
-            return itemToDelete;
         }
-
         public async Task ExportDeliveryOrdersToExcel(Query query = null, string fileName = null)
         {
             navigationManager.NavigateTo(query != null ? query.ToUrl($"export/itstockmanagment/deliveryorders/excel(fileName='{(!string.IsNullOrEmpty(fileName) ? UrlEncoder.Default.Encode(fileName) : "Export")}')") : $"export/itstockmanagment/deliveryorders/excel(fileName='{(!string.IsNullOrEmpty(fileName) ? UrlEncoder.Default.Encode(fileName) : "Export")}')", true);
