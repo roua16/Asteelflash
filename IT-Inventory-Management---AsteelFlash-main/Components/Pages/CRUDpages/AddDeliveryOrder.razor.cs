@@ -19,9 +19,9 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             deliveryOrder = new Models.ITStockManagment.DeliveryOrder();
 
-            suppliersForSupplierName = await ITStockManagmentService.GetSuppliers();
+            suppliersForSupplierName = await ITStockManagmentService.GetSuppliersList();
 
-            employeesForEmployeeId = await ITStockManagmentService.GetEmployees();
+            employeesForEmployeeId = await ITStockManagmentService.GetEmployeesList();
         }
         protected bool errorVisible;
         protected Models.ITStockManagment.DeliveryOrder deliveryOrder;

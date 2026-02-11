@@ -20,9 +20,9 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             offer = new Models.ITStockManagment.Offer();
 
-            requestsForRequestId = await ITStockManagmentService.GetRequests();
+            requestsForRequestId = await ITStockManagmentService.GetRequestsList();
 
-            suppliersForSupplierName = await ITStockManagmentService.GetSuppliers();
+            suppliersForSupplierName = await ITStockManagmentService.GetSuppliersList();
         }
         protected bool errorVisible;
         protected Models.ITStockManagment.Offer offer;

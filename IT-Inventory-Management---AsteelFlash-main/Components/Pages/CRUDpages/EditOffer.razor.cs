@@ -23,9 +23,9 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             offer = await ITStockManagmentService.GetOfferById(Id);
 
-            requestsForRequestId = await ITStockManagmentService.GetRequests();
+            requestsForRequestId = await ITStockManagmentService.GetRequestsList();
 
-            suppliersForSupplierName = await ITStockManagmentService.GetSuppliers();
+            suppliersForSupplierName = await ITStockManagmentService.GetSuppliersList();
         }
         protected bool errorVisible;
         protected Models.ITStockManagment.Offer offer;

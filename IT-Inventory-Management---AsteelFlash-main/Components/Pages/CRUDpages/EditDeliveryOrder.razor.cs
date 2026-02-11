@@ -22,9 +22,9 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             deliveryOrder = await ITStockManagmentService.GetDeliveryOrderByDeleveryOrderNumber(DeleveryOrderNumber);
 
-            suppliersForSupplierName = await ITStockManagmentService.GetSuppliers();
+            suppliersForSupplierName = await ITStockManagmentService.GetSuppliersList();
 
-            employeesForEmployeeId = await ITStockManagmentService.GetEmployees();
+            employeesForEmployeeId = await ITStockManagmentService.GetEmployeesList();
         }
         protected bool errorVisible;
         protected Models.ITStockManagment.DeliveryOrder deliveryOrder;

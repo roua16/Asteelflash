@@ -139,7 +139,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             var issueDetails = string.Join("\n", issues) + "\n\nNotes:\n" + description;
 
             // collect recipients: Admin + PDR + IT emails from personnel list
-            var employees = (await ITStockManagmentService.GetEmployees()).ToList();
+            var employees = await ITStockManagmentService.GetEmployeesList();
             var recipients = employees.Where(e => e.Role == UserRoles.Admin || e.Role == UserRoles.PDR || e.Role == UserRoles.IT)
                 .Select(e => e.Email)
                 .Where(e => !string.IsNullOrWhiteSpace(e))

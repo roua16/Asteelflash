@@ -26,9 +26,9 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             deliveryOrderMateriel = await ITStockManagmentService.GetDeliveryOrderMaterielByMaterielIdAndDeliveryOrderNumber(MaterielId, DeliveryOrderNumber);
 
-            materielsForMaterielId = await ITStockManagmentService.GetMateriels();
+            materielsForMaterielId = await ITStockManagmentService.GetMaterielsList();
 
-            deliveryOrdersForDeliveryOrderNumber = await ITStockManagmentService.GetDeliveryOrders();
+            deliveryOrdersForDeliveryOrderNumber = await ITStockManagmentService.GetDeliveryOrdersList();
         }
         protected bool errorVisible;
         protected Models.ITStockManagment.DeliveryOrderMateriel deliveryOrderMateriel;

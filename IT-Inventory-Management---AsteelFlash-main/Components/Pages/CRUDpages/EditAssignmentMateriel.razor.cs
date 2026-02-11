@@ -25,9 +25,9 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             assignmentMateriel = await ITStockManagmentService.GetAssignmentMaterielByMaterielIdAndAssignmentId(MaterielId, AssignmentId);
 
-            materielsForMaterielId = await ITStockManagmentService.GetMateriels();
+            materielsForMaterielId = await ITStockManagmentService.GetMaterielsList();
 
-            assignmentsForAssignmentId = await ITStockManagmentService.GetAssignments();
+            assignmentsForAssignmentId = await ITStockManagmentService.GetAssignmentsList();
         }
         protected bool errorVisible;
         protected Models.ITStockManagment.AssignmentMateriel assignmentMateriel;

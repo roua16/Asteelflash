@@ -32,9 +32,9 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         {
             assignment = new Assignment();
 
-            projects = await ITStockManagmentService.GetProjects();
+            projects = await ITStockManagmentService.GetProjectsList();
             
-            employeesForAssignedBy = await ITStockManagmentService.GetEmployees();
+            employeesForAssignedBy = await ITStockManagmentService.GetEmployeesList();
 
             materiels = (await ITStockManagmentService.GetMateriels()).Where(m =>  m.QuantityITStock != 0).OrderBy(m => m.Warranty).ToList(); 
 
@@ -53,20 +53,20 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
 
 
-        protected List<MatList> listMaterials;
+        protected List<MatList> listMaterials = new();
         protected bool errorVisible;
         protected string errorMsg = "";
 
         protected Assignment assignment;
 
-        protected IEnumerable<Employee> employeesForAssignedBy;
+        protected IEnumerable<Employee> employeesForAssignedBy = new List<Employee>();
 
-        protected IEnumerable<Project> projects;
+        protected IEnumerable<Project> projects = new List<Project>();
 
-        protected List<Materiel> materiels;
+        protected List<Materiel> materiels = new();
 
-        private List<RadzenDropDownDataGrid<Materiel>> myDropDowns;
-        protected List<Materiel?> previouslySelectedMateriels;
+        private List<RadzenDropDownDataGrid<Materiel>> myDropDowns = new();
+        protected List<Materiel?> previouslySelectedMateriels = new();
 
 
         protected void addMaterial()

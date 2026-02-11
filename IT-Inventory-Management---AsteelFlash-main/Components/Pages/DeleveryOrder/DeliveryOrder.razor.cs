@@ -49,7 +49,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
         protected override async Task OnInitializedAsync()
         {
             deliveryOrder = new Models.ITStockManagment.DeliveryOrder();
-            suppliersForSupplierName = (await ITStockManagmentService.GetSuppliers()).ToList();
+            suppliersForSupplierName = await ITStockManagmentService.GetSuppliersList();
 
 
             MaterielsList = new List<MaterielViewModel>

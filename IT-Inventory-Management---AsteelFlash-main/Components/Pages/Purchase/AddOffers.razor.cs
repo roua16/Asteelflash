@@ -36,7 +36,7 @@ namespace ITStockM.Components.Pages.Purchase
 
             requestTitle = req.Title;
 
-            suppliersForSupplierName = (await ITStockManagmentService.GetSuppliers()).ToList();
+            suppliersForSupplierName = await ITStockManagmentService.GetSuppliersList();
 
         }
         
@@ -75,7 +75,7 @@ namespace ITStockM.Components.Pages.Purchase
             var result = await DialogService.OpenAsync<Supplier.AddSupplier>("", null, options);
             if (result != null)
             {
-                suppliersForSupplierName = (await ITStockManagmentService.GetSuppliers()).ToList();
+                suppliersForSupplierName = await ITStockManagmentService.GetSuppliersList();
             }
         }
     }

@@ -22,11 +22,11 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             assignment = await ITStockManagmentService.GetAssignmentById(Id);
 
-            employeesForAssignedTo = await ITStockManagmentService.GetEmployees();
+            employeesForAssignedTo = await ITStockManagmentService.GetEmployeesList();
 
-            employeesForAssignedBy = await ITStockManagmentService.GetEmployees();
+            employeesForAssignedBy = await ITStockManagmentService.GetEmployeesList();
 
-            projectsForProjectId = await ITStockManagmentService.GetProjects();
+            projectsForProjectId = await ITStockManagmentService.GetProjectsList();
         }
         protected bool errorVisible;
         protected Models.ITStockManagment.Assignment assignment;

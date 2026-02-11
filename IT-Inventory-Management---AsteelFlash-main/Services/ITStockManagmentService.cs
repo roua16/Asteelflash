@@ -98,6 +98,13 @@ namespace ITStockM.Services
             return await assignmentService.GetAssignments(query);
         }
 
+        // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
+        public async Task<List<Assignment>> GetAssignmentsList(Query query = null)
+        {
+            var assignments = await assignmentService.GetAssignments(query);
+            return await assignments.ToListAsync();
+        }
+
         partial void OnAssignmentGet(Assignment item);
         partial void OnGetAssignmentById(ref IQueryable<Assignment> items);
 
@@ -543,6 +550,32 @@ namespace ITStockM.Services
             return await Task.FromResult(items);
         }
 
+        // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
+        public async Task<List<Employee>> GetEmployeesList(Query query = null)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
+            var items = ctx.Employees.AsQueryable();
+
+            if (query != null)
+            {
+                if (!string.IsNullOrEmpty(query.Expand))
+                {
+                    var propertiesToExpand = query.Expand.Split(',');
+                    foreach (var p in propertiesToExpand)
+                    {
+                        items = items.Include(p.Trim());
+                    }
+                }
+
+                items = items.ApplyQuery(query);
+            }
+
+            OnEmployeesRead(ref items);
+
+            return await items.ToListAsync();
+        }
+
 
 
 
@@ -590,6 +623,34 @@ namespace ITStockM.Services
             OnMaterielsRead(ref items);
 
             return await Task.FromResult(items);
+        }
+
+        // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
+        public async Task<List<Materiel>> GetMaterielsList(Query query = null)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
+            var items = ctx.Materiels.AsQueryable();
+
+            items = items.Include(i => i.AssignmentMateriels).ThenInclude(i => i.Assignment);
+
+            if (query != null)
+            {
+                if (!string.IsNullOrEmpty(query.Expand))
+                {
+                    var propertiesToExpand = query.Expand.Split(',');
+                    foreach (var p in propertiesToExpand)
+                    {
+                        items = items.Include(p.Trim());
+                    }
+                }
+
+                items = items.ApplyQuery(query);
+            }
+
+            OnMaterielsRead(ref items);
+
+            return await items.ToListAsync();
         }
 
         partial void OnMaterielGet(Materiel item);
@@ -1241,6 +1302,32 @@ namespace ITStockM.Services
             OnSuppliersRead(ref items);
 
             return await Task.FromResult(items);
+        }
+
+        // Convenience helper that materializes the IQueryable into a List to avoid lifetime and deferred-execution issues
+        public async Task<List<Supplier>> GetSuppliersList(Query query = null)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var ctx = scope.ServiceProvider.GetRequiredService<ITStockManagmentContext>();
+            var items = ctx.Suppliers.AsQueryable();
+
+            if (query != null)
+            {
+                if (!string.IsNullOrEmpty(query.Expand))
+                {
+                    var propertiesToExpand = query.Expand.Split(',');
+                    foreach (var p in propertiesToExpand)
+                    {
+                        items = items.Include(p.Trim());
+                    }
+                }
+
+                items = items.ApplyQuery(query);
+            }
+
+            OnSuppliersRead(ref items);
+
+            return await items.ToListAsync();
         }
 
         partial void OnSupplierGet(Supplier item);

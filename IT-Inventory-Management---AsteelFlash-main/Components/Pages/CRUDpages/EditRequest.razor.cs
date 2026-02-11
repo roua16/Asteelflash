@@ -24,7 +24,7 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             request = await ITStockManagmentService.GetRequestById(Id);
 
-            employeesForEmployeeId = await ITStockManagmentService.GetEmployees();
+            employeesForEmployeeId = await ITStockManagmentService.GetEmployeesList();
         }
         protected bool errorVisible;
         protected Models.ITStockManagment.Request request;
