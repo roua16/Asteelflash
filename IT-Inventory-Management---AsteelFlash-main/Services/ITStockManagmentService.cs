@@ -230,6 +230,20 @@ namespace ITStockM.Services
         {
             OnAssignmentMaterielCreated(assignmentmateriel);
 
+            // compute availability BEFORE change (consider active assignments)
+            var materiel = Context.Materiels.FirstOrDefault(m => m.Id == assignmentmateriel.MaterielId);
+            var threshold = int.TryParse(Environment.GetEnvironmentVariable("LOW_STOCK_THRESHOLD"), out var t) ? t : 10;
+            int? previousAvailable = null;
+
+            if (materiel != null)
+            {
+                var reservedBefore = Context.AssignmentMateriels
+                    .Where(am => am.MaterielId == assignmentmateriel.MaterielId && am.Assignment.RestoreDate == null)
+                    .Sum(am => (int?)am.Qte) ?? 0;
+
+                previousAvailable = (materiel.QuantityITStock + materiel.QuantityPDRStock) - reservedBefore;
+            }
+
             await dbSemaphore.WaitAsync();
             try
             {
@@ -260,6 +274,28 @@ namespace ITStockM.Services
 
             OnAfterAssignmentMaterielCreated(assignmentmateriel);
 
+            // after change - recompute availability and send low-stock notification if we crossed threshold downward
+            if (materiel != null && previousAvailable.HasValue && operationNotificationService != null)
+            {
+                var reservedAfter = Context.AssignmentMateriels
+                    .Where(am => am.MaterielId == assignmentmateriel.MaterielId && am.Assignment.RestoreDate == null)
+                    .Sum(am => (int?)am.Qte) ?? 0;
+
+                var newAvailable = (materiel.QuantityITStock + materiel.QuantityPDRStock) - reservedAfter;
+
+                if (previousAvailable >= threshold && newAvailable < threshold)
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await operationNotificationService.NotifyMaterielLowStock(materiel, threshold);
+                        }
+                        catch { }
+                    });
+                }
+            }
+
             return assignmentmateriel;
         }
 
@@ -271,6 +307,20 @@ namespace ITStockM.Services
         public async Task<AssignmentMateriel> UpdateAssignmentMateriel(int materielid, int assignmentid, AssignmentMateriel assignmentmateriel)
         {
             OnAssignmentMaterielUpdated(assignmentmateriel);
+
+            // compute availability BEFORE change (consider active assignments)
+            var materiel = Context.Materiels.FirstOrDefault(m => m.Id == assignmentmateriel.MaterielId);
+            var threshold = int.TryParse(Environment.GetEnvironmentVariable("LOW_STOCK_THRESHOLD"), out var t) ? t : 10;
+            int? previousAvailable = null;
+
+            if (materiel != null)
+            {
+                var totalReservedBefore = Context.AssignmentMateriels
+                    .Where(am => am.MaterielId == assignmentmateriel.MaterielId && am.Assignment.RestoreDate == null)
+                    .Sum(am => (int?)am.Qte) ?? 0;
+
+                previousAvailable = (materiel.QuantityITStock + materiel.QuantityPDRStock) - totalReservedBefore;
+            }
 
             await dbSemaphore.WaitAsync();
             try
@@ -284,11 +334,35 @@ namespace ITStockM.Services
                     throw new Exception("Item no longer available");
                 }
 
+                var oldQte = itemToUpdate.Qte;
+
                 var entryToUpdate = Context.Entry(itemToUpdate);
                 entryToUpdate.CurrentValues.SetValues(assignmentmateriel);
                 entryToUpdate.State = EntityState.Modified;
 
                 Context.SaveChanges();
+
+                // after save, recompute reserved and detect crossing
+                if (materiel != null && previousAvailable.HasValue && operationNotificationService != null)
+                {
+                    var totalReservedAfter = Context.AssignmentMateriels
+                        .Where(am => am.MaterielId == assignmentmateriel.MaterielId && am.Assignment.RestoreDate == null)
+                        .Sum(am => (int?)am.Qte) ?? 0;
+
+                    var newAvailable = (materiel.QuantityITStock + materiel.QuantityPDRStock) - totalReservedAfter;
+
+                    if (previousAvailable >= threshold && newAvailable < threshold)
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await operationNotificationService.NotifyMaterielLowStock(materiel, threshold);
+                            }
+                            catch { }
+                        });
+                    }
+                }
             }
             finally
             {
@@ -651,6 +725,94 @@ namespace ITStockM.Services
             OnMaterielsRead(ref items);
 
             return await items.ToListAsync();
+        }
+
+        // Return the top N used materiels (simple prediction using historical Qte sums)
+        public async Task<List<ITStockM.Models.ViewModels.MaterielUsageViewModel>> GetTopUsedMateriels(int top = 3)
+        {
+            // Aggregate usage from AssignmentMateriels and DeliveryOrderMateriels
+            var assignmentUsage = await Context.AssignmentMateriels
+                .GroupBy(a => a.MaterielId)
+                .Select(g => new { MaterielId = g.Key, Usage = g.Sum(x => x.Qte) })
+                .ToListAsync();
+
+            var deliveryUsage = await Context.DeliveryOrderMateriels
+                .GroupBy(d => d.MaterielId)
+                .Select(g => new { MaterielId = g.Key, Usage = g.Sum(x => x.Qte) })
+                .ToListAsync();
+
+            var combined = assignmentUsage.Concat(deliveryUsage)
+                .GroupBy(x => x.MaterielId)
+                .Select(g => new { MaterielId = g.Key, Usage = g.Sum(x => x.Usage) })
+                .OrderByDescending(x => x.Usage)
+                .ToList();
+
+            var totalUsage = combined.Sum(c => c.Usage);
+
+            var topItems = combined.Take(top).ToList();
+
+            if (!topItems.Any()) return new List<ITStockM.Models.ViewModels.MaterielUsageViewModel>();
+
+            var materielIds = topItems.Select(t => t.MaterielId).ToList();
+            var materiels = await Context.Materiels.Where(m => materielIds.Contains(m.Id)).ToListAsync();
+            var materielById = materiels.ToDictionary(m => m.Id, m => m.MaterielName);
+
+            return topItems.Select(t => new ITStockM.Models.ViewModels.MaterielUsageViewModel
+            {
+                Id = t.MaterielId,
+                MaterielName = materielById.TryGetValue(t.MaterielId, out var n) ? n : "Unknown",
+                UsageCount = t.Usage,
+                UsageShare = totalUsage > 0 ? Math.Round((double)t.Usage / totalUsage, 4) : 0
+            }).ToList();
+        }
+
+        // When dashboard opens for an Admin/PDR, send them the top-3 email once per day (operationNotificationService caches/suppresses duplicates)
+        public async Task SendTopUsedMaterielsEmailIfNotSentToday(string toEmail)
+        {
+            if (operationNotificationService == null || string.IsNullOrWhiteSpace(toEmail)) return;
+
+            var top3 = await GetTopUsedMateriels(3);
+            if (!top3.Any()) return;
+
+            await operationNotificationService.NotifyTopUsedMateriels(top3, toEmail);
+        }
+
+        // Return materiels with available quantity (stock minus active assignments) below threshold
+        public async Task<List<Materiel>> GetLowStockMateriels(int? threshold = null)
+        {
+            var th = threshold ?? (int.TryParse(Environment.GetEnvironmentVariable("LOW_STOCK_THRESHOLD"), out var envT) ? envT : 10);
+
+            // load reserved quantities from active assignments (not yet restored)
+            var reserved = await Context.AssignmentMateriels
+                .Where(am => am.Assignment.RestoreDate == null)
+                .GroupBy(am => am.MaterielId)
+                .Select(g => new { MaterielId = g.Key, Reserved = g.Sum(x => x.Qte) })
+                .ToListAsync();
+
+            var reservedDict = reserved.ToDictionary(r => r.MaterielId, r => r.Reserved);
+
+            var materiels = await Context.Materiels.ToListAsync();
+
+            var low = materiels.Where(m =>
+            {
+                var totalStock = m.QuantityITStock + m.QuantityPDRStock;
+                var reservedQty = reservedDict.TryGetValue(m.Id, out var r) ? r : 0;
+                var available = totalStock - reservedQty;
+                return available < th;
+            }).ToList();
+
+            return low;
+        }
+
+        // When dashboard opens for an Admin/PDR, send them a single low-stock summary email (one-per-day per recipient)
+        public async Task SendLowStockSummaryEmailIfNotSentToday(string toEmail)
+        {
+            if (operationNotificationService == null || string.IsNullOrWhiteSpace(toEmail)) return;
+
+            var low = await GetLowStockMateriels();
+            if (low == null || !low.Any()) return;
+
+            await operationNotificationService.NotifyLowStockSummary(low, toEmail);
         }
 
         partial void OnMaterielGet(Materiel item);

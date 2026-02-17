@@ -160,5 +160,156 @@ namespace ITStockM.Tests.Services
 
             mockOperationNotification.Verify(n => n.NotifyMaterielLowStock(It.IsAny<Materiel>(), It.IsAny<int>(), It.IsAny<string?>()), Times.Never);
         }
+
+        [Fact]
+        public async Task LowStockNotification_IsSent_When_Assignment_Causes_Crossing_Threshold()
+        {
+            // Arrange
+            var ctx = CreateInMemoryContext("lowstock_assignment_db_1");
+
+            var materiel = new Materiel
+            {
+                Id = 10,
+                MaterielName = "Assignment Material",
+                Type = "Consumable",
+                QuantityITStock = 12,
+                QuantityPDRStock = 0,
+                IrreparableQuantity = 0,
+                Repairing_Quantity = 0,
+                Warranty = DateTime.UtcNow.AddYears(1)
+            };
+
+            var assignment = new Assignment { Id = 1, Date = DateTime.UtcNow, OnMission = false };
+
+            await ctx.Materiels.AddAsync(materiel);
+            await ctx.Assignments.AddAsync(assignment);
+            await ctx.SaveChangesAsync();
+
+            var mockExport = new Mock<ITStockM.Services.Export.IExportService>();
+            var mockAssignRepo = new Mock<IAssignmentRepository>();
+            var mockReqRepo = new Mock<IRequestRepository>();
+            var mockDeliveryRepo = new Mock<IDeliveryOrderRepository>();
+            var mockMaterielRepo = new Mock<IMaterielRepository>();
+            var mockAssignService = new Mock<global::ITStockM.Services.Assignments.IAssignmentService>();
+            var mockReqService = new Mock<global::ITStockM.Services.Requests.IRequestService>();
+            var mockDeliveryService = new Mock<global::ITStockM.Services.DeliveryOrders.IDeliveryOrderService>();
+            var mockMaterielService = new Mock<global::ITStockM.Services.Materiels.IMaterielService>();
+
+            var mockOperationNotification = new Mock<IOperationNotificationService>();
+            mockOperationNotification.Setup(n => n.NotifyMaterielLowStock(It.IsAny<Materiel>(), It.IsAny<int>(), It.IsAny<string?>()))
+                .Returns(Task.CompletedTask).Verifiable();
+
+            var nav = new TestNav();
+
+            var service = new ITStockManagmentService(ctx, null!, nav, mockExport.Object,
+                mockAssignRepo.Object, mockReqRepo.Object, mockDeliveryRepo.Object, mockMaterielRepo.Object,
+                mockAssignService.Object, mockReqService.Object, mockDeliveryService.Object, mockMaterielService.Object,
+                mockOperationNotification.Object);
+
+            // Act: creating an assignmentmateriel that reduces availability from 12 to 9 (threshold 10)
+            var am = new AssignmentMateriel { MaterielId = 10, AssignmentId = 1, Qte = 3 };
+            await service.CreateAssignmentMateriel(am);
+
+            // allow async notification Task.Run to execute
+            await Task.Delay(200);
+
+            mockOperationNotification.Verify(n => n.NotifyMaterielLowStock(It.IsAny<Materiel>(), It.Is<int>(t => t == 10), It.IsAny<string?>()), Times.AtLeastOnce);
+        }
+
+        [Fact]
+        public async Task LowStockNotification_IsSent_When_Assignment_Update_Causes_Crossing_Threshold()
+        {
+            // Arrange
+            var ctx = CreateInMemoryContext("lowstock_assignment_db_2");
+
+            var materiel = new Materiel
+            {
+                Id = 20,
+                MaterielName = "Assignment Update Material",
+                Type = "Consumable",
+                QuantityITStock = 12,
+                QuantityPDRStock = 0,
+                IrreparableQuantity = 0,
+                Repairing_Quantity = 0,
+                Warranty = DateTime.UtcNow.AddYears(1)
+            };
+
+            var assignment = new Assignment { Id = 2, Date = DateTime.UtcNow, OnMission = false };
+
+            await ctx.Materiels.AddAsync(materiel);
+            await ctx.Assignments.AddAsync(assignment);
+            await ctx.AssignmentMateriels.AddAsync(new AssignmentMateriel { MaterielId = 20, AssignmentId = 2, Qte = 1 });
+            await ctx.SaveChangesAsync();
+
+            var mockExport = new Mock<ITStockM.Services.Export.IExportService>();
+            var mockAssignRepo = new Mock<IAssignmentRepository>();
+            var mockReqRepo = new Mock<IRequestRepository>();
+            var mockDeliveryRepo = new Mock<IDeliveryOrderRepository>();
+            var mockMaterielRepo = new Mock<IMaterielRepository>();
+            var mockAssignService = new Mock<global::ITStockM.Services.Assignments.IAssignmentService>();
+            var mockReqService = new Mock<global::ITStockM.Services.Requests.IRequestService>();
+            var mockDeliveryService = new Mock<global::ITStockM.Services.DeliveryOrders.IDeliveryOrderService>();
+            var mockMaterielService = new Mock<global::ITStockM.Services.Materiels.IMaterielService>();
+
+            var mockOperationNotification = new Mock<IOperationNotificationService>();
+            mockOperationNotification.Setup(n => n.NotifyMaterielLowStock(It.IsAny<Materiel>(), It.IsAny<int>(), It.IsAny<string?>()))
+                .Returns(Task.CompletedTask).Verifiable();
+
+            var nav = new TestNav();
+
+            var service = new ITStockManagmentService(ctx, null!, nav, mockExport.Object,
+                mockAssignRepo.Object, mockReqRepo.Object, mockDeliveryRepo.Object, mockMaterielRepo.Object,
+                mockAssignService.Object, mockReqService.Object, mockDeliveryService.Object, mockMaterielService.Object,
+                mockOperationNotification.Object);
+
+            // Act: update assignmentmateriel Qte from 1 to 3 -> availability goes from 11 to 9 (threshold 10)
+            var updatedAm = new AssignmentMateriel { MaterielId = 20, AssignmentId = 2, Qte = 3 };
+            await service.UpdateAssignmentMateriel(20, 2, updatedAm);
+
+            // allow async notification Task.Run to execute
+            await Task.Delay(200);
+
+            mockOperationNotification.Verify(n => n.NotifyMaterielLowStock(It.IsAny<Materiel>(), It.Is<int>(t => t == 10), It.IsAny<string?>()), Times.AtLeastOnce);
+        }
+
+        [Fact]
+        public async Task SendLowStockSummaryEmailIfNotSentToday_Invokes_NotificationService_When_LowStockExists()
+        {
+            // Arrange
+            var ctx = CreateInMemoryContext("lowstock_send_summary_db");
+
+            var m1 = new Materiel { Id = 101, MaterielName = "Low A", QuantityITStock = 2, QuantityPDRStock = 0, Warranty = DateTime.UtcNow };
+            var m2 = new Materiel { Id = 102, MaterielName = "OK B", QuantityITStock = 20, QuantityPDRStock = 0, Warranty = DateTime.UtcNow };
+
+            await ctx.Materiels.AddRangeAsync(m1, m2);
+            await ctx.SaveChangesAsync();
+
+            var mockExport = new Mock<ITStockM.Services.Export.IExportService>();
+            var mockAssignRepo = new Mock<IAssignmentRepository>();
+            var mockReqRepo = new Mock<IRequestRepository>();
+            var mockDeliveryRepo = new Mock<IDeliveryOrderRepository>();
+            var mockMaterielRepo = new Mock<IMaterielRepository>();
+            var mockAssignService = new Mock<global::ITStockM.Services.Assignments.IAssignmentService>();
+            var mockReqService = new Mock<global::ITStockM.Services.Requests.IRequestService>();
+            var mockDeliveryService = new Mock<global::ITStockM.Services.DeliveryOrders.IDeliveryOrderService>();
+            var mockMaterielService = new Mock<global::ITStockM.Services.Materiels.IMaterielService>();
+
+            var mockOperationNotification = new Mock<IOperationNotificationService>();
+            mockOperationNotification.Setup(n => n.NotifyLowStockSummary(It.IsAny<IEnumerable<Materiel>>(), It.IsAny<string>(), It.IsAny<string?>()))
+                .Returns(Task.CompletedTask).Verifiable();
+
+            var nav = new TestNav();
+
+            var service = new ITStockManagmentService(ctx, null!, nav, mockExport.Object,
+                mockAssignRepo.Object, mockReqRepo.Object, mockDeliveryRepo.Object, mockMaterielRepo.Object,
+                mockAssignService.Object, mockReqService.Object, mockDeliveryService.Object, mockMaterielService.Object,
+                mockOperationNotification.Object);
+
+            // Act
+            await service.SendLowStockSummaryEmailIfNotSentToday("admin@example.com");
+
+            // Assert
+            mockOperationNotification.Verify(n => n.NotifyLowStockSummary(It.IsAny<IEnumerable<Materiel>>(), It.Is<string>(s => s == "admin@example.com"), It.IsAny<string?>()), Times.Once);
+        }
     }
 }

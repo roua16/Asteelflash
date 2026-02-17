@@ -63,6 +63,9 @@ namespace ITStockM.Components.Pages
 
         protected IEnumerable<Models.ViewModels.MaterialsListViewModel> materielsList;
 
+        // Top-3 predicted most-used materiels (usage share = usage / total usage)
+        protected List<Models.ViewModels.MaterielUsageViewModel> TopUsedMateriels;
+
         protected async void RedirectPDR()
         {
            
@@ -208,6 +211,18 @@ namespace ITStockM.Components.Pages
             var userSession = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value;
             userRole = userSession.Role;
             userId = userSession.Id;
+
+            // compute top-3 used materiels and (for Admin/PDR) send daily summary email once per day
+            TopUsedMateriels = await ITStockManagmentService.GetTopUsedMateriels(3);
+            if (string.Equals(userRole, UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(userRole, UserRoles.PDR, StringComparison.OrdinalIgnoreCase))
+            {
+                // operationNotificationService + IMemoryCache ensure email is sent at most once per day per recipient
+                await ITStockManagmentService.SendTopUsedMaterielsEmailIfNotSentToday(userSession.Email);
+
+                // send a single low-stock summary (one email listing all low-stock materiels) when Admin/PDR open dashboard
+                await ITStockManagmentService.SendLowStockSummaryEmailIfNotSentToday(userSession.Email);
+            }
 
 
 

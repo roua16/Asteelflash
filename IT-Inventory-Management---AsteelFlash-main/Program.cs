@@ -19,6 +19,7 @@ builder.Services.AddRadzenComponents();
 
 // HTTP Client
 builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
 
 // Services
 builder.Services.AddScoped<ITStockManagmentService>();

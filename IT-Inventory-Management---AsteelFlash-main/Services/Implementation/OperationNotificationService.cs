@@ -1,5 +1,6 @@
 using ITStockM.Models.ITStockManagment;
 using ITStockM.Services.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace ITStockM.Services.Implementation
@@ -13,15 +14,18 @@ namespace ITStockM.Services.Implementation
         private readonly ILogger<OperationNotificationService> _logger;
         private readonly string _adminEmail;
         private readonly Data.ITStockManagmentContext _context;
+        private readonly IMemoryCache _cache;
 
         public OperationNotificationService(
             IEmailService emailService,
             ILogger<OperationNotificationService> logger,
-            Data.ITStockManagmentContext context)
+            Data.ITStockManagmentContext context,
+            IMemoryCache memoryCache)
         {
             _emailService = emailService;
             _logger = logger;
             _context = context;
+            _cache = memoryCache;
             _adminEmail = Environment.GetEnvironmentVariable("SMTP_ADMIN_EMAIL") ?? "admin@asteelflash.com";
         }
 
@@ -201,8 +205,35 @@ namespace ITStockM.Services.Implementation
 
                 recipientsList = recipientsList.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
-                _logger.LogInformation("Sending low stock notification to: {Recipients} for MaterielId={MaterielId}", string.Join(',', recipientsList), materiel.Id);
-                await _emailService.SendEmailToMultipleAsync(recipientsList, subject, body);
+                // Per-recipient, once-per-day suppression: send only to recipients who haven't received a low-stock notice today
+                var toSend = new List<string>();
+
+                foreach (var r in recipientsList)
+                {
+                    var cacheKey = $"LowStockSent:{r}:{DateTime.UtcNow:yyyyMMdd}";
+                    if (!_cache.TryGetValue(cacheKey, out _))
+                    {
+                        toSend.Add(r);
+                    }
+                }
+
+                if (!toSend.Any())
+                {
+                    _logger.LogDebug("Low-stock notifications suppressed for all recipients today for MaterielId={MaterielId}", materiel.Id);
+                    return;
+                }
+
+                _logger.LogInformation("Sending low stock notification to: {Recipients} for MaterielId={MaterielId}", string.Join(',', toSend), materiel.Id);
+                await _emailService.SendEmailToMultipleAsync(toSend, subject, body);
+
+                // mark as sent for each recipient (expire at next UTC midnight)
+                var expiresAt = DateTime.UtcNow.Date.AddDays(1);
+                foreach (var r in toSend)
+                {
+                    var cacheKey = $"LowStockSent:{r}:{DateTime.UtcNow:yyyyMMdd}";
+                    _cache.Set(cacheKey, true, new MemoryCacheEntryOptions { AbsoluteExpiration = new DateTimeOffset(expiresAt) });
+                }
+
                 _logger.LogInformation("Low stock notification sent successfully for MaterielId={MaterielId}", materiel.Id);
             }
             catch (Exception ex)
@@ -228,6 +259,122 @@ namespace ITStockM.Services.Implementation
                             <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>PDR Stock Qty:</td><td style='padding: 8px;'>{materiel.QuantityPDRStock}</td></tr>
                             <tr><td style='padding: 8px; font-weight: bold;'>Total Available:</td><td style='padding: 8px;'>{total}</td></tr>
                             <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Threshold:</td><td style='padding: 8px;'>{threshold}</td></tr>
+                        </table>
+                        {GetPerformedBySection(performedBy)}
+                        {GetFooter()}
+                    </div>
+                </body>
+                </html>";
+        }
+
+        /// <summary>
+        /// Send a daily low-stock summary email to a single recipient (cached per-day to avoid duplicates).
+        /// </summary>
+        public async Task NotifyLowStockSummary(IEnumerable<Materiel> lowMateriels, string toEmail, string? performedBy = null)
+        {
+            try
+            {
+                if (lowMateriels == null || !lowMateriels.Any()) return;
+
+                var cacheKey = $"LowStockSummarySent:{toEmail}:{DateTime.UtcNow:yyyyMMdd}";
+                if (_cache.TryGetValue(cacheKey, out _))
+                {
+                    _logger.LogDebug("Low-stock summary already sent today to {Email}", toEmail);
+                    return;
+                }
+
+                var subject = "⚠️ Daily: Low Stock Summary";
+                var body = BuildLowStockSummaryEmail(lowMateriels, performedBy);
+
+                await _emailService.SendEmailAsync(toEmail, subject, body);
+
+                // mark as sent for today (expire at next UTC midnight)
+                var expiresAt = DateTime.UtcNow.Date.AddDays(1);
+                _cache.Set(cacheKey, true, new MemoryCacheEntryOptions { AbsoluteExpiration = new DateTimeOffset(expiresAt) });
+
+                _logger.LogInformation("Low-stock summary sent to {Email}", toEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send low-stock summary to {Email}", toEmail);
+            }
+        }
+
+        private string BuildLowStockSummaryEmail(IEnumerable<Materiel> lowMateriels, string? performedBy)
+        {
+            var rows = string.Join("", lowMateriels.Select((m, i) =>
+                $"<tr style='background: {(i % 2 == 0 ? "#fff" : "#f7f7f7")};'><td style='padding:8px; font-weight:600;'>{System.Net.WebUtility.HtmlEncode(m.MaterielName)}</td><td style='padding:8px;text-align:right;'>{m.QuantityITStock}</td><td style='padding:8px;text-align:right;'>{m.QuantityPDRStock}</td><td style='padding:8px;text-align:right;'>{(m.QuantityITStock + m.QuantityPDRStock)}</td></tr>"));
+
+            return $@"
+                <html>
+                <body style='font-family: Arial, sans-serif; padding: 20px;'>
+                    <div style='max-width: 700px; margin: 0 auto; background: #fff9e6; border-radius: 10px; padding: 20px;'>
+                        <h2 style='color: #e67e22; padding-bottom: 10px;'>Low Stock Summary</h2>
+                        <table style='width:100%; border-collapse: collapse;'>
+                            <thead>
+                                <tr style='background:#f1f3f5;'><th style='text-align:left; padding:8px;'>Material</th><th style='text-align:right; padding:8px;'>IT Stock</th><th style='text-align:right; padding:8px;'>PDR Stock</th><th style='text-align:right; padding:8px;'>Total</th></tr>
+                            </thead>
+                            <tbody>
+                                {rows}
+                            </tbody>
+                        </table>
+                        {GetPerformedBySection(performedBy)}
+                        {GetFooter()}
+                    </div>
+                </body>
+                </html>";
+        }
+
+        /// <summary>
+        /// Send a daily top-used materials email to a single recipient (cached per-day to avoid duplicates).
+        /// </summary>
+        public async Task NotifyTopUsedMateriels(IEnumerable<ITStockM.Models.ViewModels.MaterielUsageViewModel> topMateriels, string toEmail, string? performedBy = null)
+        {
+            try
+            {
+                if (topMateriels == null || !topMateriels.Any()) return;
+
+                var cacheKey = $"TopUsedSent:{toEmail}:{DateTime.UtcNow:yyyyMMdd}";
+                if (_cache.TryGetValue(cacheKey, out _))
+                {
+                    _logger.LogDebug("Top-used email already sent today to {Email}", toEmail);
+                    return;
+                }
+
+                var subject = "📈 Daily: Top 3 Most Used Materials";
+                var body = BuildTopUsedMaterielsEmail(topMateriels, performedBy);
+
+                await _emailService.SendEmailAsync(toEmail, subject, body);
+
+                // mark as sent for today (expire at next UTC midnight)
+                var expiresAt = DateTime.UtcNow.Date.AddDays(1);
+                _cache.Set(cacheKey, true, new MemoryCacheEntryOptions { AbsoluteExpiration = new DateTimeOffset(expiresAt) });
+
+                _logger.LogInformation("Top-used materials email sent to {Email}", toEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send top-used materials email to {Email}", toEmail);
+            }
+        }
+
+        private string BuildTopUsedMaterielsEmail(IEnumerable<ITStockM.Models.ViewModels.MaterielUsageViewModel> topMateriels, string? performedBy)
+        {
+            var rows = string.Join("", topMateriels.Select((m, i) =>
+                $"<tr style='background: {(i % 2 == 0 ? "#fff" : "#f7f7f7")};'><td style='padding:8px; font-weight:600;'>{i + 1}. {System.Net.WebUtility.HtmlEncode(m.MaterielName)}</td><td style='padding:8px;text-align:right;'>{m.UsageCount}</td><td style='padding:8px;text-align:right;'>{(m.UsageShare * 100.0).ToString("F1")}%</td></tr>"));
+
+            return $@"
+                <html>
+                <body style='font-family: Arial, sans-serif; padding: 20px;'>
+                    <div style='max-width: 600px; margin: 0 auto; background: #f9f9fb; border-radius: 10px; padding: 20px;'>
+                        <h2 style='color: #2c3e50; padding-bottom: 10px;'>Top 3 Most Used Materials</h2>
+                        <table style='width:100%; border-collapse: collapse;'>
+                            <thead>
+                                <tr style='background:#f1f3f5;'><th style='text-align:left; padding:8px;'>Material</th><th style='text-align:right; padding:8px;'>Used</th><th style='text-align:right; padding:8px;'>Share</th></tr>
+                            </thead>
+                            <tbody>
+                                {rows}
+                            </tbody>
                         </table>
                         {GetPerformedBySection(performedBy)}
                         {GetFooter()}

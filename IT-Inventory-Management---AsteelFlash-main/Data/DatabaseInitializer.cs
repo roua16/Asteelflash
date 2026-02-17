@@ -214,6 +214,27 @@ namespace ITStockM.Data
                         Adress = "789 Commerce Blvd, Chicago, IL",
                         Email = "info@officeplus.com",
                         PhoneNumber = "+1-555-0103"
+                    },
+                    new Supplier
+                    {
+                        SupplierName = "NetSupply Co.",
+                        Adress = "12 Harbor Rd, Boston, MA",
+                        Email = "contact@netsupply.co",
+                        PhoneNumber = "+1-555-0201"
+                    },
+                    new Supplier
+                    {
+                        SupplierName = "AlphaTech Distributors",
+                        Adress = "88 Industrial Park, Austin, TX",
+                        Email = "sales@alphatech.com",
+                        PhoneNumber = "+1-555-0302"
+                    },
+                    new Supplier
+                    {
+                        SupplierName = "SecureParts Ltd.",
+                        Adress = "9 Secure Ln, Seattle, WA",
+                        Email = "orders@secureparts.com",
+                        PhoneNumber = "+1-555-0403"
                     }
                 };
                 context.Suppliers.AddRange(suppliers);
@@ -293,6 +314,74 @@ namespace ITStockM.Data
                         IrreparableQuantity = 0,
                         Repairing_Quantity = 0,
                         Warranty = DateTime.Now.AddYears(2)
+                    },
+
+                    // Additional demo materials
+                    new Materiel
+                    {
+                        MaterielName = "Dell 24\" Monitor (FHD)",
+                        Type = "Monitor",
+                        SerialNumber = "MON24-001",
+                        QuantityITStock = 12,
+                        QuantityPDRStock = 3,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(2)
+                    },
+                    new Materiel
+                    {
+                        MaterielName = "USB-C Docking Station",
+                        Type = "Docking Station",
+                        SerialNumber = "DOC-100",
+                        QuantityITStock = 6,
+                        QuantityPDRStock = 1,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(1)
+                    },
+                    new Materiel
+                    {
+                        MaterielName = "Samsung 1TB NVMe SSD",
+                        Type = "Storage",
+                        SerialNumber = "SSD1TB-001",
+                        QuantityITStock = 10,
+                        QuantityPDRStock = 0,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(3)
+                    },
+                    new Materiel
+                    {
+                        MaterielName = "Logitech C920 Webcam",
+                        Type = "Peripheral",
+                        SerialNumber = "C920-001",
+                        QuantityITStock = 7,
+                        QuantityPDRStock = 0,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(2)
+                    },
+                    new Materiel
+                    {
+                        MaterielName = "Jabra Evolve 40 Headset",
+                        Type = "Peripheral",
+                        SerialNumber = "JAB-E40-001",
+                        QuantityITStock = 5,
+                        QuantityPDRStock = 0,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(2)
+                    },
+                    new Materiel
+                    {
+                        MaterielName = "Cat6 Ethernet Cable (1m)",
+                        Type = "Consumable",
+                        SerialNumber = null,
+                        QuantityITStock = 50,
+                        QuantityPDRStock = 100,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(1)
                     }
                 };
 
@@ -305,10 +394,14 @@ namespace ITStockM.Data
             {
                 var admin = await context.Employees.FirstOrDefaultAsync(e => e.Email == "admin@asteelflash.com", cancellationToken);
                 var john = await context.Employees.FirstOrDefaultAsync(e => e.Email == "john.smith@asteelflash.com", cancellationToken);
+                var thomas = await context.Employees.FirstOrDefaultAsync(e => e.Email == "thomas.miller@asteelflash.com", cancellationToken);
+                var emma = await context.Employees.FirstOrDefaultAsync(e => e.Email == "emma.white@asteelflash.com", cancellationToken);
+                var paul = await context.Employees.FirstOrDefaultAsync(e => e.Email == "paul.green@asteelflash.com", cancellationToken);
                 var project = await context.Projects.OrderBy(p => p.Id).FirstOrDefaultAsync(cancellationToken);
 
                 if (admin != null && john != null && project != null)
                 {
+                    // Active assignment (existing scenario)
                     var assignment = new Assignment
                     {
                         AssignedTo = john.Id,
@@ -320,9 +413,41 @@ namespace ITStockM.Data
                         RestoreDateLimit = DateTime.Now.AddDays(30)
                     };
                     context.Assignments.Add(assignment);
+
+                    // Recently completed / archived assignment for Emma (Archived mission)
+                    var archivedAssignment = new Assignment
+                    {
+                        AssignedTo = emma != null ? emma.Id : john.Id,
+                        AssignedBy = admin.Id,
+                        ProjectId = project.Id,
+                        Date = DateTime.Now.AddDays(-45),
+                        Descipriton = "Returned equipment after PDR task",
+                        OnMission = false,
+                        RestoreDate = DateTime.Now.AddDays(-5),
+                        RestoreDateLimit = DateTime.Now.AddDays(-10)
+                    };
+                    context.Assignments.Add(archivedAssignment);
+
+                    // On-mission assignment with near deadline for Paul
+                    var urgentAssignment = new Assignment
+                    {
+                        AssignedTo = paul != null ? paul.Id : john.Id,
+                        AssignedBy = admin.Id,
+                        ProjectId = project.Id,
+                        Date = DateTime.Now.AddDays(-8),
+                        Descipriton = "Field mission - temporary devices",
+                        OnMission = true,
+                        RestoreDateLimit = DateTime.Now.AddDays(3)
+                    };
+                    context.Assignments.Add(urgentAssignment);
+
                     await context.SaveChangesAsync(cancellationToken);
 
                     var laptop = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Laptop", cancellationToken);
+                    var mouse = await context.Materiels.FirstOrDefaultAsync(m => m.MaterielName.Contains("Mouse"), cancellationToken);
+                    var printer = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Printer", cancellationToken);
+                    var monitor = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Monitor", cancellationToken);
+
                     if (laptop != null)
                     {
                         context.AssignmentMateriels.Add(new AssignmentMateriel
@@ -331,19 +456,64 @@ namespace ITStockM.Data
                             MaterielId = laptop.Id,
                             Qte = 1
                         });
-                        await context.SaveChangesAsync(cancellationToken);
                     }
+
+                    if (printer != null)
+                    {
+                        context.AssignmentMateriels.Add(new AssignmentMateriel
+                        {
+                            AssignmentId = archivedAssignment.Id,
+                            MaterielId = printer.Id,
+                            Qte = 1
+                        });
+                    }
+
+                    if (monitor != null)
+                    {
+                        context.AssignmentMateriels.Add(new AssignmentMateriel
+                        {
+                            AssignmentId = urgentAssignment.Id,
+                            MaterielId = monitor.Id,
+                            Qte = 2
+                        });
+                    }
+
+                    if (mouse != null && thomas != null)
+                    {
+                        // small assignment for Thomas
+                        var personalAssignment = new Assignment
+                        {
+                            AssignedTo = thomas.Id,
+                            AssignedBy = admin.Id,
+                            ProjectId = project.Id,
+                            Date = DateTime.Now.AddDays(-12),
+                            Descipriton = "Peripheral allocation",
+                            OnMission = false,
+                            RestoreDateLimit = null
+                        };
+                        context.Assignments.Add(personalAssignment);
+                        await context.SaveChangesAsync(cancellationToken);
+
+                        context.AssignmentMateriels.Add(new AssignmentMateriel
+                        {
+                            AssignmentId = personalAssignment.Id,
+                            MaterielId = mouse.Id,
+                            Qte = 1
+                        });
+                    }
+
+                    await context.SaveChangesAsync(cancellationToken);
                 }
 
                 // Add a sample assignment that simulates a partial/damaged return (for testing notifications)
-                var thomas = await context.Employees.FirstOrDefaultAsync(e => e.Email == "thomas.miller@asteelflash.com", cancellationToken);
+                var partialReturnThomas = await context.Employees.FirstOrDefaultAsync(e => e.Email == "thomas.miller@asteelflash.com", cancellationToken);
                 var laptopMat = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Laptop", cancellationToken);
-                if (thomas != null && laptopMat != null && !await context.Assignments.AnyAsync(a => a.Descipriton.Contains("Partial return example"), cancellationToken))
+                if (partialReturnThomas != null && laptopMat != null && project != null && !await context.Assignments.AnyAsync(a => a.Descipriton.Contains("Partial return example"), cancellationToken))
                 {
                     var problemAssignment = new Assignment
                     {
-                        AssignedTo = thomas.Id,
-                        AssignedBy = admin != null ? admin.Id : thomas.Id,
+                        AssignedTo = partialReturnThomas.Id,
+                        AssignedBy = admin != null ? admin.Id : partialReturnThomas.Id,
                         ProjectId = project.Id,
                         Date = DateTime.Now.AddDays(-40),
                         Descipriton = "Partial return example: 2 laptops assigned, 1 returned damaged",
@@ -369,9 +539,12 @@ namespace ITStockM.Data
             {
                 var sarah = await context.Employees.FirstOrDefaultAsync(e => e.Email == "sarah.johnson@asteelflash.com", cancellationToken);
                 var mike = await context.Employees.FirstOrDefaultAsync(e => e.Email == "mike.davis@asteelflash.com", cancellationToken);
+                var paul = await context.Employees.FirstOrDefaultAsync(e => e.Email == "paul.green@asteelflash.com", cancellationToken);
+                var emma = await context.Employees.FirstOrDefaultAsync(e => e.Email == "emma.white@asteelflash.com", cancellationToken);
 
                 if (sarah != null && mike != null)
                 {
+                    // Core requests
                     context.Requests.AddRange(
                         new Request
                         {
@@ -394,7 +567,87 @@ namespace ITStockM.Data
                             Date = DateTime.Now.AddDays(-7),
                             Status = "Pending",
                             File = Array.Empty<byte>()
+                        },
+
+                        // Additional demo requests to populate Pending/Archived views
+                        new Request
+                        {
+                            EmployeeId = paul != null ? paul.Id : sarah.Id,
+                            Title = "Ergonomic Chairs Request",
+                            ProjectName = "Office Ergonomics",
+                            Description = "Purchase of 5 ergonomic chairs",
+                            MaterialType = "Furniture",
+                            Date = DateTime.Now.AddDays(-40),
+                            Status = "Done",
+                            File = Array.Empty<byte>()
+                        },
+                        new Request
+                        {
+                            EmployeeId = emma != null ? emma.Id : sarah.Id,
+                            Title = "Spare Batteries Request",
+                            ProjectName = "PDR Stock",
+                            Description = "Spare batteries for hand tools",
+                            MaterialType = "Consumables",
+                            Date = DateTime.Now.AddDays(-20),
+                            Status = "Approved",
+                            File = Array.Empty<byte>()
                         });
+
+                    await context.SaveChangesAsync(cancellationToken);
+
+                    // Create offers for some requests (selected/unselected, past/future delivery dates)
+                    var monitorsRequest = await context.Requests.FirstOrDefaultAsync(r => r.Title == "Additional Monitors Request", cancellationToken);
+                    var keyboardRequest = await context.Requests.FirstOrDefaultAsync(r => r.Title == "Keyboard and Mouse Request", cancellationToken);
+                    var chairsRequest = await context.Requests.FirstOrDefaultAsync(r => r.Title == "Ergonomic Chairs Request", cancellationToken);
+
+                    var supplier1 = await context.Suppliers.FirstOrDefaultAsync(s => s.SupplierName == "TechCorp Supplies", cancellationToken);
+                    var supplier2 = await context.Suppliers.FirstOrDefaultAsync(s => s.SupplierName == "Global IT Solutions", cancellationToken);
+
+                    if (monitorsRequest != null && supplier1 != null)
+                    {
+                        context.Offers.Add(new Offer
+                        {
+                            RequestId = monitorsRequest.Id,
+                            SupplierName = supplier1.SupplierName,
+                            DeliveryDate = DateTime.Now.AddDays(5),
+                            Price = 1200m,
+                            Selected = true
+                        });
+
+                        context.Offers.Add(new Offer
+                        {
+                            RequestId = monitorsRequest.Id,
+                            SupplierName = supplier2 != null ? supplier2.SupplierName : "Office Equipment Plus",
+                            DeliveryDate = DateTime.Now.AddDays(7),
+                            Price = 1350m,
+                            Selected = false
+                        });
+                    }
+
+                    if (keyboardRequest != null && supplier2 != null)
+                    {
+                        // a past delivery -> should appear in Archived Requests
+                        context.Offers.Add(new Offer
+                        {
+                            RequestId = keyboardRequest.Id,
+                            SupplierName = supplier2.SupplierName,
+                            DeliveryDate = DateTime.Now.AddDays(-3),
+                            Price = 150m,
+                            Selected = true
+                        });
+                    }
+
+                    if (chairsRequest != null && supplier1 != null)
+                    {
+                        context.Offers.Add(new Offer
+                        {
+                            RequestId = chairsRequest.Id,
+                            SupplierName = supplier1.SupplierName,
+                            DeliveryDate = DateTime.Now.AddDays(-20),
+                            Price = 2500m,
+                            Selected = true
+                        });
+                    }
 
                     await context.SaveChangesAsync(cancellationToken);
                 }
@@ -405,10 +658,11 @@ namespace ITStockM.Data
             {
                 var supplier = await context.Suppliers.FirstOrDefaultAsync(cancellationToken);
                 var mike = await context.Employees.FirstOrDefaultAsync(e => e.Email == "mike.davis@asteelflash.com", cancellationToken);
+                var admin = await context.Employees.FirstOrDefaultAsync(e => e.Email == "admin@asteelflash.com", cancellationToken);
 
                 if (supplier != null && mike != null)
                 {
-                    var deliveryOrder = new DeliveryOrder
+                    var deliveryOrder1 = new DeliveryOrder
                     {
                         DeleveryOrderNumber = "DO-2024-001",
                         OrderNumber = "ORD-2024-001",
@@ -419,20 +673,82 @@ namespace ITStockM.Data
                         EmployeeId = mike.Id,
                         HasDelayedM = false
                     };
-                    context.DeliveryOrders.Add(deliveryOrder);
+                    context.DeliveryOrders.Add(deliveryOrder1);
+
+                    var deliveryOrder2 = new DeliveryOrder
+                    {
+                        DeleveryOrderNumber = "DO-2025-002",
+                        OrderNumber = "ORD-2025-002",
+                        Descriptoin = "Monitors and docking stations",
+                        SupplierName = supplier.SupplierName,
+                        Date = DateTime.Now.AddDays(-5),
+                        DeliveryDate = DateTime.Now.AddDays(2),
+                        EmployeeId = admin != null ? admin.Id : mike.Id,
+                        HasDelayedM = false
+                    };
+                    context.DeliveryOrders.Add(deliveryOrder2);
+
+                    var deliveryOrder3 = new DeliveryOrder
+                    {
+                        DeleveryOrderNumber = "DO-2023-010",
+                        OrderNumber = "ORD-2023-010",
+                        Descriptoin = "Old delivery (archived)",
+                        SupplierName = supplier.SupplierName,
+                        Date = DateTime.Now.AddYears(-1),
+                        DeliveryDate = DateTime.Now.AddYears(-1).AddDays(3),
+                        EmployeeId = mike.Id,
+                        HasDelayedM = false
+                    };
+                    context.DeliveryOrders.Add(deliveryOrder3);
+
                     await context.SaveChangesAsync(cancellationToken);
 
-                    var mouse = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Peripheral", cancellationToken);
+                    var mouse = await context.Materiels.FirstOrDefaultAsync(m => m.MaterielName.Contains("Mouse"), cancellationToken);
+                    var monitor = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Monitor", cancellationToken);
+                    var dock = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Docking Station", cancellationToken);
+                    var ssd = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Storage", cancellationToken);
+
                     if (mouse != null)
                     {
                         context.DeliveryOrderMateriels.Add(new DeliveryOrderMateriel
                         {
-                            DeliveryOrderNumber = deliveryOrder.DeleveryOrderNumber,
+                            DeliveryOrderNumber = deliveryOrder1.DeleveryOrderNumber,
                             MaterielId = mouse.Id,
                             Qte = 5
                         });
-                        await context.SaveChangesAsync(cancellationToken);
                     }
+
+                    if (monitor != null)
+                    {
+                        context.DeliveryOrderMateriels.Add(new DeliveryOrderMateriel
+                        {
+                            DeliveryOrderNumber = deliveryOrder2.DeleveryOrderNumber,
+                            MaterielId = monitor.Id,
+                            Qte = 6
+                        });
+                    }
+
+                    if (dock != null)
+                    {
+                        context.DeliveryOrderMateriels.Add(new DeliveryOrderMateriel
+                        {
+                            DeliveryOrderNumber = deliveryOrder2.DeleveryOrderNumber,
+                            MaterielId = dock.Id,
+                            Qte = 4
+                        });
+                    }
+
+                    if (ssd != null)
+                    {
+                        context.DeliveryOrderMateriels.Add(new DeliveryOrderMateriel
+                        {
+                            DeliveryOrderNumber = deliveryOrder3.DeleveryOrderNumber,
+                            MaterielId = ssd.Id,
+                            Qte = 10
+                        });
+                    }
+
+                    await context.SaveChangesAsync(cancellationToken);
                 }
             }
 

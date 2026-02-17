@@ -40,7 +40,13 @@ namespace ITStockM.Services.Interfaces
         // Assignment return issue notification (e.g., missing/damaged returns)
         Task NotifyAssignmentReturnIssue(Assignment assignment, string issueDetails, IEnumerable<string>? recipients = null);
 
-        // Low stock notification
+        // Low stock notification (single materiel)
         Task NotifyMaterielLowStock(Materiel materiel, int threshold, string? performedBy = null);
+
+        // Low stock summary (sent once-per-day per recipient when requested)
+        Task NotifyLowStockSummary(IEnumerable<Materiel> lowMateriels, string toEmail, string? performedBy = null);
+
+        // Daily top-used materials notification (sent to a user once per day when requested)
+        Task NotifyTopUsedMateriels(IEnumerable<ITStockM.Models.ViewModels.MaterielUsageViewModel> topMateriels, string toEmail, string? performedBy = null);
     }
 }
