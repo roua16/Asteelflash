@@ -1,5 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using ITStockM.Repositories;
+using ITStockM.Services.Interfaces;
+using ITStockM.Services.Implementation;
+using ITStockM.Services.AssetLifecycle;
+using ITStockM.Services.Maintenance;
+using ITStockM.Services.Prediction;
 
 namespace ITStockM.Services;
 
@@ -20,7 +25,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITStockM.Services.Requests.IRequestService, ITStockM.Services.Requests.RequestService>();
         services.AddScoped<ITStockM.Services.DeliveryOrders.IDeliveryOrderService, ITStockM.Services.DeliveryOrders.DeliveryOrderService>();
 
-        // Keep existing services already registered in Program.cs, or register here if you prefer centralization
+        // Asset Lifecycle Module
+        services.AddScoped<IAssetLifecycleService, AssetLifecycleService>();
+        services.AddScoped<IMaintenanceService, MaintenanceService>();
+        services.AddScoped<IPredictionService, PredictionService>();
+        services.AddScoped<IWarrantyAlertService, WarrantyAlertService>();
+        // IEmailTemplateService is singleton — stateless HTML builder
+        services.AddSingleton<IEmailTemplateService, EmailTemplateService>();
+
         return services;
     }
 }

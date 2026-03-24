@@ -1,6 +1,6 @@
 
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.EntityFrameworkCore;
 
 using ITStockM.Data;
 
@@ -247,5 +247,142 @@ namespace ITStockM.Controllers
             }), fileName);
         }
 
+        // ─── Asset Lifecycle Module exports ───────────────────────────────────────
+
+        [HttpGet("/export/ITStockManagment/maintenance/csv")]
+        [HttpGet("/export/ITStockManagment/maintenance/csv(fileName='{fileName}')")]
+        public async Task<FileStreamResult> ExportMaintenanceToCSV(string fileName = null)
+        {
+            var tickets = await context.MaintenanceTickets
+                .Include(t => t.Materiel)
+                .Include(t => t.ReportedBy)
+                .OrderByDescending(t => t.ReportedAt)
+                .Select(t => new
+                {
+                    TicketId          = t.Id,
+                    AssetName         = t.Materiel.MaterielName,
+                    SerialNumber      = t.Materiel.SerialNumber,
+                    ProblemDescription= t.ProblemDescription,
+                    Status            = t.Status,
+                    ReportedBy        = t.ReportedBy != null ? t.ReportedBy.FullName : "",
+                    ReportedAt        = t.ReportedAt,
+                    ResolvedAt        = t.ResolvedAt,
+                    Resolution        = t.Resolution,
+                    Cost              = t.Cost
+                })
+                .ToListAsync();
+            return ToCSV(tickets.AsQueryable(), fileName);
+        }
+
+        [HttpGet("/export/ITStockManagment/maintenance/excel")]
+        [HttpGet("/export/ITStockManagment/maintenance/excel(fileName='{fileName}')")]
+        public async Task<FileStreamResult> ExportMaintenanceToExcel(string fileName = null)
+        {
+            var tickets = await context.MaintenanceTickets
+                .Include(t => t.Materiel)
+                .Include(t => t.ReportedBy)
+                .OrderByDescending(t => t.ReportedAt)
+                .Select(t => new
+                {
+                    TicketId          = t.Id,
+                    AssetName         = t.Materiel.MaterielName,
+                    SerialNumber      = t.Materiel.SerialNumber,
+                    ProblemDescription= t.ProblemDescription,
+                    Status            = t.Status,
+                    ReportedBy        = t.ReportedBy != null ? t.ReportedBy.FullName : "",
+                    ReportedAt        = t.ReportedAt,
+                    ResolvedAt        = t.ResolvedAt,
+                    Resolution        = t.Resolution,
+                    Cost              = t.Cost
+                })
+                .ToListAsync();
+            return ToExcel(tickets.AsQueryable(), fileName);
+        }
+
+        [HttpGet("/export/ITStockManagment/lifecycle/csv")]
+        [HttpGet("/export/ITStockManagment/lifecycle/csv(fileName='{fileName}')")]
+        public async Task<FileStreamResult> ExportLifecycleToCSV(string fileName = null)
+        {
+            var records = await context.AssetLifecycleRecords
+                .Include(r => r.Materiel)
+                .OrderByDescending(r => r.StartDate)
+                .Select(r => new
+                {
+                    AssetName    = r.Materiel.MaterielName,
+                    SerialNumber = r.Materiel.SerialNumber,
+                    Stage        = r.Stage,
+                    StartDate    = r.StartDate,
+                    EndDate      = r.EndDate,
+                    Notes        = r.Notes
+                })
+                .ToListAsync();
+            return ToCSV(records.AsQueryable(), fileName);
+        }
+
+        [HttpGet("/export/ITStockManagment/lifecycle/excel")]
+        [HttpGet("/export/ITStockManagment/lifecycle/excel(fileName='{fileName}')")]
+        public async Task<FileStreamResult> ExportLifecycleToExcel(string fileName = null)
+        {
+            var records = await context.AssetLifecycleRecords
+                .Include(r => r.Materiel)
+                .OrderByDescending(r => r.StartDate)
+                .Select(r => new
+                {
+                    AssetName    = r.Materiel.MaterielName,
+                    SerialNumber = r.Materiel.SerialNumber,
+                    Stage        = r.Stage,
+                    StartDate    = r.StartDate,
+                    EndDate      = r.EndDate,
+                    Notes        = r.Notes
+                })
+                .ToListAsync();
+            return ToExcel(records.AsQueryable(), fileName);
+        }
+
+        [HttpGet("/export/ITStockManagment/predictions/csv")]
+        [HttpGet("/export/ITStockManagment/predictions/csv(fileName='{fileName}')")]
+        public async Task<FileStreamResult> ExportPredictionsToCSV(string fileName = null)
+        {
+            var predictions = await context.AssetPredictions
+                .Include(p => p.Materiel)
+                .OrderBy(p => p.HealthScore)
+                .Select(p => new
+                {
+                    AssetName                = p.Materiel.MaterielName,
+                    SerialNumber             = p.Materiel.SerialNumber,
+                    HealthScore              = p.HealthScore,
+                    HealthStatus             = p.HealthStatus,
+                    CalculatedAt             = p.CalculatedAt,
+                    PredictedFailureDate     = p.PredictedFailureDate,
+                    RecommendedReplacement   = p.RecommendedReplacementDate,
+                    EstimatedCostEUR         = p.EstimatedReplacementCost,
+                    Reason                   = p.RecommendationReason
+                })
+                .ToListAsync();
+            return ToCSV(predictions.AsQueryable(), fileName);
+        }
+
+        [HttpGet("/export/ITStockManagment/predictions/excel")]
+        [HttpGet("/export/ITStockManagment/predictions/excel(fileName='{fileName}')")]
+        public async Task<FileStreamResult> ExportPredictionsToExcel(string fileName = null)
+        {
+            var predictions = await context.AssetPredictions
+                .Include(p => p.Materiel)
+                .OrderBy(p => p.HealthScore)
+                .Select(p => new
+                {
+                    AssetName                = p.Materiel.MaterielName,
+                    SerialNumber             = p.Materiel.SerialNumber,
+                    HealthScore              = p.HealthScore,
+                    HealthStatus             = p.HealthStatus,
+                    CalculatedAt             = p.CalculatedAt,
+                    PredictedFailureDate     = p.PredictedFailureDate,
+                    RecommendedReplacement   = p.RecommendedReplacementDate,
+                    EstimatedCostEUR         = p.EstimatedReplacementCost,
+                    Reason                   = p.RecommendationReason
+                })
+                .ToListAsync();
+            return ToExcel(predictions.AsQueryable(), fileName);
+        }
     }
 }

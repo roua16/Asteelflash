@@ -22,6 +22,12 @@ builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 
 // Services
+// EmailOptions: bind from appsettings + allow env-var overrides at startup
+builder.Services.Configure<EmailOptions>(opts =>
+{
+    builder.Configuration.GetSection(EmailOptions.Section).Bind(opts);
+    opts.ApplyEnvironmentOverrides();
+});
 builder.Services.AddScoped<ITStockManagmentService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<INotificationService, ITStockM.Services.Implementation.NotificationService>();
@@ -84,6 +90,7 @@ builder.Services.AddAuthorization();
 
 // Background Services
 builder.Services.AddHostedService<EmailBackgroundService>();
+builder.Services.AddHostedService<AssetHealthBackgroundService>();
 
 var app = builder.Build();
 

@@ -1,13 +1,11 @@
 using FluentAssertions;
 using ITStockM.Services.Implementation;
 using ITStockM.Services.Interfaces;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
-using System.Net;
-using System.Net.Mail;
-using Xunit;
 using MimeKit;
+using Xunit;
 
 using EmailServiceImpl = ITStockM.Services.Implementation.EmailService;
 
@@ -15,82 +13,82 @@ namespace ITStockM.Tests.Services
 {
     public class EmailServiceTests
     {
-        private readonly Mock<ILogger<EmailServiceImpl>> _mockLogger;
-        private readonly Mock<IConfiguration> _mockConfiguration;
-        private readonly Mock<IConfigurationSection> _mockEmailSettings;
-
-        public EmailServiceTests()
+        private static EmailServiceImpl CreateService(
+            string adminEmail    = "admin@example.com",
+            string fromEmail     = "sender@example.com",
+            string smtpServer    = "localhost",
+            int    smtpPort      = 25,
+            Mock<IEmailTemplateService>? templatesMock = null)
         {
-            _mockLogger = new Mock<ILogger<EmailServiceImpl>>();
-            _mockConfiguration = new Mock<IConfiguration>();
-            _mockEmailSettings = new Mock<IConfigurationSection>();
-
-            // Setup configuration
-            _mockEmailSettings.Setup(x => x["SmtpServer"]).Returns("smtp.gmail.com");
-            _mockEmailSettings.Setup(x => x["SmtpPort"]).Returns("587");
-            _mockEmailSettings.Setup(x => x["FromEmail"]).Returns("test@example.com");
-            _mockEmailSettings.Setup(x => x["Password"]).Returns("testpassword");
-            _mockEmailSettings.Setup(x => x["AdminEmail"]).Returns("admin@example.com");
-
-            _mockConfiguration.Setup(x => x.GetSection("EmailSettings")).Returns(_mockEmailSettings.Object);
-        }
-
-        [Fact]
-        public void Constructor_ShouldThrowArgumentNullException_WhenFromEmailIsNull()
-        {
-            // Arrange
-            _mockEmailSettings.Setup(x => x["FromEmail"]).Returns((string)null);
-
-            // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => new EmailServiceImpl(_mockConfiguration.Object, _mockLogger.Object));
-        }
-
-        [Fact]
-        public void Constructor_ShouldThrowArgumentNullException_WhenPasswordIsNull()
-        {
-            // Arrange
-            _mockEmailSettings.Setup(x => x["Password"]).Returns((string)null);
-
-            // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => new EmailServiceImpl(_mockConfiguration.Object, _mockLogger.Object));
-        }
-
-        [Fact]
-        public async Task SendAdminNotificationAsync_ShouldFormatEmailCorrectly()
-        {
-            // Arrange
-            var originalAdmin = Environment.GetEnvironmentVariable("SMTP_ADMIN_EMAIL");
-            var originalFrom = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL");
-            var originalPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD");
-            var originalServer = Environment.GetEnvironmentVariable("SMTP_SERVER");
-            var originalPort = Environment.GetEnvironmentVariable("SMTP_PORT");
-
-            Environment.SetEnvironmentVariable("SMTP_ADMIN_EMAIL", "not-an-email@@");
-            Environment.SetEnvironmentVariable("SMTP_FROM_EMAIL", "test@example.com");
-            Environment.SetEnvironmentVariable("SMTP_PASSWORD", "");
-            Environment.SetEnvironmentVariable("SMTP_SERVER", "localhost");
-            Environment.SetEnvironmentVariable("SMTP_PORT", "25");
-
-            try
+            var opts = Options.Create(new EmailOptions
             {
-                var service = new EmailServiceImpl(_mockConfiguration.Object, _mockLogger.Object);
-                var action = "Test Action";
-                var details = "Test Details";
-                var performedBy = "Test User";
+                AdminEmail  = adminEmail,
+                FromEmail   = fromEmail,
+                SmtpServer  = smtpServer,
+                SmtpPort    = smtpPort,
+                Password    = "",
+                MaxRetryAttempts = 1,
+                RetryDelayMs     = 0
+            });
 
-                // Act & Assert
-                // Force a fast failure before any SMTP/network activity by using an invalid admin email.
-                await Assert.ThrowsAsync<ParseException>(() =>
-                    service.SendAdminNotificationAsync(action, details, performedBy));
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("SMTP_ADMIN_EMAIL", originalAdmin);
-                Environment.SetEnvironmentVariable("SMTP_FROM_EMAIL", originalFrom);
-                Environment.SetEnvironmentVariable("SMTP_PASSWORD", originalPassword);
-                Environment.SetEnvironmentVariable("SMTP_SERVER", originalServer);
-                Environment.SetEnvironmentVariable("SMTP_PORT", originalPort);
-            }
+            templatesMock ??= new Mock<IEmailTemplateService>();
+            return new EmailServiceImpl(opts, templatesMock.Object, NullLogger<EmailServiceImpl>.Instance);
+        }
+
+        // ─── AdminEmail skipping ──────────────────────────────────────────────────
+
+        [Fact]
+        public async Task SendAdminNotificationAsync_Skips_WhenAdminEmailIsEmpty()
+        {
+            var templatesMock = new Mock<IEmailTemplateService>();
+            var svc = CreateService(adminEmail: "", templatesMock: templatesMock);
+
+            // No SMTP connection attempted — since AdminEmail is empty the method returns early
+            await svc.SendAdminNotificationAsync("action", "details", "user");
+
+            templatesMock.Verify(
+                t => t.BuildActionNotification(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+                Times.Never,
+                "template should not be built when AdminEmail is not configured");
+        }
+
+        // ─── Template delegation ──────────────────────────────────────────────────
+
+        [Fact]
+        public async Task SendAdminNotificationAsync_CallsTemplate_WithCorrectArgs()
+        {
+            var templatesMock = new Mock<IEmailTemplateService>();
+            templatesMock
+                .Setup(t => t.BuildActionNotification("Deploy", "v2.0", "Alice"))
+                .Returns("<html>body</html>");
+
+            // Service will try to deliver but fail on connection — that is fine for this test
+            var svc = CreateService(templatesMock: templatesMock);
+
+            // swallow any SmtpCommandException/SocketException — we only care the template was called
+            try { await svc.SendAdminNotificationAsync("Deploy", "v2.0", "Alice"); }
+            catch { /* SMTP delivery expected to fail in unit test */ }
+
+            templatesMock.Verify(
+                t => t.BuildActionNotification("Deploy", "v2.0", "Alice"),
+                Times.Once);
+        }
+
+        // ─── Invalid recipient address ────────────────────────────────────────────
+
+        [Fact]
+        public async Task SendAdminNotificationAsync_Throws_WhenAdminEmailIsInvalidFormat()
+        {
+            var templatesMock = new Mock<IEmailTemplateService>();
+            templatesMock
+                .Setup(t => t.BuildActionNotification(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns("<html/>");
+
+            var svc = CreateService(adminEmail: "not-an-email@@", templatesMock: templatesMock);
+
+            Func<Task> act = () => svc.SendAdminNotificationAsync("action", "detail", "user");
+
+            await act.Should().ThrowAsync<ParseException>("an invalid To address must cause a ParseException");
         }
     }
 }

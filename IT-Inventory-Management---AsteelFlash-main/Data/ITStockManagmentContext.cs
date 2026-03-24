@@ -147,6 +147,33 @@ namespace ITStockM.Data
       builder.Entity<ITStockM.Models.ITStockManagment.Request>()
         .Property(p => p.ApprovedAt)
         .HasColumnType("datetime2");
+
+      // ─── Asset Lifecycle Module ─────────────────────────────────────────────
+      builder.Entity<ITStockM.Models.ITStockManagment.MaintenanceTicket>()
+        .HasOne(t => t.Materiel)
+        .WithMany(m => m.MaintenanceTickets)
+        .HasForeignKey(t => t.MaterielId)
+        .OnDelete(DeleteBehavior.Restrict);
+
+      builder.Entity<ITStockM.Models.ITStockManagment.MaintenanceTicket>()
+        .HasOne(t => t.ReportedBy)
+        .WithMany()
+        .HasForeignKey(t => t.ReportedByEmployeeId)
+        .IsRequired(false)
+        .OnDelete(DeleteBehavior.SetNull);
+
+      builder.Entity<ITStockM.Models.ITStockManagment.AssetLifecycleRecord>()
+        .HasOne(r => r.Materiel)
+        .WithMany(m => m.AssetLifecycleRecords)
+        .HasForeignKey(r => r.MaterielId)
+        .OnDelete(DeleteBehavior.Cascade);
+
+      builder.Entity<ITStockM.Models.ITStockManagment.AssetPrediction>()
+        .HasOne(p => p.Materiel)
+        .WithMany(m => m.AssetPredictions)
+        .HasForeignKey(p => p.MaterielId)
+        .OnDelete(DeleteBehavior.Cascade);
+
       this.OnModelBuilding(builder);
     }
 
@@ -169,6 +196,11 @@ namespace ITStockM.Data
     public DbSet<ITStockM.Models.ITStockManagment.Request> Requests { get; set; }
 
     public DbSet<ITStockM.Models.ITStockManagment.Supplier> Suppliers { get; set; }
+
+    // ─── Asset Lifecycle Module ───────────────────────────────────────────────
+    public DbSet<ITStockM.Models.ITStockManagment.MaintenanceTicket> MaintenanceTickets { get; set; }
+    public DbSet<ITStockM.Models.ITStockManagment.AssetLifecycleRecord> AssetLifecycleRecords { get; set; }
+    public DbSet<ITStockM.Models.ITStockManagment.AssetPrediction> AssetPredictions { get; set; }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

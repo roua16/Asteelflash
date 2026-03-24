@@ -423,6 +423,16 @@
             </Authorized>
         </AuthorizeView>
 
+        <!-- Asset Lifecycle Section -->
+        <AuthorizeView Roles="Admin,IT">
+            <Authorized>
+                <div class="menu-category">Asset Lifecycle</div>
+                <RadzenPanelMenuItem Text="Lifecycle Tracker" Icon="autorenew" Path="/asset-lifecycle" />
+                <RadzenPanelMenuItem Text="Maintenance Tickets" Icon="build" Path="/maintenance" />
+                <RadzenPanelMenuItem Text="Health Predictions" Icon="monitoring" Path="/asset-predictions" />
+            </Authorized>
+        </AuthorizeView>
+
         <!-- Purchasing Section -->
         <AuthorizeView Roles="Admin,Purchasing,PDR">
             <Authorized>

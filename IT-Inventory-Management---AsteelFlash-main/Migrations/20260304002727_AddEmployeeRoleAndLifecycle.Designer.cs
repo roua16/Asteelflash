@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ITStockM.Migrations
 {
     [DbContext(typeof(ITStockManagmentContext))]
-    [Migration("20260208181002_AddEmployeeRoleField")]
-    partial class AddEmployeeRoleField
+    [Migration("20260304002727_AddEmployeeRoleAndLifecycle")]
+    partial class AddEmployeeRoleAndLifecycle
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,91 @@ namespace ITStockM.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("ITStockM.Models.ITStockManagment.AssetLifecycleRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MaterielId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Stage")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterielId");
+
+                    b.ToTable("AssetLifecycleRecord", "dbo", t =>
+                        {
+                            t.HasTrigger("AssetLifecycleRecord_Trigger");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("ITStockM.Models.ITStockManagment.AssetPrediction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CalculatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("EstimatedReplacementCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("HealthScore")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("HealthStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("MaterielId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PredictedFailureDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RecommendationReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("RecommendedReplacementDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterielId");
+
+                    b.ToTable("AssetPrediction", "dbo", t =>
+                        {
+                            t.HasTrigger("AssetPrediction_Trigger");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
 
             modelBuilder.Entity("ITStockM.Models.ITStockManagment.Assignment", b =>
                 {
@@ -208,6 +293,57 @@ namespace ITStockM.Migrations
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
+            modelBuilder.Entity("ITStockM.Models.ITStockManagment.MaintenanceTicket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("Cost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("MaterielId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProblemDescription")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("ReportedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ReportedByEmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Resolution")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterielId");
+
+                    b.HasIndex("ReportedByEmployeeId");
+
+                    b.ToTable("MaintenanceTicket", "dbo", t =>
+                        {
+                            t.HasTrigger("MaintenanceTicket_Trigger");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
             modelBuilder.Entity("ITStockM.Models.ITStockManagment.Materiel", b =>
                 {
                     b.Property<int>("Id")
@@ -216,13 +352,26 @@ namespace ITStockM.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal?>("CurrentHealthScore")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int?>("ExpectedLifetimeMonths")
+                        .HasColumnType("int");
+
                     b.Property<int>("IrreparableQuantity")
                         .HasColumnType("int");
+
+                    b.Property<string>("LifecycleStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("MaterielName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("materielName");
+
+                    b.Property<DateTime?>("PurchaseDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("QuantityITStock")
                         .HasColumnType("int");
@@ -403,6 +552,28 @@ namespace ITStockM.Migrations
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
+            modelBuilder.Entity("ITStockM.Models.ITStockManagment.AssetLifecycleRecord", b =>
+                {
+                    b.HasOne("ITStockM.Models.ITStockManagment.Materiel", "Materiel")
+                        .WithMany("AssetLifecycleRecords")
+                        .HasForeignKey("MaterielId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Materiel");
+                });
+
+            modelBuilder.Entity("ITStockM.Models.ITStockManagment.AssetPrediction", b =>
+                {
+                    b.HasOne("ITStockM.Models.ITStockManagment.Materiel", "Materiel")
+                        .WithMany("AssetPredictions")
+                        .HasForeignKey("MaterielId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Materiel");
+                });
+
             modelBuilder.Entity("ITStockM.Models.ITStockManagment.Assignment", b =>
                 {
                     b.HasOne("ITStockM.Models.ITStockManagment.Employee", "Employee")
@@ -483,6 +654,24 @@ namespace ITStockM.Migrations
                     b.Navigation("Materiel");
                 });
 
+            modelBuilder.Entity("ITStockM.Models.ITStockManagment.MaintenanceTicket", b =>
+                {
+                    b.HasOne("ITStockM.Models.ITStockManagment.Materiel", "Materiel")
+                        .WithMany("MaintenanceTickets")
+                        .HasForeignKey("MaterielId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ITStockM.Models.ITStockManagment.Employee", "ReportedBy")
+                        .WithMany()
+                        .HasForeignKey("ReportedByEmployeeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Materiel");
+
+                    b.Navigation("ReportedBy");
+                });
+
             modelBuilder.Entity("ITStockM.Models.ITStockManagment.Offer", b =>
                 {
                     b.HasOne("ITStockM.Models.ITStockManagment.Request", "Request")
@@ -534,9 +723,15 @@ namespace ITStockM.Migrations
 
             modelBuilder.Entity("ITStockM.Models.ITStockManagment.Materiel", b =>
                 {
+                    b.Navigation("AssetLifecycleRecords");
+
+                    b.Navigation("AssetPredictions");
+
                     b.Navigation("AssignmentMateriels");
 
                     b.Navigation("DeliveryOrderMateriels");
+
+                    b.Navigation("MaintenanceTickets");
                 });
 
             modelBuilder.Entity("ITStockM.Models.ITStockManagment.Project", b =>

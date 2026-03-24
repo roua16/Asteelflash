@@ -30,40 +30,45 @@ namespace ITStockM.Components.Layout
         string theme;
         protected override async Task OnInitializedAsync()
         {
+            // NOTE: Do NOT call ProtectedLocalStorage here — it uses JS interop which is
+            // unavailable during prerendering. All storage reads are deferred to OnAfterRenderAsync.
+            var deliveryOrders = await ITStockManagmentService.GetDeliveryOrdersList();
+            orderNumbersNF = deliveryOrders.Where(dlo => dlo.OrderNumber == null).Count();
+        }
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (!firstRender) return;
+
+            // Circuit is now connected — JS interop (ProtectedLocalStorage) is safe to use.
             try
             {
-                user = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.FullName;
+                user = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value?.FullName ?? "Guest";
             }
-            catch (Exception)
+            catch
             {
-                // Data protection key changed, clear invalid data
                 await LocalStorage.DeleteAsync("UserSession");
                 user = "Guest";
             }
-
-            var deliveryOrders = await ITStockManagmentService.GetDeliveryOrdersList();
-            orderNumbersNF = deliveryOrders.Where(dlo => dlo.OrderNumber == null).Count();
 
             try
             {
                 theme = (await LocalStorage.GetAsync<string>("theme")).Value;
                 if (string.IsNullOrEmpty(theme))
                 {
-                    await LocalStorage.SetAsync("theme", "humanistic");
-                    ThemeService.SetTheme("humanistic");
+                    theme = "humanistic";
+                    await LocalStorage.SetAsync("theme", theme);
                 }
-                else
-                {
-                    ThemeService.SetTheme(theme);
-                }
+                ThemeService.SetTheme(theme);
             }
-            catch (Exception)
+            catch
             {
-                // Data protection key changed, set default theme
                 theme = "humanistic";
-                await LocalStorage.SetAsync("theme", "humanistic");
-                ThemeService.SetTheme("humanistic");
+                await LocalStorage.SetAsync("theme", theme);
+                ThemeService.SetTheme(theme);
             }
+
+            StateHasChanged();
         }
 
         void SidebarToggleClick()

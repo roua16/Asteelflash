@@ -1,177 +1,125 @@
 using ITStockM.Services.Interfaces;
 using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MimeKit;
 
 namespace ITStockM.Services.Implementation
 {
     /// <summary>
-    /// Implementation of email service using MailKit for proper SSL support
+    /// Delivers email via MailKit.
+    /// SRP: only responsible for transport — HTML bodies come from <see cref="IEmailTemplateService"/>.
+    /// Uses <see cref="EmailOptions"/> (IOptions pattern) for configuration.
+    /// Includes exponential-backoff retry for transient SMTP failures.
     /// </summary>
     public class EmailService : IEmailService
     {
-        private readonly string _smtpServer;
-        private readonly int _smtpPort;
-        private readonly string _fromEmail;
-        private readonly string _password;
-        private readonly string _adminEmail;
+        private readonly EmailOptions _opts;
+        private readonly IEmailTemplateService _templates;
         private readonly ILogger<EmailService> _logger;
 
         public EmailService(
-            IConfiguration configuration,
+            IOptions<EmailOptions> options,
+            IEmailTemplateService templates,
             ILogger<EmailService> logger)
         {
-            // Priority: Environment variables > appsettings.json
-            _smtpServer = Environment.GetEnvironmentVariable("SMTP_SERVER")
-                ?? configuration.GetSection("EmailSettings")["SmtpServer"]
-                ?? "smtp.gmail.com";
+            _opts      = options.Value;
+            _templates = templates;
+            _logger    = logger;
 
-            _smtpPort = int.TryParse(Environment.GetEnvironmentVariable("SMTP_PORT"), out var envPort)
-                ? envPort
-                : int.Parse(configuration.GetSection("EmailSettings")["SmtpPort"] ?? "587");
-
-            _fromEmail = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL")
-                ?? configuration.GetSection("EmailSettings")["FromEmail"]
-                ?? throw new ArgumentNullException("SMTP_FROM_EMAIL or EmailSettings:FromEmail is required");
-
-            _password = Environment.GetEnvironmentVariable("SMTP_PASSWORD")
-                ?? configuration.GetSection("EmailSettings")["Password"]
-                ?? throw new ArgumentNullException("SMTP_PASSWORD or EmailSettings:Password is required");
-
-            _adminEmail = Environment.GetEnvironmentVariable("SMTP_ADMIN_EMAIL")
-                ?? configuration.GetSection("EmailSettings")["AdminEmail"]
-                ?? _fromEmail;
-
-            _logger = logger;
-
-            _logger.LogInformation("EmailService initialized with server={Server}, port={Port}, from={From}",
-                _smtpServer, _smtpPort, _fromEmail);
+            _logger.LogInformation(
+                "EmailService ready — server={Server}:{Port} from={From}",
+                _opts.SmtpServer, _opts.SmtpPort, _opts.FromEmail);
         }
 
-        public async Task SendEmailAsync(string toEmail, string subject, string body)
-        {
-            _logger.LogInformation("Preparing to send email {@EmailMeta}", new { Server = _smtpServer, Port = _smtpPort, From = _fromEmail, To = toEmail, Subject = subject });
-            try
-            {
-                var bodySize = System.Text.Encoding.UTF8.GetByteCount(body ?? string.Empty);
-                _logger.LogDebug("Sending email to {To} (subject length={SubjectLen}, bodyBytes={BodyBytes})", toEmail, subject?.Length ?? 0, bodySize);
+        // ─── Public interface ────────────────────────────────────────────────────
 
-                var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("IT Stock Management", _fromEmail));
-                message.To.Add(MailboxAddress.Parse(toEmail));
-                message.Subject = subject;
-                message.Body = new TextPart("html") { Text = body };
+        public Task SendEmailAsync(string toEmail, string subject, string body)
+            => SendWithRetryAsync(BuildMessage([toEmail], subject, body), subject);
 
-                using var client = new SmtpClient();
-
-                // Port 465 = SSL/TLS from start, Port 587 = STARTTLS, Port 25 = No encryption (for local testing)
-                var secureSocketOptions = _smtpPort == 465
-                    ? SecureSocketOptions.SslOnConnect
-                    : _smtpPort == 25
-                        ? SecureSocketOptions.None
-                        : SecureSocketOptions.StartTls;
-
-                _logger.LogDebug("Connecting to {Server}:{Port} with {SecurityOption}", _smtpServer, _smtpPort, secureSocketOptions);
-
-                await client.ConnectAsync(_smtpServer, _smtpPort, secureSocketOptions);
-
-                // Only authenticate if password is provided (skip for local smtp4dev testing)
-                if (!string.IsNullOrEmpty(_password))
-                {
-                    await client.AuthenticateAsync(_fromEmail, _password);
-                }
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-
-                _logger.LogInformation("Email sent successfully {@SendResult}", new { To = toEmail, Server = _smtpServer, Port = _smtpPort });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send email to {To}", toEmail);
-                throw;
-            }
-        }
-
-        public async Task SendEmailToMultipleAsync(List<string> toEmails, string subject, string body)
-        {
-            _logger.LogInformation("Preparing to send bulk email {@BulkMeta}", new { Server = _smtpServer, Port = _smtpPort, From = _fromEmail, RecipientCount = toEmails?.Count ?? 0, Subject = subject });
-            try
-            {
-                var bodySize = System.Text.Encoding.UTF8.GetByteCount(body ?? string.Empty);
-                var preview = string.Join(',', toEmails?.Take(5) ?? Array.Empty<string>());
-                _logger.LogDebug("Sending bulk email to {PreviewRecipients} (count={Count}) subjectLen={SubjectLen} bodyBytes={BodyBytes}", preview, toEmails?.Count ?? 0, subject?.Length ?? 0, bodySize);
-
-                var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("IT Stock Management", _fromEmail));
-                foreach (var email in toEmails ?? new List<string>())
-                {
-                    message.To.Add(MailboxAddress.Parse(email));
-                }
-                message.Subject = subject;
-                message.Body = new TextPart("html") { Text = body };
-
-                using var client = new SmtpClient();
-
-                // Port 465 = SSL/TLS from start, Port 587 = STARTTLS, Port 25 = No encryption (for local testing)
-                var secureSocketOptions = _smtpPort == 465
-                    ? SecureSocketOptions.SslOnConnect
-                    : _smtpPort == 25
-                        ? SecureSocketOptions.None
-                        : SecureSocketOptions.StartTls;
-
-                await client.ConnectAsync(_smtpServer, _smtpPort, secureSocketOptions);
-
-                // Only authenticate if password is provided (skip for local smtp4dev testing)
-                if (!string.IsNullOrEmpty(_password))
-                {
-                    await client.AuthenticateAsync(_fromEmail, _password);
-                }
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-
-                _logger.LogInformation("Bulk email sent successfully {@BulkResult}", new { RecipientCount = toEmails?.Count ?? 0, Server = _smtpServer });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send bulk email to recipients (count={Count})", toEmails?.Count ?? 0);
-                throw;
-            }
-        }
+        public Task SendEmailToMultipleAsync(List<string> toEmails, string subject, string body)
+            => SendWithRetryAsync(BuildMessage(toEmails, subject, body), subject);
 
         public async Task SendAdminNotificationAsync(string action, string details, string performedBy)
         {
-            var subject = $"[IT Stock Management] {action}";
-            var body = $@"
-                <html>
-                <body style='font-family: Arial, sans-serif;'>
-                    <h2 style='color: #2c3e50;'>Action Notification</h2>
-                    <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px;'>
-                        <p><strong>Action:</strong> {action}</p>
-                        <p><strong>Performed By:</strong> {performedBy}</p>
-                        <p><strong>Details:</strong></p>
-                        <div style='background-color: white; padding: 10px; border-left: 3px solid #3498db;'>
-                            {details}
-                        </div>
-                        <p style='margin-top: 15px; color: #7f8c8d;'>
-                            <small>Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}</small>
-                        </p>
-                    </div>
-                </body>
-                </html>";
+            if (string.IsNullOrWhiteSpace(_opts.AdminEmail))
+            {
+                _logger.LogWarning("AdminEmail is not configured — skipping admin notification for action='{Action}'", action);
+                return;
+            }
 
-            _logger.LogInformation("Sending admin notification {@AdminNotificationMeta}", new { To = _adminEmail, Subject = subject, PerformedBy = performedBy });
-            try
+            var subject = $"[IT Stock Management] {action}";
+            var body    = _templates.BuildActionNotification(action, details, performedBy);
+            await SendEmailAsync(_opts.AdminEmail, subject, body);
+        }
+
+        // ─── Private helpers ─────────────────────────────────────────────────────
+
+        private MimeMessage BuildMessage(IEnumerable<string> recipients, string subject, string htmlBody)
+        {
+            var msg = new MimeMessage();
+            msg.From.Add(new MailboxAddress("IT Stock Management", _opts.FromEmail));
+            foreach (var r in recipients)
+                msg.To.Add(MailboxAddress.Parse(r));
+            msg.Subject = subject;
+            msg.Body    = new TextPart("html") { Text = htmlBody };
+            return msg;
+        }
+
+        private async Task SendWithRetryAsync(MimeMessage message, string subjectForLog)
+        {
+            var attempt = 0;
+            var delay   = _opts.RetryDelayMs;
+
+            while (true)
             {
-                await SendEmailAsync(_adminEmail, subject, body);
-                _logger.LogInformation("Admin notification sent {@AdminSendResult}", new { To = _adminEmail, Subject = subject });
+                attempt++;
+                try
+                {
+                    await DeliverAsync(message);
+                    _logger.LogInformation(
+                        "Email delivered on attempt {Attempt}: subject='{Subject}' to=[{To}]",
+                        attempt, subjectForLog, string.Join(',', message.To));
+                    return;
+                }
+                catch (Exception ex) when (attempt < _opts.MaxRetryAttempts)
+                {
+                    _logger.LogWarning(ex,
+                        "SMTP delivery failed (attempt {Attempt}/{Max}) — retrying in {Delay}ms. Subject='{Subject}'",
+                        attempt, _opts.MaxRetryAttempts, delay, subjectForLog);
+                    await Task.Delay(delay);
+                    delay *= 2; // exponential back-off
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "SMTP delivery failed after {Max} attempts. Subject='{Subject}'",
+                        _opts.MaxRetryAttempts, subjectForLog);
+                    throw;
+                }
             }
-            catch (Exception ex)
+        }
+
+        /// <summary>Opens a connection, sends, disconnects. One responsibility only.</summary>
+        private async Task DeliverAsync(MimeMessage message)
+        {
+            using var client = new SmtpClient();
+
+            var ssl = _opts.SmtpPort switch
             {
-                _logger.LogError(ex, "Failed to send admin notification to {AdminEmail}", _adminEmail);
-                throw;
-            }
+                465 => SecureSocketOptions.SslOnConnect,
+                25  => SecureSocketOptions.None,
+                _   => SecureSocketOptions.StartTls
+            };
+
+            await client.ConnectAsync(_opts.SmtpServer, _opts.SmtpPort, ssl);
+
+            if (!string.IsNullOrEmpty(_opts.Password))
+                await client.AuthenticateAsync(_opts.FromEmail, _opts.Password);
+
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
         }
     }
 }

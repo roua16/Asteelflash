@@ -38,7 +38,27 @@ namespace ITStockM.Models.ITStockManagment
         [Required]
         public DateTime Warranty { get; set; }
 
+        // ─── Lifecycle-module fields ─────────────────────────────────────────────
 
+        /// <summary>Date the asset was purchased / first entered the system.</summary>
+        [Column(TypeName = "datetime2")]
+        public DateTime? PurchaseDate { get; set; }
+
+        /// <summary>Expected useful lifetime in months (default 48 = 4 years).</summary>
+        public int? ExpectedLifetimeMonths { get; set; } = 48;
+
+        /// <summary>Latest calculated health score 0–100. Updated daily by AssetHealthBackgroundService.</summary>
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal? CurrentHealthScore { get; set; }
+
+        /// <summary>Current lifecycle stage (Purchased / InStock / Assigned / UnderMaintenance / Retired).</summary>
+        [MaxLength(50)]
+        public string? LifecycleStatus { get; set; } = Enums.LifecycleStage.InStock;
+
+        // ─── Lifecycle collections ───────────────────────────────────────────────
+        public ICollection<MaintenanceTicket> MaintenanceTickets { get; set; } = new List<MaintenanceTicket>();
+        public ICollection<AssetLifecycleRecord> AssetLifecycleRecords { get; set; } = new List<AssetLifecycleRecord>();
+        public ICollection<AssetPrediction> AssetPredictions { get; set; } = new List<AssetPrediction>();
 
 
 
