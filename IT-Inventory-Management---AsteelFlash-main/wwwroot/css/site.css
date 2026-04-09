@@ -1,32 +1,30 @@
+/* ===== NX Design System - Global Styles ===== */
 :root {
-    font-size: var(--rz-root-font-size);
-    --app-font: "Manrope", "Segoe UI", "Helvetica Neue", sans-serif;
-    --app-bg: #fdf6f0;
-    --app-bg-soft: #fff4eb;
-    --app-surface: #ffffff;
-    --app-surface-soft: #fff6f0;
-    --app-border: rgba(204, 111, 38, 0.18);
-    --app-text: #3d2a1d;
-    --app-muted: #775848;
-    --app-primary: #d6691d;
-    --app-accent: #f18f3f;
-    --app-success: #1d7d47;
-    --app-danger: #ce3c2c;
-    --app-shadow-sm: 0 8px 22px rgba(89, 53, 34, 0.12);
-    --app-shadow-md: 0 16px 34px rgba(89, 53, 34, 0.16);
-    --app-shadow-lg: 0 28px 56px rgba(89, 53, 34, 0.18);
-    --app-glow: 0 0 0 3px rgba(214, 105, 29, 0.15);
-    --app-ring-strong: 0 0 0 4px rgba(214, 105, 29, 0.22);
-    --app-gradient-primary: linear-gradient(135deg, #d6691d 0%, #f58f3b 50%, #d6691d 100%);
-    --app-gradient-accent: linear-gradient(135deg, #f18f3f 0%, #f7ab65 50%, #df7f3f 100%);
-    --rz-text-color: #2e1f15;
-    --rz-text-title-color: #24180f;
-    --rz-text-secondary-color: #5f4a3b;
-    --rz-text-tertiary-color: #7a6453;
-    --rz-primary: #c95f19;
-    --rz-primary-dark: #8f400f;
-    --rz-primary-light: #f8dcc9;
-    --rz-primary-lighter: #fdf1e8;
+    /* Typography */
+    --app-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    /* Palette */
+    --nx-primary: #0F172A;
+    --nx-accent: #6366F1;
+    --nx-accent-soft: #EEF2FF;
+    --nx-pink: #EC4899;
+    --nx-success: #10B981;
+    --nx-warning: #F59E0B;
+    --nx-danger: #EF4444;
+    --nx-surface: #FFFFFF;
+    --nx-bg: #F1F5F9;
+    --nx-border: rgba(226, 232, 240, 0.8);
+    --nx-text: #0F172A;
+    --nx-muted: #64748B;
+    /* Radzen theme color overrides */
+    --rz-text-color: #334155;
+    --rz-text-title-color: #0F172A;
+    --rz-text-secondary-color: #475569;
+    --rz-text-tertiary-color: #64748B;
+    --rz-primary: #6366F1;
+    --rz-primary-dark: #4338CA;
+    --rz-primary-light: #EEF2FF;
+    --rz-primary-lighter: #F5F3FF;
+    /* Spacing */
     --space-1: 0.5rem;
     --space-2: 0.75rem;
     --space-3: 1rem;
@@ -35,132 +33,72 @@
     --space-6: 2rem;
 }
 
-html {
-    scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
     margin: 0;
     font-family: var(--app-font);
-    color: var(--app-text);
+    color: var(--nx-text);
     font-size: var(--rz-body-font-size);
     line-height: var(--rz-body-line-height);
-    background:
-        radial-gradient(circle at 12% 14%, rgba(214, 105, 29, 0.14), transparent 32%),
-        radial-gradient(circle at 88% 6%, rgba(241, 143, 63, 0.12), transparent 28%),
-        linear-gradient(180deg, #fff7f1 0%, var(--app-bg-soft) 100%);
-    background-attachment: fixed;
-}
-
-body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background-image: linear-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
-    background-size: 30px 30px;
-    opacity: 0.22;
-    z-index: -1;
+    background: var(--nx-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-    background: rgba(15, 118, 110, 0.2);
-    color: #0b3431;
+    background: rgba(99, 102, 241, 0.2);
+    color: #1E1B4B;
 }
 
-.rz-body {
-    --rz-body-padding: 0;
-}
+.rz-body { --rz-body-padding: 0; }
 
-a {
-    color: var(--app-primary);
-}
+a { color: var(--nx-accent); text-decoration: none; }
+a:hover, a:focus { color: #4338CA; text-decoration: underline; }
 
-a:hover,
-a:focus {
-    color: #0b5d56;
-}
-
-/* Keep all Radzen typography and form content readable across CRUD and dashboard pages. */
+/* ===== Radzen component text overrides ===== */
 .rz-label,
 .rz-form-field-label,
-.rz-text-h1,
-.rz-text-h2,
-.rz-text-h3,
-.rz-text-h4,
+.rz-text-h1, .rz-text-h2, .rz-text-h3, .rz-text-h4,
 .rz-column-title-content,
 .rz-cell-data,
 .rz-dropdown-label,
-.rz-dialog-title,
-.rz-dialog-content,
+.rz-dialog-title, .rz-dialog-content,
 .rz-paginator,
-.rz-datatable,
-.rz-data-grid {
+.rz-datatable, .rz-data-grid {
     color: var(--rz-text-color);
 }
 
-.rz-text-h1,
-.rz-text-h2,
-.rz-text-h3,
-.rz-text-h4 {
+.rz-text-h1, .rz-text-h2, .rz-text-h3, .rz-text-h4 {
     color: var(--rz-text-title-color);
 }
 
-.rz-alert {
-    color: var(--rz-text-color);
-}
+.rz-alert { color: var(--rz-text-color); }
 
-/* Shared spacing/layout system for dashboard + CRUD pages inside the main content shell. */
-.app-content-shell > * {
-    max-width: 100%;
-}
+/* ===== Content shell layout ===== */
+.app-content-shell > * { max-width: 100%; }
 
-.app-content-shell .rz-stack {
-    width: 100%;
-    gap: var(--space-4);
-}
+.app-content-shell .rz-stack { width: 100%; gap: var(--space-4); }
+.app-content-shell .rz-row { row-gap: var(--space-3); }
+.app-content-shell .rz-column { min-width: 0; }
 
-.app-content-shell .rz-row {
-    row-gap: var(--space-3);
-}
-
-.app-content-shell .rz-column {
-    min-width: 0;
-}
-
-.app-content-shell .rz-stack > .rz-textbox,
-.app-content-shell .rz-stack > .rz-dropdown,
-.app-content-shell .rz-stack > .rz-numeric,
-.app-content-shell .rz-stack > .rz-datepicker {
-    margin-top: var(--space-1);
-}
-
-.app-content-shell .rz-alert {
-    margin-bottom: var(--space-3);
-}
+.app-content-shell .rz-alert { margin-bottom: var(--space-3); }
 
 .app-content-shell .rz-templateform {
     margin-top: var(--space-2);
     padding: var(--space-4);
-    border-radius: 16px;
-    border: 1px solid rgba(201, 95, 25, 0.18);
-    background: rgba(255, 255, 255, 0.95);
+    border-radius: 14px;
+    border: 1px solid var(--nx-border);
+    background: var(--nx-surface);
 }
 
-.app-content-shell .rz-templateform .rz-row {
-    row-gap: var(--space-2);
-}
+.app-content-shell .rz-templateform .rz-row { row-gap: var(--space-2); }
 
 .app-content-shell .rz-templateform .rz-label {
     display: inline-block;
-    margin-bottom: 0.4rem;
-    font-weight: 650;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
     color: var(--rz-text-secondary-color);
-}
-
-.app-content-shell .rz-templateform .rz-stack {
-    margin-top: var(--space-2);
 }
 
 .app-content-shell .rz-datatable,
@@ -168,6 +106,7 @@ a:focus {
     margin-top: var(--space-2);
 }
 
+/* ===== Form inputs ===== */
 .rz-inputtext,
 .rz-textbox,
 .rz-dropdown,
@@ -176,7 +115,17 @@ a:focus {
 .rz-datepicker-input,
 .rz-textarea {
     color: var(--rz-text-color) !important;
-    background-color: #ffffff;
+    background-color: var(--nx-surface);
+    border-color: var(--nx-border) !important;
+}
+
+.rz-inputtext:focus,
+.rz-textbox:focus,
+.rz-dropdown:focus,
+.rz-textarea:focus {
+    border-color: var(--nx-accent) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+    outline: none;
 }
 
 .rz-inputtext::placeholder,
@@ -191,9 +140,11 @@ a:focus {
 .rz-multiselect-panel,
 .rz-autocomplete-panel,
 .rz-popup {
-    background: #ffffff;
+    background: var(--nx-surface);
     color: var(--rz-text-color);
-    border: 1px solid var(--app-border);
+    border: 1px solid var(--nx-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
     z-index: 1400;
 }
 
@@ -201,14 +152,17 @@ a:focus {
 .rz-multiselect-items li,
 .rz-autocomplete-items li {
     color: var(--rz-text-color);
+    font-size: 0.875rem;
 }
 
 .rz-dropdown-items li:hover,
 .rz-multiselect-items li:hover,
 .rz-autocomplete-items li:hover {
-    background: #f8efe7;
+    background: var(--nx-accent-soft);
+    color: var(--nx-accent);
 }
 
+/* ===== Tables ===== */
 .rz-datatable-data td,
 .rz-datatable-data td .rz-cell-data,
 .rz-grid-table td,
@@ -218,36 +172,50 @@ a:focus {
 
 .rz-datatable-thead th,
 .rz-datatable-thead th .rz-column-title-content {
-    color: #1f4c49;
+    color: #475569;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
 }
 
-.rz-dialog-content {
-    background: #ffffff;
-}
+/* ===== Dialogs ===== */
+.rz-dialog-content { background: var(--nx-surface); }
 
+/* ===== Buttons ===== */
 .rz-button.rz-light,
 .rz-button.rz-light:hover,
 .rz-button.rz-light:focus {
     color: var(--rz-text-color);
-    background: #f7eee6;
-    border: 1px solid rgba(201, 95, 25, 0.26);
+    background: #F8FAFC;
+    border: 1px solid var(--nx-border);
 }
 
-.blazor-error-boundary::after {
-    content: "An error has occurred.";
+/* ===== Cards ===== */
+.rz-card {
+    border-radius: 16px;
+    border: 1px solid var(--nx-border);
+    background: var(--nx-surface);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 16px rgba(15, 23, 42, 0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
+/* ===== Error UI ===== */
+.blazor-error-boundary::after { content: "An error has occurred."; }
 
 #blazor-error-ui {
-    background: #fff7d6;
-    border-top: 1px solid #f0dc8a;
+    background: #FFFBEB;
+    border-top: 1px solid #FDE68A;
     bottom: 0;
-    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
     display: none;
     left: 0;
     padding: 0.75rem 1.25rem;
     position: fixed;
     width: 100%;
     z-index: 1000;
+    font-size: 0.875rem;
+    color: #92400E;
 }
 
 #blazor-error-ui .dismiss {
@@ -257,6 +225,7 @@ a:focus {
     top: 0.5rem;
 }
 
+/* ===== Loading ===== */
 .loading-progress {
     position: relative;
     display: block;
@@ -267,14 +236,14 @@ a:focus {
 
 .loading-progress circle {
     fill: none;
-    stroke: #d9ecea;
+    stroke: #E2E8F0;
     stroke-width: 0.6rem;
     transform-origin: 50% 50%;
     transform: rotate(-90deg);
 }
 
 .loading-progress circle:last-child {
-    stroke: var(--app-primary);
+    stroke: var(--nx-accent);
     stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
     transition: stroke-dasharray 0.05s ease-in-out;
 }
@@ -283,351 +252,10 @@ a:focus {
     position: absolute;
     text-align: center;
     font-weight: 700;
+    color: var(--nx-primary);
     inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
 }
 
 .loading-progress-text:after {
     content: var(--blazor-load-percentage-text, "Loading");
-}
-
-.rz-card {
-    border-radius: 18px;
-    border: 1px solid var(--app-border);
-    background: linear-gradient(180deg, var(--app-surface) 0%, #fbfefe 100%);
-    box-shadow: var(--app-shadow-sm);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.rz-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--app-shadow-md);
-    border-color: rgba(15, 118, 110, 0.28);
-}
-
-.page-container {
-    display: block;
-    width: 100%;
-    padding: 1.6rem;
-    margin: 0 auto 1.8rem;
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(15, 118, 110, 0.12);
-    border-radius: 28px;
-    box-shadow: 0 18px 42px rgba(11, 79, 77, 0.08);
-    backdrop-filter: blur(12px);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.page-container:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 24px 52px rgba(11, 79, 77, 0.11);
-}
-
-.section-panel,
-.panel-surface,
-.content-panel {
-    background: rgba(255, 255, 255, 0.94);
-    border-radius: 22px;
-    border: 1px solid rgba(15, 118, 110, 0.1);
-    box-shadow: 0 10px 26px rgba(11, 79, 77, 0.08);
-}
-
-.panel-header,
-.section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.85rem;
-    margin-bottom: 1.45rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(15, 118, 110, 0.1);
-}
-
-.panel-title,
-.section-title {
-    margin: 0;
-    font-size: clamp(1.2rem, 1.35vw, 1.6rem);
-    font-weight: 700;
-    color: var(--app-text);
-}
-
-img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    max-height: 52rem;
-}
-
-.section-pill,
-.status-pill,
-.badge-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.45rem 0.85rem;
-    background: rgba(15, 118, 110, 0.09);
-    border: 1px solid rgba(15, 118, 110, 0.14);
-    border-radius: 999px;
-    color: var(--app-primary);
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-}
-
-.card-micro {
-    border-radius: 18px;
-    padding: 1rem 1.1rem;
-    background: rgba(255, 255, 255, 0.98);
-    border: 1px solid rgba(15, 118, 110, 0.1);
-    box-shadow: 0 10px 22px rgba(11, 79, 77, 0.08);
-}
-
-.rz-button,
-.rz-button.rz-state-focus {
-    border-radius: 11px;
-    font-weight: 650;
-    transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease, background-position 0.24s ease;
-}
-
-.rz-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(11, 79, 77, 0.2);
-}
-
-.rz-button:active {
-    transform: translateY(0);
-}
-
-.rz-button.rz-primary,
-.rz-button.rz-primary:hover,
-.rz-button.rz-primary:focus {
-    border: none;
-    background: var(--app-gradient-primary);
-    background-size: 180% 180%;
-    color: #ffffff;
-}
-
-.rz-button.rz-secondary,
-.rz-button.rz-secondary:hover,
-.rz-button.rz-secondary:focus {
-    border: none;
-    background: rgba(241, 143, 63, 0.14);
-    color: var(--app-primary);
-}
-
-.rz-button.rz-primary:hover,
-.rz-button.rz-secondary:hover {
-    background-position: 100% 0;
-}
-
-.rz-textbox,
-.rz-dropdown,
-.rz-numeric,
-.rz-datepicker,
-.rz-textarea {
-    border-radius: 10px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.rz-textbox:hover,
-.rz-dropdown:hover,
-.rz-numeric:hover,
-.rz-datepicker:hover,
-.rz-textarea:hover {
-    border-color: rgba(15, 118, 110, 0.38);
-}
-
-.rz-textbox:focus,
-.rz-dropdown:focus,
-.rz-numeric:focus,
-.rz-datepicker:focus,
-.rz-textarea:focus {
-    box-shadow: var(--app-ring-strong);
-    transform: translateY(-1px);
-}
-
-.rz-data-grid,
-.rz-datatable {
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid var(--app-border);
-    box-shadow: var(--app-shadow-sm);
-    background: var(--app-surface);
-}
-
-.rz-datatable-thead th {
-    background: #e8f5f3;
-    color: #1e5250;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    font-size: 0.76rem;
-}
-
-.rz-datatable-tbody tr:hover {
-    background: #f5fbfa;
-}
-
-.rz-datatable-tbody tr {
-    transition: background 0.16s ease, transform 0.16s ease;
-}
-
-.rz-datatable-tbody tr:hover {
-    transform: translateY(-1px);
-}
-
-.rz-datatable .rz-sortable-column:hover {
-    color: #0f766e;
-}
-
-.rz-paginator {
-    border-top: 1px solid var(--app-border);
-    background: #f6fcfb;
-}
-
-.rz-dialog {
-    border-radius: 16px;
-    border: 1px solid var(--app-border);
-    box-shadow: var(--app-shadow-lg);
-    overflow: hidden;
-}
-
-.rz-dialog-titlebar {
-    background: linear-gradient(90deg, #eaf7f5 0%, #f7fbfb 100%);
-    border-bottom: 1px solid var(--app-border);
-}
-
-.rz-notification,
-.rz-alert {
-    border-radius: 12px;
-}
-
-.rz-notification {
-    border: 1px solid rgba(15, 118, 110, 0.2);
-    box-shadow: var(--app-shadow-md);
-}
-
-.dialog-animation {
-    animation: dialogEnter 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
-    transform-origin: center center;
-}
-
-.dialog-exit {
-    animation: dialogExit 0.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-}
-
-@keyframes dialogEnter {
-    from {
-        opacity: 0;
-        transform: scale(0.95) translateY(-10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-}
-
-@keyframes dialogExit {
-    from {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    to {
-        opacity: 0;
-        transform: scale(0.95) translateY(-10px);
-    }
-}
-
-.fileToHover :hover {
-    background-color: #eff9f8;
-    cursor: pointer;
-}
-
-* {
-    scrollbar-width: thin;
-    scrollbar-color: #7bb0ac #e8f3f2;
-}
-
-*::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-
-*::-webkit-scrollbar-track {
-    background: #e8f3f2;
-}
-
-*::-webkit-scrollbar-thumb {
-    background: #7bb0ac;
-    border-radius: 999px;
-    border: 2px solid #e8f3f2;
-}
-
-@media (max-width: 992px) {
-    .responsive-row {
-        flex-direction: column;
-    }
-
-    .app-content-shell .rz-stack {
-        gap: var(--space-3);
-    }
-
-    .app-content-shell .rz-templateform {
-        padding: var(--space-3);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation: none !important;
-        transition: none !important;
-        scroll-behavior: auto !important;
-    }
-}
-
-@media (max-width: 768px) {
-    .search-export-container {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .dashboard-card {
-        margin-bottom: 1rem;
-    }
-
-    .form-grid,
-    .warranty-fields,
-    .material-cards {
-        grid-template-columns: 1fr;
-    }
-
-    .form-field-full {
-        grid-column: span 1;
-    }
-
-    .form-col-6 {
-        width: 100%;
-    }
-
-    .form-container {
-        padding: 1.5rem 1rem;
-    }
-
-    .form-section {
-        padding: 1.25rem;
-    }
-
-    .form-row {
-        flex-direction: column;
-    }
-
-    .form-field {
-        min-width: 100%;
-    }
-
-
-
 }

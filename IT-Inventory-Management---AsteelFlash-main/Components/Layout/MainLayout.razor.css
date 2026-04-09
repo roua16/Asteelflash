@@ -1,132 +1,108 @@
+/* ===== NX Design System - Main Layout ===== */
 .app-shell {
     grid-template-areas: "rz-sidebar rz-header" "rz-sidebar rz-body";
     min-height: 100vh;
-    position: relative;
-    background:
-        radial-gradient(circle at 8% 16%, rgba(46, 196, 182, 0.14), transparent 36%),
-        radial-gradient(circle at 92% 0%, rgba(244, 162, 97, 0.12), transparent 42%),
-        linear-gradient(180deg, #F7F9FB 0%, #EEF3F8 100%);
-}
-
-.app-shell::before,
-.app-shell::after {
-    content: "";
-    position: fixed;
-    width: 42vmax;
-    height: 42vmax;
-    border-radius: 50%;
-    pointer-events: none;
-    filter: blur(54px);
-    z-index: 0;
-}
-
-.app-shell::before {
-    top: -22vmax;
-    right: -16vmax;
-    background: rgba(46, 196, 182, 0.16);
-    animation: shell-float-a 12s ease-in-out infinite alternate;
-}
-
-.app-shell::after {
-    bottom: -24vmax;
-    left: -18vmax;
-    background: rgba(30, 58, 95, 0.14);
-    animation: shell-float-b 16s ease-in-out infinite alternate;
+    background: #F1F5F9;
 }
 
 ::deep .rz-layout {
-    background: transparent;
+    background: #F1F5F9;
 }
 
 .app-body {
-    background: transparent;
+    background: #F1F5F9;
 }
 
 .app-content-shell {
+    padding: 1.5rem;
+    max-width: 1600px;
     margin: 0 auto;
-    max-width: 1540px;
-    padding: 24px 20px 34px;
-    animation: app-content-enter 260ms ease-out;
-    position: relative;
-    z-index: 1;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(30, 58, 95, 0.1);
-    border-radius: 30px;
-    box-shadow: 0 24px 58px rgba(22, 42, 68, 0.1);
-    backdrop-filter: blur(16px);
+    animation: nx-content-enter 240ms ease-out both;
 }
 
+/* Page header utility classes */
 ::deep .page-header {
-    margin-bottom: 20px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid rgba(30, 58, 95, 0.14);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 ::deep .page-title {
     margin: 0;
-    font-size: clamp(1.5rem, 2vw, 1.95rem);
-    font-weight: 760;
-    letter-spacing: 0;
-    color: #1E3A5F;
+    font-size: clamp(1.35rem, 2vw, 1.75rem);
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: -0.02em;
 }
 
 ::deep .page-subtitle {
-    margin-top: 6px;
+    margin-top: 4px;
     color: #64748B;
+    font-size: 0.875rem;
 }
 
+/* Cards */
 ::deep .rz-card {
     border-radius: 16px;
-    border: 1px solid rgba(30, 58, 95, 0.12);
-    box-shadow: 0 16px 34px rgba(22, 42, 68, 0.09);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    background: #FFFFFF;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 16px rgba(15, 23, 42, 0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-::deep .rz-datatable {
-    border-radius: 14px;
+::deep .rz-card:hover {
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1), 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+/* Data Grid */
+::deep .rz-datatable,
+::deep .rz-data-grid {
+    border-radius: 12px;
     overflow: hidden;
-    border: 1px solid rgba(30, 58, 95, 0.13);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 ::deep .rz-datatable-header,
-::deep .rz-datatable-thead th {
-    background: linear-gradient(90deg, rgba(30, 58, 95, 0.08), rgba(46, 196, 182, 0.08));
+::deep .rz-datatable-thead th,
+::deep .rz-grid-table thead th {
+    background: #F8FAFC;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
 }
 
-@keyframes app-content-enter {
+::deep .rz-datatable-data tr:nth-child(even),
+::deep .rz-grid-table tbody tr:nth-child(even) {
+    background: #FAFBFC;
+}
+
+::deep .rz-datatable-data tr:hover,
+::deep .rz-grid-table tbody tr:hover {
+    background: #EEF2FF;
+}
+
+@keyframes nx-content-enter {
     from {
         opacity: 0;
-        transform: translateY(8px);
+        transform: translateY(6px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-@keyframes shell-float-a {
-    from {
-        transform: translate3d(0, 0, 0);
-    }
-
-    to {
-        transform: translate3d(-16px, 24px, 0);
-    }
-}
-
-@keyframes shell-float-b {
-    from {
-        transform: translate3d(0, 0, 0);
-    }
-
-    to {
-        transform: translate3d(20px, -20px, 0);
-    }
-}
-
 @media (max-width: 992px) {
     .app-content-shell {
-        padding: 16px 14px 24px;
-        border-radius: 22px;
+        padding: 1rem;
     }
 }

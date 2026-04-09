@@ -1,141 +1,123 @@
-<RadzenHeader class="app-header">
-    <RadzenRow JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Gap="0" class="header-row">
-        <RadzenColumn Size="6" SizeMD="4" class="header-left">
-            <RadzenSidebarToggle Click="@SidebarToggleClick" class="sidebar-toggle-btn" />
-        </RadzenColumn>
-
-        <RadzenColumn Size="6" SizeMD="8" class="header-right">
-            <RadzenStack AlignItems="AlignItems.Center" Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.75rem">
-                <span class="user-greeting">@user</span>
-
-                <RadzenButton
-                    Click="@(ChangeTheme)"
-                    ButtonStyle="ButtonStyle.Light"
-                    Shade="Shade.Lighter"
-                    Variant="Variant.Flat"
-                    class="header-action-btn"
-                    Icon="@(theme == null || theme == "humanistic" ? "light_mode" : "dark_mode")" />
-
-                <a href="/logout" class="logout-link" aria-label="Logout">
-                    <RadzenButton
-                        ButtonStyle="ButtonStyle.Light"
-                        Icon="logout"
-                        Size="ButtonSize.Medium"
-                        Shade="Shade.Lighter"
-                        Variant="Variant.Flat"
-                        class="header-action-btn" />
-                </a>
-            </RadzenStack>
-        </RadzenColumn>
-    </RadzenRow>
-</RadzenHeader>
-
-<RadzenSidebar @bind-Expanded="@sidebarExpanded" class="app-sidebar" style="z-index: 2;">
-    <div class="logo-container">
-        <div class="logo-content">
-            <img src="images/logoAsteel.png" class="logo-image" alt="AsteelFlash logo" />
-            <h1 class="app-title">IT Inventory</h1>
-            <p class="app-subtitle">Operations Control</p>
+<RadzenHeader class="nx-header">
+    <div class="nx-header-inner">
+        <RadzenSidebarToggle Click="@SidebarToggleClick" class="nx-hamburger" />
+        <div class="nx-header-brand">
+            <span class="nx-header-title">IT Inventory</span>
+        </div>
+        <div class="nx-header-actions">
+            <span class="nx-user-badge">
+                <span class="nx-user-avatar">@(user?.Length > 0 ? user[0].ToString().ToUpper() : "G")</span>
+                <span class="nx-user-name">@user</span>
+            </span>
+            <button class="nx-icon-btn" @onclick="ChangeTheme" title="Toggle theme">
+                <span class="material-symbols-outlined">@(theme == null || theme == "humanistic" ? "light_mode" : "dark_mode")</span>
+            </button>
+            <a href="/logout" class="nx-icon-btn nx-logout-btn" aria-label="Logout">
+                <span class="material-symbols-outlined">logout</span>
+            </a>
         </div>
     </div>
+</RadzenHeader>
 
-    <RadzenPanelMenu class="main-menu">
-        <div class="menu-section">
-            <div class="menu-category">Dashboard</div>
-            <SidebarItem Roles="Admin,PDR,Purchasing,IT,Infrastructure,Employee" Text="Dashboard" Icon="dashboard" Path="/" />
+<RadzenSidebar @bind-Expanded="@sidebarExpanded" class="nx-sidebar" style="z-index: 2;">
+    <div class="nx-sidebar-inner">
+        <div class="nx-brand-section">
+            <img src="images/logoAsteel.png" class="nx-brand-logo" alt="AsteelFlash" />
+            @if (sidebarExpanded)
+            {
+                <div class="nx-brand-text">
+                    <div class="nx-brand-name">IT Inventory</div>
+                    <div class="nx-brand-sub">AsteelFlash</div>
+                </div>
+            }
         </div>
 
-        <div class="menu-divider" aria-hidden="true"></div>
+        <nav class="nx-nav">
+            <div class="nx-nav-group">
+                @if (sidebarExpanded) { <div class="nx-nav-label">Overview</div> }
+                <SidebarItem Roles="Admin,PDR,Purchasing,IT,Infrastructure,Employee" Text="Dashboard" Icon="dashboard" Path="/" />
+            </div>
 
-        <div class="menu-section">
-            <div class="menu-category">Inventory Management</div>
-            <SidebarItem Roles="Admin,Purchasing,IT" Text="Materials View" Icon="inventory_2" Path="/materials-view-interface" />
-            <SidebarItem Roles="Admin,IT,Infrastructure,Employee" Text="Materials Assignments" Icon="assignment" Path="/assignments-interface" />
-            <SidebarItem Roles="Admin,PDR,Purchasing" Text="Materials View (PDR)" Icon="inventory" Path="/materials-view-interface-pdr" />
-        </div>
+            <div class="nx-nav-group">
+                @if (sidebarExpanded) { <div class="nx-nav-label">Inventory</div> }
+                <SidebarItem Roles="Admin,Purchasing,IT" Text="Materials View" Icon="inventory_2" Path="/materials-view-interface" />
+                <SidebarItem Roles="Admin,IT,Infrastructure,Employee" Text="Assignments" Icon="assignment" Path="/assignments-interface" />
+                <SidebarItem Roles="Admin,PDR,Purchasing" Text="Materials PDR" Icon="inventory" Path="/materials-view-interface-pdr" />
+            </div>
 
-        <div class="menu-divider" aria-hidden="true"></div>
+            <div class="nx-nav-group">
+                @if (sidebarExpanded) { <div class="nx-nav-label">Lifecycle</div> }
+                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Lifecycle" Icon="autorenew" Path="/asset-lifecycle" />
+                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Maintenance" Icon="build" Path="/maintenance" />
+                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Predictions" Icon="monitoring" Path="/asset-predictions" />
+            </div>
 
-        <div class="menu-section">
-            <div class="menu-category">Asset Lifecycle</div>
-            <SidebarItem Roles="Admin,IT,Infrastructure" Text="Lifecycle Tracker" Icon="autorenew" Path="/asset-lifecycle" />
-            <SidebarItem Roles="Admin,IT,Infrastructure" Text="Maintenance Tickets" Icon="build" Path="/maintenance" />
-            <SidebarItem Roles="Admin,IT,Infrastructure" Text="Health Predictions" Icon="monitoring" Path="/asset-predictions" />
-        </div>
+            <div class="nx-nav-group">
+                @if (sidebarExpanded) { <div class="nx-nav-label">Infrastructure</div> }
+                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Infrastructure" Icon="memory" Path="/infra-interface" />
+            </div>
 
-        <div class="menu-divider" aria-hidden="true"></div>
+            <div class="nx-nav-group">
+                @if (sidebarExpanded) { <div class="nx-nav-label">Purchasing</div> }
+                <SidebarItem Roles="Admin,Purchasing" Text="Requests" Icon="shopping_cart" Path="/purchase-page" />
+                <SidebarItem Roles="Admin,Purchasing,PDR" Text="Suppliers" Icon="storefront" Path="/suppliers" />
+                <SidebarItem Roles="Admin,Purchasing,PDR" Text="Add Delivery" Icon="add_circle" Path="/delivery-order" />
+                <SidebarItem Roles="Admin,Purchasing,PDR" Text="Pending" Icon="local_shipping" Path="/pending-deliveries" />
 
-        <div class="menu-section">
-            <div class="menu-category">Infrastructure</div>
-            <SidebarItem Roles="Admin,IT,Infrastructure" Text="Infrastructure" Icon="memory" Path="/infra-interface" />
-        </div>
+                <AuthorizeView Roles="Admin,Purchasing,PDR">
+                    <Authorized>
+                        @if (orderNumbersNF == 0)
+                        {
+                            <RadzenPanelMenuItem Text="D.O History" Icon="history" Path="/delivery-order-history" Click="ForceRefresh" />
+                        }
+                        else
+                        {
+                            <div class="rz-navigation-item-wrapper special-menu-item">
+                                <a tabindex="-1" href="/delivery-order-history" class="rz-navigation-item-link" @onclick="ForceRefresh">
+                                    <i class="notranslate rzi rz-navigation-item-icon">history</i>
+                                    <span class="rz-navigation-item-text">
+                                        D.O History
+                                        <span class="nx-badge nx-badge-danger">@orderNumbersNF</span>
+                                    </span>
+                                </a>
+                            </div>
+                        }
+                    </Authorized>
+                </AuthorizeView>
+            </div>
 
-        <div class="menu-divider" aria-hidden="true"></div>
-
-        <div class="menu-section">
-            <div class="menu-category">Purchasing</div>
-            <SidebarItem Roles="Admin,Purchasing" Text="Purchase Requests" Icon="shopping_cart" Path="/purchase-page" />
-            <SidebarItem Roles="Admin,Purchasing,PDR" Text="Suppliers" Icon="storefront" Path="/suppliers" />
-            <SidebarItem Roles="Admin,Purchasing,PDR" Text="Add Delivery Orders" Icon="add_circle" Path="/delivery-order" />
-            <SidebarItem Roles="Admin,Purchasing,PDR" Text="Pending Deliveries" Icon="local_shipping" Path="/pending-deliveries" />
-
-            <AuthorizeView Roles="Admin,Purchasing,PDR">
+            <AuthorizeView Roles="Admin,Purchasing">
                 <Authorized>
-                    @if (orderNumbersNF == 0)
-                    {
-                        <RadzenPanelMenuItem Text="D.O History" Icon="history" Path="/delivery-order-history" Click="ForceRefresh" />
-                    }
-                    else
-                    {
-                        <div class="rz-navigation-item-wrapper special-menu-item">
-                            <a tabindex="-1" href="/delivery-order-history" class="rz-navigation-item-link" @onclick="ForceRefresh">
-                                <i class="notranslate rzi rz-navigation-item-icon">history</i>
-                                <span class="rz-navigation-item-text">
-                                    D.O History
-                                    <span class="badge badge-danger">@orderNumbersNF</span>
-                                </span>
-                            </a>
-                        </div>
-                    }
+                    <div class="nx-nav-group">
+                        @if (sidebarExpanded) { <div class="nx-nav-label">Archives</div> }
+                        <SidebarItem Text="Archived Requests" Icon="archive" Path="/archived-requests-page" />
+                        <SidebarItem Roles="Admin" Text="Archived Assigns" Icon="inventory_2" Path="/assignments-archive" />
+                        <SidebarItem Roles="Admin" Text="Archived Missions" Icon="event_repeat" Path="/archived-missions" />
+                    </div>
                 </Authorized>
             </AuthorizeView>
+
+            <AuthorizeView Roles="Admin">
+                <Authorized>
+                    <div class="nx-nav-group">
+                        @if (sidebarExpanded) { <div class="nx-nav-label">Admin</div> }
+                        <SidebarItem Text="Materials" Icon="category" Path="/materiels-super-admin" />
+                        <SidebarItem Text="Assignments" Icon="assignment_turned_in" Path="/assignments-super-admin" />
+                        <SidebarItem Text="Assign Mats" Icon="assignment_late" Path="/assignment-materiels-super-admin" />
+                        <SidebarItem Text="Delivery Orders" Icon="receipt_long" Path="/delivery-orders-super-admin" />
+                        <SidebarItem Text="D.O Materials" Icon="receipt" Path="/delivery-order-materiels-super-admin" />
+                        <SidebarItem Text="Requests" Icon="description" Path="/requests-super-admin" />
+                        <SidebarItem Text="Employees" Icon="people" Path="/employees-super-admin" />
+                        <SidebarItem Text="Offers" Icon="local_offer" Path="/offers-super-admin" />
+                        <SidebarItem Text="Projects" Icon="work" Path="/projects-super-admin" />
+                        <SidebarItem Text="Suppliers" Icon="store" Path="/suppliers-super-admin" />
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+        </nav>
+
+        <div class="nx-sidebar-footer">
+            <div class="nx-footer-version">v1.0.0</div>
         </div>
-
-        <div class="menu-divider" aria-hidden="true"></div>
-
-        <AuthorizeView Roles="Admin,Purchasing">
-            <Authorized>
-                <div class="menu-section">
-                    <div class="menu-category">Archives</div>
-                    <SidebarItem Text="Archived Requests" Icon="archive" Path="/archived-requests-page" />
-                    <SidebarItem Roles="Admin" Text="Archived Assignments" Icon="inventory_2" Path="/assignments-archive" />
-                    <SidebarItem Roles="Admin" Text="Archived Missions" Icon="event_repeat" Path="/archived-missions" />
-                </div>
-                <div class="menu-divider" aria-hidden="true"></div>
-            </Authorized>
-        </AuthorizeView>
-
-        <AuthorizeView Roles="Admin">
-            <Authorized>
-                <div class="menu-section">
-                    <div class="menu-category">Administration</div>
-                    <SidebarItem Text="Materials" Icon="category" Path="/materiels-super-admin" />
-                    <SidebarItem Text="Assignments" Icon="assignment_turned_in" Path="/assignments-super-admin" />
-                    <SidebarItem Text="Assignment Materials" Icon="assignment_late" Path="/assignment-materiels-super-admin" />
-                    <SidebarItem Text="Delivery Orders" Icon="receipt_long" Path="/delivery-orders-super-admin" />
-                    <SidebarItem Text="Delivery Orders Mats" Icon="receipt" Path="/delivery-order-materiels-super-admin" />
-                    <SidebarItem Text="Requests" Icon="description" Path="/requests-super-admin" />
-                    <SidebarItem Text="Employees" Icon="people" Path="/employees-super-admin" />
-                    <SidebarItem Text="Offers" Icon="local_offer" Path="/offers-super-admin" />
-                    <SidebarItem Text="Projects" Icon="work" Path="/projects-super-admin" />
-                    <SidebarItem Text="Suppliers" Icon="store" Path="/suppliers-super-admin" />
-                </div>
-            </Authorized>
-        </AuthorizeView>
-    </RadzenPanelMenu>
-
-    <div class="footer-container">
-        <RadzenText Text="AsteelFlash Inventory v1.0.0" TextStyle="Radzen.Blazor.TextStyle.Caption" TagName="Radzen.Blazor.TagName.P" TextAlign="Radzen.TextAlign.Center" Style="color:white;" />
-        <RadzenText Text="Copyright (c) AsteelFlash" TextStyle="Radzen.Blazor.TextStyle.Caption" class="rz-mb-0" TagName="Radzen.Blazor.TagName.P" TextAlign="Radzen.TextAlign.Center" Style="color:white;" />
     </div>
 </RadzenSidebar>
