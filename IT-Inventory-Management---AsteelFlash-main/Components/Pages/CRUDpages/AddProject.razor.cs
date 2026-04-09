@@ -3,30 +3,31 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
 using ITStockM.Services;
+using ITStockM.Services.Projects;
 
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class AddProject
     {
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IProjectService ProjectService { get; set; } = default!;
 
         protected override async Task OnInitializedAsync()
         {
             project = new Models.ITStockManagment.Project();
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Project project;
+        protected Models.ITStockManagment.Project project = new();
 
         protected async Task FormSubmit()
         {
             try
             {
-                await ITStockManagmentService.CreateProject(project);
+                await ProjectService.CreateProject(project);
                 DialogService.Close(project);
             }
             catch (Exception ex)

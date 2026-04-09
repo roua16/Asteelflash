@@ -8,16 +8,16 @@
         <PageTitle>Pending Deliveries</PageTitle>
 
         <div class="container-fluid py-4">
-            <RadzenCard class="mb-4 rz-shadow-2" Style="border-radius: 12px; border: none;">
+            <RadzenCard class="mb-4 rz-shadow-2 ux-list-shell">
                 <!-- Header Section -->
-                <RadzenRow AlignItems="AlignItems.Center" class="mb-4">
+                <RadzenRow AlignItems="AlignItems.Center" class="mb-4 ux-list-header">
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenText Text="Pending Deliveries"
                                     TextStyle="TextStyle.H3"
                                     TagName="TagName.H1"
-                                    Style="margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 1px; margin-bottom:25px;" />
+                                    Class="ux-list-title" />
                     </RadzenColumn>
-                    <RadzenColumn Size="12" SizeMD="6" Class="d-flex justify-content-md-end mt-3 mt-md-0">
+                    <RadzenColumn Size="12" SizeMD="6" Class="d-flex justify-content-md-end mt-3 mt-md-0 ux-list-toolbar">
                         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="1rem">
                             <RadzenSplitButton ButtonStyle="ButtonStyle.Light"
                                                Icon="download"
@@ -33,10 +33,9 @@
 
                 <RadzenRow class="mb-4">
                     <RadzenColumn Size="12">
-                        <div class="position-relative">
-                            <RadzenTextBox Placeholder="🔍 Search Pending Deliveries..." @oninput="@Search" aria-label="Search by all string columns"
-                                           Style="display: block;width: 100%;padding: 10px;border: 1px solid #ccc;border-radius: 8px;  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);" Icon="find_in_page" />
-                            <i class="rzi rzi-search position-absolute" style="left: 0.75rem; top: 50%; transform: translateY(-50%);"></i>
+                        <div class="position-relative ux-search-wrap">
+                            <RadzenTextBox Placeholder="Search pending deliveries..." @oninput="@Search" aria-label="Search by all string columns"
+                                           Class="ux-search-input" Icon="find_in_page" />
                         </div>
                     </RadzenColumn>
                 </RadzenRow>
@@ -50,8 +49,8 @@
                                 ShowPagingSummary="true"
                                 PageSizeOptions="@(new int[]{5, 10, 20, 30})"
                                 Data="@requests"
+                                Class="ux-data-grid"
                                 TItem="ITStockM.Models.ITStockManagment.Request"
-                                Style="border-radius: 10px; overflow: hidden; border: none;"
                                 EmptyText="No purchase requests found">
                     <Columns>
 

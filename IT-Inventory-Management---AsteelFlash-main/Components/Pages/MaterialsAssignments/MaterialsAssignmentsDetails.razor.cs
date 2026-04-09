@@ -1,4 +1,6 @@
-using ITStockM.Services;
+using ITStockM.Services.AssignmentMateriels;
+using ITStockM.Services.Assignments;
+using ITStockM.Services.Materiels;
 using Microsoft.AspNetCore.Components;
 using Radzen;
 
@@ -10,7 +12,13 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
+        public IMaterielService MaterielService { get; set; } = default!;
+
+        [Inject]
+        public IAssignmentService AssignmentService { get; set; } = default!;
+
+        [Inject]
+        public IAssignmentMaterielService AssignmentMaterielService { get; set; } = default!;
 
         [Parameter]
         public Models.ITStockManagment.AssignmentMateriel AssignmentMateriel { get; set; } = new();
@@ -73,7 +81,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
                 mat.IrreparableQuantity += quantity;
             }
 
-            await ITStockManagmentService.UpdateMateriel(mat.Id, mat);
+            await MaterielService.UpdateMateriel(mat.Id, mat);
 
             var assignment = AssignmentMateriel.Assignment;
             if (values.TryGetValue("description", out var descriptionObj))
@@ -97,8 +105,8 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
                 DialogService.Close(false);
             }
 
-            await ITStockManagmentService.UpdateAssignment(assignment.Id, assignment);
-            await ITStockManagmentService.UpdateAssignmentMateriel(AssignmentMateriel.MaterielId, AssignmentMateriel.AssignmentId, AssignmentMateriel);
+            await AssignmentService.UpdateAssignment(assignment.Id, assignment);
+            await AssignmentMaterielService.UpdateAssignmentMateriel(AssignmentMateriel.MaterielId, AssignmentMateriel.AssignmentId, AssignmentMateriel);
 
         }
 

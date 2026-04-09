@@ -1,4 +1,5 @@
-using ITStockM.Services;
+using ITStockM.Services.Offers;
+using ITStockM.Services.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -9,30 +10,33 @@ namespace ITStockM.Components.Pages.Purchase
     public partial class RequestsDetails
     {
         [Inject]
-        protected IJSRuntime JSRuntime { get; set; }
+        protected IJSRuntime JSRuntime { get; set; } = default!;
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IRequestService RequestService { get; set; } = default!;
+
+        [Inject]
+        public IOfferService OfferService { get; set; } = default!;
 
         [Parameter]
         public int Id { get; set; }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Request request;
-        protected IEnumerable<Models.ITStockManagment.Offer> offers;
+        protected Models.ITStockManagment.Request request = new();
+        protected IEnumerable<Models.ITStockManagment.Offer> offers = new List<Models.ITStockManagment.Offer>();
         protected bool hasChanges = false;
         protected bool canEdit = true;
 
         protected override async Task OnInitializedAsync()
         {
 
-            request = await ITStockManagmentService.GetRequestById(Id);
+            request = await RequestService.GetRequestById(Id) ?? new Models.ITStockManagment.Request();
 
-            offers = await ITStockManagmentService.GetOffers(new Query
+            offers = await OfferService.GetOffers(new Query
             {
                 Filter = "i =>  i.RequestId == @0",
                 FilterParameters = new object[] {  Id },
@@ -65,7 +69,7 @@ namespace ITStockM.Components.Pages.Purchase
             {
                 request.Status = "Done";
                 request.ApprovedAt = DateTime.Now;
-                await ITStockManagmentService.UpdateRequest(Id, request);
+                await RequestService.UpdateRequest(Id, request);
                 DialogService.Close(true);
             }
 

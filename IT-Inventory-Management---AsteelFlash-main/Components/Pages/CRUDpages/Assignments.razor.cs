@@ -5,24 +5,29 @@ using Microsoft.AspNetCore.Components.Web;
 using Radzen;
 using Radzen.Blazor;
 using ITStockM.Services;
+using ITStockM.Services.Assignments;
+using ITStockM.Services.Export;
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class Assignments
     {
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IAssignmentService AssignmentService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Assignment> assignments;
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
-        protected RadzenDataGrid<Models.ITStockManagment.Assignment> grid0;
+        protected IEnumerable<Models.ITStockManagment.Assignment> assignments = new List<Models.ITStockManagment.Assignment>();
+
+        protected RadzenDataGrid<Models.ITStockManagment.Assignment> grid0 = default!;
 
         protected string search = "";
 
@@ -32,11 +37,11 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             await grid0.GoToPage(0);
 
-            assignments = await ITStockManagmentService.GetAssignments(new Query { Filter = $@"i => i.Descipriton.Contains(@0)", FilterParameters = new object[] { search }, Expand = "AssignedEmployee,Employee,Project" });
+            assignments = await AssignmentService.GetAssignments(new Query { Filter = $@"i => i.Descipriton.Contains(@0)", FilterParameters = new object[] { search }, Expand = "AssignedEmployee,Employee,Project" });
         }
         protected override async Task OnInitializedAsync()
         {
-            assignments = await ITStockManagmentService.GetAssignments(new Query { Filter = $@"i => i.Descipriton.Contains(@0)", FilterParameters = new object[] { search }, Expand = "AssignedEmployee,Employee,Project" });
+            assignments = await AssignmentService.GetAssignments(new Query { Filter = $@"i => i.Descipriton.Contains(@0)", FilterParameters = new object[] { search }, Expand = "AssignedEmployee,Employee,Project" });
         }
 
         protected async Task AddButtonClick(MouseEventArgs args)
@@ -56,7 +61,7 @@ namespace ITStockM.Components.Pages.CRUDpages
             {
                 if (await DialogService.Confirm("Are you sure you want to delete this record?") == true)
                 {
-                    var deleteResult = await ITStockManagmentService.DeleteAssignment(assignment.Id);
+                    var deleteResult = await AssignmentService.DeleteAssignment(assignment.Id);
 
                     if (deleteResult != null)
                     {
@@ -79,7 +84,7 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportAssignmentsToCSV(new Query
+                await ExportService.ExportToCSV("export/itstockmanagment/assignments", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",
@@ -90,7 +95,7 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportAssignmentsToExcel(new Query
+                await ExportService.ExportToExcel("export/itstockmanagment/assignments", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",

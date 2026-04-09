@@ -3,39 +3,43 @@ using Microsoft.JSInterop;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
-using ITStockM.Services;
+using ITStockM.Services.Employees;
+using ITStockM.Services.Requests;
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class EditRequest
     {
 
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IRequestService RequestService { get; set; } = default!;
+
+        [Inject]
+        public IEmployeeService EmployeeService { get; set; } = default!;
 
         [Parameter]
         public int Id { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
-            request = await ITStockManagmentService.GetRequestById(Id);
+            request = await RequestService.GetRequestById(Id) ?? new Models.ITStockManagment.Request();
 
-            employeesForEmployeeId = await ITStockManagmentService.GetEmployeesList();
+            employeesForEmployeeId = await EmployeeService.GetEmployeesList();
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Request request;
+        protected Models.ITStockManagment.Request request = new();
 
-        protected IEnumerable<Models.ITStockManagment.Employee> employeesForEmployeeId;
+        protected IEnumerable<Models.ITStockManagment.Employee> employeesForEmployeeId = new List<Models.ITStockManagment.Employee>();
 
         protected async Task FormSubmit()
         {
             try
             {
-                await ITStockManagmentService.UpdateRequest(Id, request);
+                await RequestService.UpdateRequest(Id, request);
                 DialogService.Close(request);
             }
             catch (Exception ex)

@@ -2,12 +2,12 @@
 <AuthorizeView Roles="Admin,Purchasing,IT">
     <Authorized>
         <PageTitle>Materials View</PageTitle>
-        <div class="container-fluid py-4 materials-page">
-            <RadzenCard class="mb-4 rz-shadow-2" Style="border-radius: 12px; border: none;">
+        <div class="container-fluid py-4 materials-page ux-list-shell">
+            <RadzenCard class="mb-4 rz-shadow-2">
                 <div class="page-container">
-                    <div class="page-title">
+                    <div class="page-title ux-list-header">
                         <RadzenText Text="Materials Overview" TextStyle="TextStyle.H3" TagName="TagName.H1"
-                                    Style="text-transform: uppercase; font-weight: 600; letter-spacing: 1px;" />
+                                    Class="ux-list-title" />
                     </div>
 
                     <RadzenRow Class="mb-6">
@@ -72,12 +72,12 @@
                         </RadzenColumn>
                     </RadzenRow>
 
-                    <div class="search-export-container">
+                    <div class="search-export-container ux-list-toolbar">
                         <div class="search-container">
                             <span class="search-icon">🔍</span>
                             <RadzenTextBox Placeholder="Search..."
                                            @oninput="@Search"
-                                           Class="search-box" />
+                                           Class="search-box ux-search-input" />
                         </div>
 
                         <div class="export-container">
@@ -110,6 +110,7 @@
                     <div class="datagrid-container">
                         <RadzenDataGrid @ref="grid0"
                                         Data="@materielsList"
+                                        Class="ux-data-grid"
                                         TItem="ITStockM.Models.ViewModels.MaterialsListViewModel"
                                         AllowFiltering="true"
                                         AllowSorting="true"

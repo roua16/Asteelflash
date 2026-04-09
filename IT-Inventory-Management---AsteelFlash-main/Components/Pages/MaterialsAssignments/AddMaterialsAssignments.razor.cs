@@ -1,5 +1,9 @@
 using ITStockM.Models.ITStockManagment;
-using ITStockM.Services;
+using ITStockM.Services.AssignmentMateriels;
+using ITStockM.Services.Assignments;
+using ITStockM.Services.Employees;
+using ITStockM.Services.Materiels;
+using ITStockM.Services.Projects;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.Components.Web;
@@ -17,7 +21,19 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         protected ProtectedLocalStorage LocalStorage { get; set; }
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IAssignmentService AssignmentService { get; set; }
+
+        [Inject]
+        public IAssignmentMaterielService AssignmentMaterielService { get; set; }
+
+        [Inject]
+        public IMaterielService MaterielService { get; set; }
+
+        [Inject]
+        public IProjectService ProjectService { get; set; }
+
+        [Inject]
+        public IEmployeeService EmployeeService { get; set; }
 
 
 
@@ -32,11 +48,11 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         {
             assignment = new Assignment();
 
-            projects = await ITStockManagmentService.GetProjectsList();
+            projects = await ProjectService.GetProjectsList();
             
-            employeesForAssignedBy = await ITStockManagmentService.GetEmployeesList();
+            employeesForAssignedBy = await EmployeeService.GetEmployeesList();
 
-            materiels = (await ITStockManagmentService.GetMateriels()).Where(m =>  m.QuantityITStock != 0).OrderBy(m => m.Warranty).ToList(); 
+            materiels = (await MaterielService.GetMateriels()).Where(m =>  m.QuantityITStock != 0).OrderBy(m => m.Warranty).ToList(); 
 
             
             listMaterials = new List<MatList>();
@@ -82,7 +98,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             {
 
                 assignment.Date = DateTime.Now;
-                var assignmentCreated = await ITStockManagmentService.CreateAssignment(assignment);
+                var assignmentCreated = await AssignmentService.CreateAssignment(assignment);
 
                 foreach (var mat in listMaterials)
                 {
@@ -98,8 +114,8 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
                     };
 
-                    await ITStockManagmentService.UpdateMateriel(newAssignmentMaterial.MaterielId, newAssignmentMaterial.Materiel);
-                    await ITStockManagmentService.CreateAssignmentMateriel(newAssignmentMaterial);
+                    await MaterielService.UpdateMateriel(newAssignmentMaterial.MaterielId, newAssignmentMaterial.Materiel);
+                    await AssignmentMaterielService.CreateAssignmentMateriel(newAssignmentMaterial);
                    
 
                 }
@@ -119,7 +135,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             DialogService.Close();
         }
        
-        private async void deleteMaterial(int i)
+        private async Task deleteMaterial(int i)
         {
             listMaterials.RemoveAt(i);
             if (previouslySelectedMateriels[i] != null)
@@ -134,7 +150,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             }
         }
 
-        protected async void RemoveMatOnSelect(object e, int i)
+        protected async Task RemoveMatOnSelect(object e, int i)
         {
             var newSelection = e as Materiel;
 

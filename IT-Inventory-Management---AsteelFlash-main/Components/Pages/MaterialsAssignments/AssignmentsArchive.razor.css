@@ -168,30 +168,30 @@
                 border: 1px solid rgba(0, 0, 0, 0.05);
             }
 
-                .datagrid-container :deep(.rz-datatable-header) {
-                    background-color: white;
+                .datagrid-container ::deep .rz-datatable-header {
+                    background-color: var(--app-surface);
                     padding: 1rem;
                     border-bottom: 1px solid #e5e7eb;
                 }
 
-                .datagrid-container :deep(.rz-grid-table) {
+                .datagrid-container ::deep .rz-grid-table {
                     border-collapse: separate;
                     border-spacing: 0;
                 }
 
-                .datagrid-container :deep(.rz-datatable-thead th) {
+                .datagrid-container ::deep .rz-datatable-thead th {
                     background-color: var(--gray-light);
                     font-weight: 600;
                     padding: 1rem;
                     border-bottom: 1px solid #e5e7eb;
                 }
 
-                .datagrid-container :deep(.rz-grid-table td) {
+                .datagrid-container ::deep .rz-grid-table td {
                     padding: 1rem;
                     border-bottom: 1px solid #e5e7eb;
                 }
 
-                .datagrid-container :deep(.rz-datatable-data tr:hover) {
+                .datagrid-container ::deep .rz-datatable-data tr:hover {
                     background-color: var(--gray-light);
                 }
 

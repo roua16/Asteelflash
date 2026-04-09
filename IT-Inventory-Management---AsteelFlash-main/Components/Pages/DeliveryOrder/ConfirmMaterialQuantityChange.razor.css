@@ -69,7 +69,7 @@
         }
 
     .cancel-button {
-        background-color: #f8f9fa !important;
+        background-color: var(--app-surface-soft) !important;
         color: #495057 !important;
         border: 1px solid #ced4da !important;
     }

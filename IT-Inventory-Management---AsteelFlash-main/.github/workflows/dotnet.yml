@@ -7,7 +7,7 @@ on:
     branches: ["main", "master"]
 
 jobs:
-  build:
+  build-app:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -23,8 +23,48 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+      - name: Build App
+        run: bash ./scripts/build-app.sh ITStockM.csproj
+
+      - name: Architecture Regression Guard
+        run: bash ./scripts/check-architecture-regressions.sh
+
+      - name: Warning Budget Check
+        run: bash ./scripts/check-warning-budget.sh
+
+  build-solution:
+    runs-on: ubuntu-latest
+    needs: [build-app]
+    strategy:
+      matrix:
+        dotnet-version: [8.0]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Build Solution
+        run: bash ./scripts/build-solution.sh ITStockM.sln
+
+  test:
+    runs-on: ubuntu-latest
+    needs: [build-solution]
+    strategy:
+      matrix:
+        dotnet-version: [8.0]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Build Tests
+        run: bash ./scripts/build-tests.sh ITStockM.Tests/ITStockM.Tests.csproj
 
       - name: Test
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet test ITStockM.Tests/ITStockM.Tests.csproj --no-build --verbosity normal

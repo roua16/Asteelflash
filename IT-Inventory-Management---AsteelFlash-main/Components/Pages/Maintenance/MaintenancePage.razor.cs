@@ -1,6 +1,7 @@
 using ITStockM.Models.ITStockManagment;
 using ITStockM.Services;
 using ITStockM.Services.Interfaces;
+using ITStockM.Services.Materiels;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Radzen.Blazor;
@@ -10,7 +11,7 @@ namespace ITStockM.Components.Pages.Maintenance
     public partial class MaintenancePage
     {
         [Inject] protected IMaintenanceService MaintenanceService { get; set; }
-        [Inject] protected ITStockManagmentService ITStockManagmentService { get; set; }
+        [Inject] protected IMaterielService MaterielService { get; set; }
         [Inject] protected NavigationManager NavigationManager { get; set; }
         [Inject] protected ProtectedLocalStorage LocalStorage { get; set; }
 
@@ -38,7 +39,7 @@ namespace ITStockM.Components.Pages.Maintenance
 
         protected override async Task OnInitializedAsync()
         {
-            materielOptions = (await ITStockManagmentService.GetMateriels()).ToList();
+            materielOptions = (await MaterielService.GetMateriels()).ToList();
             await LoadTickets();
         }
 

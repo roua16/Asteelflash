@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Components;
 using Radzen;
 using Radzen.Blazor;
 using ITStockM.Models.ITStockManagment;
-using ITStockM.Services;
+using ITStockM.Services.Export;
+using ITStockM.Services.Requests;
 
 
 namespace ITStockM.Components.Pages.ArchivedRequests
@@ -11,16 +12,19 @@ namespace ITStockM.Components.Pages.ArchivedRequests
     {
         
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IRequestService RequestService { get; set; } = default!;
 
-        protected IEnumerable<Request> requests;
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
-        protected RadzenDataGrid<Request> grid0;
+        protected IEnumerable<Request> requests = new List<Request>();
+
+        protected RadzenDataGrid<Request> grid0 = default!;
 
         protected string search = "";
 
@@ -36,7 +40,7 @@ namespace ITStockM.Components.Pages.ArchivedRequests
         }
         protected override async Task OnInitializedAsync()
         {
-            requests = await ITStockManagmentService.GetRequests(new Query
+            requests = await RequestService.GetRequests(new Query
             {
                 Filter = $@"i => i.Status == @0",
                 FilterParameters = new object[] { "Done" },
@@ -80,7 +84,7 @@ namespace ITStockM.Components.Pages.ArchivedRequests
         {
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportArchivedRequestsToCSV(new Query
+                await ExportService.ExportToCSV("export/itstockmanagment/archived-requests", new Query
                 {
                     Select = string.Join(",", new List<string> { "Employee.FullName", "Title", "Type", "ProjectName", "Description", "MaterialType", "Date", "Status" }.Select(c => c.Contains(".") ? c + " as " + c.Replace(".", "") : c)),
                 }
@@ -89,7 +93,7 @@ namespace ITStockM.Components.Pages.ArchivedRequests
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportArchivedRequestsToExcel(new Query
+                await ExportService.ExportToExcel("export/itstockmanagment/archived-requests", new Query
                 {
                     Select = string.Join(",", new List<string> { "Employee.FullName", "Title", "Type", "ProjectName", "Description", "MaterialType", "Date", "Status" }.Select(c => c.Contains(".") ? c + " as " + c.Replace(".", "") : c)),
                 }

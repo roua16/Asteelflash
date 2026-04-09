@@ -6,7 +6,7 @@
     <Authorized>
         @if (userRole == "Employee")
         {
-            <RadzenCard class="mb-4 rz-shadow-2 dashboard-shell-card">
+            <RadzenCard class="mb-4 dashboard-shell-card">
                 <div class="dashboard-container">
                     <div class="dashboard-header reveal-fade">
                         <div>
@@ -147,7 +147,7 @@
         }
         else
         {
-            <RadzenCard class="mb-4 rz-shadow-2 dashboard-shell-card">
+            <RadzenCard class="mb-4 dashboard-shell-card">
                 <div class="dashboard-container">
                     <div class="dashboard-header reveal-fade">
                         <div>
@@ -509,7 +509,7 @@
                         <div class="activity-scroll">
                             @foreach (var mat in materielsList)
                             {
-                                <div class="inventory-status">
+                                <div class="inventory-status @(mat.Qte < 6 ? "inventory-status-danger" : "inventory-status-warning")">
                                     <div class="inventory-status-icon @(mat.Qte < 6 ? "bg-danger-light" : "bg-warning-light")">
                                         <RadzenIcon Icon="warning" />
                                     </div>

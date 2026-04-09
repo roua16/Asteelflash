@@ -66,7 +66,7 @@ namespace ITStockM.Components.Pages
         // Top-3 predicted most-used materiels (usage share = usage / total usage)
         protected List<Models.ViewModels.MaterielUsageViewModel> TopUsedMateriels = new();
 
-        protected async void RedirectPDR()
+        protected async Task RedirectPDR()
         {
            
             var userRoleLocal = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value?.Role;
@@ -406,7 +406,7 @@ namespace ITStockM.Components.Pages
 
         }
 
-        protected string deliveryOrderToText(DeliveryOrder deliveryOrder)
+        protected string deliveryOrderToText(ITStockM.Models.ITStockManagment.DeliveryOrder deliveryOrder)
         {
             if (deliveryOrder?.DeliveryOrderMateriels == null || !deliveryOrder.DeliveryOrderMateriels.Any())
             {

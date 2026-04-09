@@ -1,4 +1,5 @@
-using ITStockM.Services;
+using ITStockM.Services.AssignmentMateriels;
+using ITStockM.Services.Export;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -10,16 +11,19 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
     public partial class AssignmentsArchive
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IAssignmentMaterielService AssignmentMaterielService { get; set; } = default!;
+
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
 
 
-        protected IEnumerable<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels;
+        protected IEnumerable<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels = new List<Models.ITStockManagment.AssignmentMateriel>();
 
-        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0;
+        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0 = default!;
 
        
 
@@ -32,7 +36,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
         protected override async Task OnInitializedAsync()
         {
-            assignmentMateriels = (await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " })).Where(assm => assm.Assignment.OnMission == false && assm.Qte == 0).OrderByDescending(assm => assm.Assignment.Date); 
+            assignmentMateriels = (await AssignmentMaterielService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " })).Where(assm => assm.Assignment.OnMission == false && assm.Qte == 0).OrderByDescending(assm => assm.Assignment.Date); 
 
 
         }
@@ -48,12 +52,12 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportAssignmentMaterielsToCSV(query, "Archived - Assignments");
+                await ExportService.ExportToCSV("export/itstockmanagment/assignmentmateriels", query, "Archived - Assignments");
             }
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportAssignmentMaterielsToExcel(query, "Archived - Assignments");
+                await ExportService.ExportToExcel("export/itstockmanagment/assignmentmateriels", query, "Archived - Assignments");
             }
         }
 
@@ -83,16 +87,16 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             await DialogService.OpenAsync<ArchivedMaterialsAssignmnetsDetails>("", new Dictionary<string, object> { { "AssignmentMateriel", assignmentMateriel } }, options);
         }
 
-        protected async void AssignemntFilter()
+        protected async Task AssignemntFilter()
         {
             if (SelectedAssignment == "To IT")
             {
-                assignmentMateriels = (await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " })).Where(assm => assm.Assignment.AssignedTo == 6);
+                assignmentMateriels = (await AssignmentMaterielService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " })).Where(assm => assm.Assignment.AssignedTo == 6);
 
             }
             else
             {
-                assignmentMateriels = (await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " })).Where(assm => assm.Assignment.OnMission == false && assm.Qte == 0).OrderByDescending(assm => assm.Assignment.Date);
+                assignmentMateriels = (await AssignmentMaterielService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " })).Where(assm => assm.Assignment.OnMission == false && assm.Qte == 0).OrderByDescending(assm => assm.Assignment.Date);
                
 
             }

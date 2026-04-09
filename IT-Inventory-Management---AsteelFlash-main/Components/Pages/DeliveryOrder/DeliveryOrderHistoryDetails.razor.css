@@ -146,7 +146,7 @@
 
 .datagrid-container .rz-datatable-thead th {
     background: #eef2ff;
-    color: #111827;
+    color: var(--app-text);
     font-weight: 700;
     border: none;
     padding: 1rem 1.1rem;
@@ -155,7 +155,7 @@
 }
 
 .datagrid-container .rz-datatable-tbody tr {
-    background: #ffffff;
+    background: var(--app-surface);
     border-radius: 16px;
     box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
 }

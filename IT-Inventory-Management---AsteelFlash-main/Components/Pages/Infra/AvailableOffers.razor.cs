@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using ITStockM.Services;
+using ITStockM.Services.Offers;
 using ITStockM.Services.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
@@ -11,20 +12,20 @@ namespace ITStockM.Components.Pages.Infra
     public partial class AvailableOffers
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IOfferService OfferService { get; set; } = default!;
 
         [Inject]
-        protected ProtectedLocalStorage LocalStorage { get; set; }
+        protected ProtectedLocalStorage LocalStorage { get; set; } = default!;
 
-        protected RadzenDataGrid<Models.ITStockManagment.Offer> grid;
+        protected RadzenDataGrid<Models.ITStockManagment.Offer> grid = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Offer> offers;
+        protected IEnumerable<Models.ITStockManagment.Offer> offers = new List<Models.ITStockManagment.Offer>();
 
         [Parameter]
-        public List<int> Id { get; set; }
+        public List<int> Id { get; set; } = new();
         protected bool errorVisible;
         RadzenCarousel carousel;
         bool auto = true;
@@ -33,11 +34,11 @@ namespace ITStockM.Components.Pages.Infra
 
         protected override async Task OnInitializedAsync()
         {
-            offers = await ITStockManagmentService.GetOffersByIds(Id);
+            offers = await OfferService.GetOffersByIds(Id);
         }
 
         [Inject]
-        public IEmailService EmailService { get; set; }
+        public IEmailService EmailService { get; set; } = default!;
 
         public async Task ChooseOffer(Models.ITStockManagment.Offer offer)
         {
@@ -52,14 +53,14 @@ namespace ITStockM.Components.Pages.Infra
             await InvokeAsync(async () =>
             {
                 offer.Selected = true;
-                await ITStockManagmentService.UpdateOffer(offer.Id, offer);
+                await OfferService.UpdateOffer(offer.Id, offer);
 
                 foreach (ITStockM.Models.ITStockManagment.Offer item in offers)
                 {
                     if (item.Id != offer.Id)
                     {
                         item.Selected = false;
-                        await ITStockManagmentService.UpdateOffer(item.Id, item);
+                        await OfferService.UpdateOffer(item.Id, item);
                     }
                 }
                 var user = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.FullName;

@@ -3,39 +3,47 @@ using Microsoft.JSInterop;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
-using ITStockM.Services;
+using ITStockM.Services.DeliveryOrderMateriels;
+using ITStockM.Services.DeliveryOrders;
+using ITStockM.Services.Materiels;
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class AddDeliveryOrderMateriel
     {
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IDeliveryOrderMaterielService DeliveryOrderMaterielService { get; set; } = default!;
+
+        [Inject]
+        public IMaterielService MaterielService { get; set; } = default!;
+
+        [Inject]
+        public IDeliveryOrderService DeliveryOrderService { get; set; } = default!;
 
         protected override async Task OnInitializedAsync()
         {
             deliveryOrderMateriel = new ITStockM.Models.ITStockManagment.DeliveryOrderMateriel();
 
-            materielsForMaterielId = await ITStockManagmentService.GetMaterielsList();
+            materielsForMaterielId = (await MaterielService.GetMateriels()).ToList();
 
-            deliveryOrdersForDeliveryOrderNumber = await ITStockManagmentService.GetDeliveryOrdersList();
+            deliveryOrdersForDeliveryOrderNumber = await DeliveryOrderService.GetDeliveryOrdersList();
         }
         protected bool errorVisible;
-        protected ITStockM.Models.ITStockManagment.DeliveryOrderMateriel deliveryOrderMateriel;
+        protected ITStockM.Models.ITStockManagment.DeliveryOrderMateriel deliveryOrderMateriel = new();
 
-        protected IEnumerable<ITStockM.Models.ITStockManagment.Materiel> materielsForMaterielId;
+        protected IEnumerable<ITStockM.Models.ITStockManagment.Materiel> materielsForMaterielId = new List<ITStockM.Models.ITStockManagment.Materiel>();
 
-        protected IEnumerable<ITStockM.Models.ITStockManagment.DeliveryOrder> deliveryOrdersForDeliveryOrderNumber;
+        protected IEnumerable<ITStockM.Models.ITStockManagment.DeliveryOrder> deliveryOrdersForDeliveryOrderNumber = new List<ITStockM.Models.ITStockManagment.DeliveryOrder>();
 
         protected async Task FormSubmit()
         {
             try
             {
-                await ITStockManagmentService.CreateDeliveryOrderMateriel(deliveryOrderMateriel);
+                await DeliveryOrderMaterielService.CreateDeliveryOrderMateriel(deliveryOrderMateriel);
                 DialogService.Close(deliveryOrderMateriel);
             }
             catch (Exception ex)

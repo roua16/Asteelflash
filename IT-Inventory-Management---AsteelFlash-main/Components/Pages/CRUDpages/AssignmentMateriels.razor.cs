@@ -4,24 +4,28 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
 using Radzen.Blazor;
-using ITStockM.Services;
+using ITStockM.Services.AssignmentMateriels;
+using ITStockM.Services.Export;
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class AssignmentMateriels
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IAssignmentMaterielService AssignmentMaterielService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels;
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
-        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0;
+        protected IEnumerable<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels = new List<Models.ITStockManagment.AssignmentMateriel>();
+
+        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0 = default!;
 
         protected string search = "";
 
@@ -31,11 +35,11 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             await grid0.GoToPage(0);
 
-            assignmentMateriels = await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment" });
+            assignmentMateriels = await AssignmentMaterielService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment" });
         }
         protected override async Task OnInitializedAsync()
         {
-            assignmentMateriels = await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment" });
+            assignmentMateriels = await AssignmentMaterielService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment" });
         }
 
         protected async Task AddButtonClick(MouseEventArgs args)
@@ -55,7 +59,7 @@ namespace ITStockM.Components.Pages.CRUDpages
             {
                 if (await DialogService.Confirm("Are you sure you want to delete this record?") == true)
                 {
-                    var deleteResult = await ITStockManagmentService.DeleteAssignmentMateriel(assignmentMateriel.MaterielId, assignmentMateriel.AssignmentId);
+                    var deleteResult = await AssignmentMaterielService.DeleteAssignmentMateriel(assignmentMateriel.MaterielId, assignmentMateriel.AssignmentId);
 
                     if (deleteResult != null)
                     {
@@ -78,7 +82,7 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportAssignmentMaterielsToCSV(new Query
+                await ExportService.ExportToCSV("export/itstockmanagment/assignmentmateriels", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",
@@ -89,7 +93,7 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportAssignmentMaterielsToExcel(new Query
+                await ExportService.ExportToExcel("export/itstockmanagment/assignmentmateriels", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",

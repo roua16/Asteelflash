@@ -1,7 +1,4 @@
 
-
-using ITStockM.Components.Pages.DeleveryOrder;
-
 namespace ITStockM.Models.ViewModels
 {
     public class MaterialsListViewModel

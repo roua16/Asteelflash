@@ -1,4 +1,5 @@
-using ITStockM.Services;
+using ITStockM.Services.Projects;
+using ITStockM.Services.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -15,7 +16,10 @@ namespace ITStockM.Components.Pages.Infra
         protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
+        public IRequestService RequestService { get; set; } = default!;
+
+        [Inject]
+        public IProjectService ProjectService { get; set; } = default!;
 
         [Parameter]
         public int Id { get; set; }
@@ -31,9 +35,9 @@ namespace ITStockM.Components.Pages.Infra
         protected override async Task OnInitializedAsync()
         {
             projectNames = new List<string>();
-            request = await ITStockManagmentService.GetRequestById(Id);
+            request = await RequestService.GetRequestById(Id) ?? new Models.ITStockManagment.Request();
 
-            projectNames = (await ITStockManagmentService.GetProjectsList()).Select(p => p.ProjectName).ToList();
+            projectNames = (await ProjectService.GetProjectsList()).Select(p => p.ProjectName).ToList();
 
             if (request.File != null)
             {
@@ -67,7 +71,7 @@ namespace ITStockM.Components.Pages.Infra
         {
             try
             {
-                await ITStockManagmentService.UpdateRequest(Id, request);
+                await RequestService.UpdateRequest(Id, request);
                 DialogService.Close(request);
             }
             catch (Exception ex)

@@ -1,10 +1,10 @@
-﻿using ITStockM.Components.Pages.CRUDpages;
+﻿using ITStockM.Components.Pages.CrudPages;
 using ITStockM.Models.ITStockManagment;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Radzen;
 
-namespace ITStockM.Components.Pages.DeleveryOrder
+namespace ITStockM.Components.Pages.DeliveryOrder
 {
     public partial class ConfirmMaterialQuantityChange
     {

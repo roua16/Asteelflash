@@ -1,5 +1,4 @@
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using ITStockM.Models.ITStockManagment;
 using ITStockM.Repositories;
@@ -77,11 +76,8 @@ public class AssignmentService : IAssignmentService
             dbSemaphore.Release();
         }
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyAssignmentCreated(assignment);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyAssignmentCreated(assignment);
 
         return assignment;
     }
@@ -92,14 +88,12 @@ public class AssignmentService : IAssignmentService
         try
         {
             var itemToUpdate = assignmentRepository.Query().FirstOrDefault(i => i.Id == assignment.Id);
+            if (itemToUpdate == null)
+            {
+                throw new Exception("Item no longer available");
+            }
 
-            var entryToUpdate = assignmentRepository is EfRepository<Assignment> ef ? ef.Query().FirstOrDefault(i => i.Id == assignment.Id) : itemToUpdate;
-
-            // Use repository's context to update values
-            var ctx = (assignmentRepository as dynamic)?._context as Microsoft.EntityFrameworkCore.DbContext;
-            var entry = ctx.Entry(itemToUpdate);
-            entry.CurrentValues.SetValues(assignment);
-            entry.State = EntityState.Modified;
+            assignmentRepository.Update(assignment);
 
             await assignmentRepository.SaveChangesAsync();
         }
@@ -108,11 +102,8 @@ public class AssignmentService : IAssignmentService
             dbSemaphore.Release();
         }
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyAssignmentUpdated(assignment);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyAssignmentUpdated(assignment);
 
         return assignment;
     }
@@ -124,14 +115,16 @@ public class AssignmentService : IAssignmentService
         {
             var itemToDelete = assignmentRepository.QueryWithIncludes().FirstOrDefault(i => i.Id == id);
 
+            if (itemToDelete == null)
+            {
+                throw new Exception("Item no longer available");
+            }
+
             assignmentRepository.Remove(itemToDelete);
             await assignmentRepository.SaveChangesAsync();
 
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyAssignmentDeleted(id);
-            });
+            if (operationNotificationService != null)
+                await operationNotificationService.NotifyAssignmentDeleted(id);
 
             return itemToDelete;
         }

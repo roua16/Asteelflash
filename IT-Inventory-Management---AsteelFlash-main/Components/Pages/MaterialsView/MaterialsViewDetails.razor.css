@@ -87,31 +87,31 @@
     border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.materials-view-details-page .datagrid-container :deep(.rz-datatable-header) {
-    background-color: #f9fafb;
+.materials-view-details-page .datagrid-container ::deep .rz-datatable-header {
+    background-color: var(--app-surface-soft);
     padding: 1rem;
     border-bottom: 1px solid #e5e7eb;
 }
 
-.materials-view-details-page .datagrid-container :deep(.rz-grid-table) {
+.materials-view-details-page .datagrid-container ::deep .rz-grid-table {
     border-collapse: separate;
     border-spacing: 0;
 }
 
-.materials-view-details-page .datagrid-container :deep(.rz-datatable-thead th) {
+.materials-view-details-page .datagrid-container ::deep .rz-datatable-thead th {
     background-color: #f3f4f6;
     font-weight: 600;
     padding: 0.75rem 1rem;
     border-bottom: 1px solid #e5e7eb;
 }
 
-.materials-view-details-page .datagrid-container :deep(.rz-grid-table td) {
+.materials-view-details-page .datagrid-container ::deep .rz-grid-table td {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid #e5e7eb;
 }
 
-.materials-view-details-page .datagrid-container :deep(.rz-datatable-data tr:hover) {
-    background-color: #f9fafb;
+.materials-view-details-page .datagrid-container ::deep .rz-datatable-data tr:hover {
+    background-color: var(--app-surface-soft);
 }
 
 .materials-view-details-page .QuantityPDRStock-badge {

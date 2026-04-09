@@ -4,33 +4,34 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
 using ITStockM.Services;
+using ITStockM.Services.Suppliers;
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class EditSupplier
     {
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public ISupplierService SupplierService { get; set; } = default!;
 
         [Parameter]
-        public string SupplierName { get; set; }
+        public string SupplierName { get; set; } = string.Empty;
 
         protected override async Task OnInitializedAsync()
         {
-            supplier = await ITStockManagmentService.GetSupplierBySupplierName(SupplierName);
+            supplier = await SupplierService.GetSupplierBySupplierName(SupplierName) ?? throw new InvalidOperationException($"Supplier '{SupplierName}' was not found.");
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Supplier supplier;
+        protected Models.ITStockManagment.Supplier supplier = new();
 
         protected async Task FormSubmit()
         {
             try
             {
-                await ITStockManagmentService.UpdateSupplier(SupplierName, supplier);
+                await SupplierService.UpdateSupplier(SupplierName, supplier);
                 DialogService.Close(supplier);
             }
             catch (Exception ex)

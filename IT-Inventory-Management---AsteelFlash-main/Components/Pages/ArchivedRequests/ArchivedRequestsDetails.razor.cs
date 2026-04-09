@@ -1,4 +1,5 @@
-using ITStockM.Services;
+using ITStockM.Services.Offers;
+using ITStockM.Services.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Radzen;
@@ -8,32 +9,35 @@ namespace ITStockM.Components.Pages.ArchivedRequests
     public partial class ArchivedRequestsDetails
     {
         [Inject]
-        protected IJSRuntime JSRuntime { get; set; }
+        protected IJSRuntime JSRuntime { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IRequestService RequestService { get; set; } = default!;
+
+        [Inject]
+        public IOfferService OfferService { get; set; } = default!;
 
         [Parameter]
         public int Id { get; set; }
 
-        protected Models.ITStockManagment.Request request;
-        protected IEnumerable<Models.ITStockManagment.Offer> offers;
-        protected Models.ITStockManagment.Offer offer;
+        protected Models.ITStockManagment.Request request = new();
+        protected IEnumerable<Models.ITStockManagment.Offer> offers = new List<Models.ITStockManagment.Offer>();
+        protected Models.ITStockManagment.Offer? offer;
         protected override async Task OnInitializedAsync()
         {
 
-            request = await ITStockManagmentService.GetRequestById(Id);
+            request = await RequestService.GetRequestById(Id) ?? new Models.ITStockManagment.Request();
 
-            offers = await ITStockManagmentService.GetOffers(new Query
+            offers = await OfferService.GetOffers(new Query
             {
                 Filter = "i => i.SupplierName.Contains(@0) &&  i.RequestId == @1",
                 FilterParameters = new object[] { "", Id },
                 Expand = "Request,Supplier"
             });
 
-            offer = (await ITStockManagmentService.GetOffers(new Query
+            offer = (await OfferService.GetOffers(new Query
             {
                 Filter = "i => i.SupplierName.Contains(@0) &&  i.RequestId == @1 && i.Selected==true",
                 FilterParameters = new object[] { "", Id },

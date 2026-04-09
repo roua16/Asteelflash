@@ -5,24 +5,29 @@ using Microsoft.AspNetCore.Components.Web;
 using Radzen;
 using Radzen.Blazor;
 using ITStockM.Services;
+using ITStockM.Services.Export;
+using ITStockM.Services.Projects;
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class Projects
     {
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IProjectService ProjectService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Project> projects;
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
-        protected RadzenDataGrid<Models.ITStockManagment.Project> grid0;
+        protected IEnumerable<Models.ITStockManagment.Project> projects = new List<Models.ITStockManagment.Project>();
+
+        protected RadzenDataGrid<Models.ITStockManagment.Project> grid0 = default!;
 
         protected string search = "";
 
@@ -32,11 +37,11 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             await grid0.GoToPage(0);
 
-            projects = await ITStockManagmentService.GetProjects(new Query { Filter = $@"i => i.ProjectName.Contains(@0)", FilterParameters = new object[] { search } });
+            projects = await ProjectService.GetProjects(new Query { Filter = $@"i => i.ProjectName.Contains(@0)", FilterParameters = new object[] { search } });
         }
         protected override async Task OnInitializedAsync()
         {
-            projects = await ITStockManagmentService.GetProjects(new Query { Filter = $@"i => i.ProjectName.Contains(@0)", FilterParameters = new object[] { search } });
+            projects = await ProjectService.GetProjects(new Query { Filter = $@"i => i.ProjectName.Contains(@0)", FilterParameters = new object[] { search } });
         }
 
         protected async Task AddButtonClick(MouseEventArgs args)
@@ -56,7 +61,7 @@ namespace ITStockM.Components.Pages.CRUDpages
             {
                 if (await DialogService.Confirm("Are you sure you want to delete this record?") == true)
                 {
-                    var deleteResult = await ITStockManagmentService.DeleteProject(project.Id);
+                    var deleteResult = await ProjectService.DeleteProject(project.Id);
 
                     if (deleteResult != null)
                     {
@@ -79,7 +84,7 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportProjectsToCSV(new Query
+                await ExportService.ExportToCSV("export/itstockmanagment/projects", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",
@@ -90,7 +95,7 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportProjectsToExcel(new Query
+                await ExportService.ExportToExcel("export/itstockmanagment/projects", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",

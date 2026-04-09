@@ -4,18 +4,23 @@ using Microsoft.AspNetCore.Components;
 using Radzen;
 using Radzen.Blazor;
 using ITStockM.Services;
+using ITStockM.Services.Employees;
+using ITStockM.Services.Export;
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class Employees
     {
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IEmployeeService EmployeeService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Employee> employees;
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
-        protected RadzenDataGrid<Models.ITStockManagment.Employee> grid0;
+        protected IEnumerable<Models.ITStockManagment.Employee> employees = new List<Models.ITStockManagment.Employee>();
+
+        protected RadzenDataGrid<Models.ITStockManagment.Employee> grid0 = default!;
 
         protected string search = "";
 
@@ -25,18 +30,18 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             await grid0.GoToPage(0);
 
-            employees = await ITStockManagmentService.GetEmployees(new Query { Filter = $@"i => i.FullName.Contains(@0) || i.Email.Contains(@0) || i.Password.Contains(@0) || i.Post.Contains(@0) || i.PhoneNumber.Contains(@0) || i.Service.Contains(@0)", FilterParameters = new object[] { search } });
+            employees = await EmployeeService.GetEmployees(new Query { Filter = $@"i => i.FullName.Contains(@0) || i.Email.Contains(@0) || i.Password.Contains(@0) || i.Post.Contains(@0) || i.PhoneNumber.Contains(@0) || i.Service.Contains(@0)", FilterParameters = new object[] { search } });
         }
         protected override async Task OnInitializedAsync()
         {
-            employees = await ITStockManagmentService.GetEmployees(new Query { Filter = $@"i => i.FullName.Contains(@0) || i.Email.Contains(@0) || i.Password.Contains(@0) || i.Post.Contains(@0) || i.PhoneNumber.Contains(@0) || i.Service.Contains(@0)", FilterParameters = new object[] { search } });
+            employees = await EmployeeService.GetEmployees(new Query { Filter = $@"i => i.FullName.Contains(@0) || i.Email.Contains(@0) || i.Password.Contains(@0) || i.Post.Contains(@0) || i.PhoneNumber.Contains(@0) || i.Service.Contains(@0)", FilterParameters = new object[] { search } });
         }  
 
         protected async Task ExportClick(RadzenSplitButtonItem args)
         {
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportEmployeesToCSV(new Query
+                await ExportService.ExportToCSV("export/itstockmanagment/employees", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",
@@ -47,7 +52,7 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportEmployeesToExcel(new Query
+                await ExportService.ExportToExcel("export/itstockmanagment/employees", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",

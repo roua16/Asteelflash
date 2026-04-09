@@ -1,4 +1,6 @@
-using ITStockM.Services;
+using ITStockM.Services.Offers;
+using ITStockM.Services.Requests;
+using ITStockM.Services.Suppliers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -11,32 +13,38 @@ namespace ITStockM.Components.Pages.Purchase
     {
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IOfferService OfferService { get; set; } = default!;
+
+        [Inject]
+        public IRequestService RequestService { get; set; } = default!;
+
+        [Inject]
+        public ISupplierService SupplierService { get; set; } = default!;
 
         [Parameter]
         public int Id { get; set; }
 
-        protected string requestTitle;
+        protected string requestTitle = string.Empty;
 
         protected bool errorVisible;
 
-        protected Models.ITStockManagment.Offer offer;
+        protected Models.ITStockManagment.Offer offer = new();
 
-        protected IEnumerable<Models.ITStockManagment.Request> requestsForRequestId;
-        protected List<Models.ITStockManagment.Supplier> suppliersForSupplierName;
+        protected IEnumerable<Models.ITStockManagment.Request> requestsForRequestId = new List<Models.ITStockManagment.Request>();
+        protected List<Models.ITStockManagment.Supplier> suppliersForSupplierName = new();
 
         protected override async Task OnInitializedAsync()
         {
             offer = new Models.ITStockManagment.Offer();
 
-            var req = await ITStockManagmentService.GetRequestById(Id);
+            var req = await RequestService.GetRequestById(Id);
 
-            requestTitle = req.Title;
+            requestTitle = req?.Title ?? string.Empty;
 
-            suppliersForSupplierName = await ITStockManagmentService.GetSuppliersList();
+            suppliersForSupplierName = await SupplierService.GetSuppliersList();
 
         }
         
@@ -47,7 +55,7 @@ namespace ITStockM.Components.Pages.Purchase
             try
             {
                 offer.RequestId = Id;
-                await ITStockManagmentService.CreateOffer(offer);
+                await OfferService.CreateOffer(offer);
                 DialogService.Close(offer);
             }
             catch (Exception ex)
@@ -75,7 +83,7 @@ namespace ITStockM.Components.Pages.Purchase
             var result = await DialogService.OpenAsync<Supplier.AddSupplier>("", null, options);
             if (result != null)
             {
-                suppliersForSupplierName = await ITStockManagmentService.GetSuppliersList();
+                suppliersForSupplierName = await SupplierService.GetSuppliersList();
             }
         }
     }

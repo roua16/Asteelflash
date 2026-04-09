@@ -1,41 +1,53 @@
 using ITStockM.Models.ViewModels;
 using ITStockM.Services;
+using ITStockM.Services.DeliveryOrderMateriels;
+using ITStockM.Services.DeliveryOrders;
+using ITStockM.Services.Materiels;
+using ITStockM.Services.Suppliers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.JSInterop;
 using Radzen;
 using Radzen.Blazor;
 
-namespace ITStockM.Components.Pages.DeleveryOrder
+namespace ITStockM.Components.Pages.DeliveryOrder
 {
     public partial class DeliveryOrder
     {
         [Inject]
-        protected IJSRuntime JSRuntime { get; set; }
+        protected IJSRuntime JSRuntime { get; set; } = default!;
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
-        protected ProtectedLocalStorage LocalStorage { get; set; }
+        protected ProtectedLocalStorage LocalStorage { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IDeliveryOrderService DeliveryOrderService { get; set; } = default!;
 
-        private ElementReference formElement;
-        private RadzenTemplateForm<Models.ITStockManagment.DeliveryOrder> form;
+        [Inject]
+        public IDeliveryOrderMaterielService DeliveryOrderMaterielService { get; set; } = default!;
+
+        [Inject]
+        public IMaterielService MaterielService { get; set; } = default!;
+
+        [Inject]
+        public ISupplierService SupplierService { get; set; } = default!;
+
+        private RadzenTemplateForm<Models.ITStockManagment.DeliveryOrder> form = default!;
 
         protected bool errorVisible = false;
         protected Models.ITStockManagment.DeliveryOrder deliveryOrder = new Models.ITStockManagment.DeliveryOrder();
         protected List<MaterielViewModel> MaterielsList = new List<MaterielViewModel>();
-        protected List<Models.ITStockManagment.Supplier> suppliersForSupplierName;
+        protected List<Models.ITStockManagment.Supplier> suppliersForSupplierName = new();
         protected List<string> options = new List<string> { "HardWare", "SoftWare", "Mouse", "KeyBoard", "Laptop", "Mini Pc", "Backpack", "Headphone", "Monitor", "Network device", "Printer", "Consumables" };
         protected bool changeSR = true;
 
-        private IEnumerable<string> MaterialSuggestions { get; set; }
+        private IEnumerable<string> MaterialSuggestions { get; set; } = Enumerable.Empty<string>();
 
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -49,7 +61,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
         protected override async Task OnInitializedAsync()
         {
             deliveryOrder = new Models.ITStockManagment.DeliveryOrder();
-            suppliersForSupplierName = await ITStockManagmentService.GetSuppliersList();
+            suppliersForSupplierName = await SupplierService.GetSuppliersList();
 
 
             MaterielsList = new List<MaterielViewModel>
@@ -64,7 +76,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                                 }
                             };
 
-            var mats = await ITStockManagmentService.GetMateriels();
+            var mats = await MaterielService.GetMateriels();
 
             MaterialSuggestions = mats.Select(m => m.MaterielName).Distinct();
 
@@ -176,7 +188,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                 {
 
 
-                    await ITStockManagmentService.CreateDeliveryOrder(deliveryOrder);
+                    await DeliveryOrderService.CreateDeliveryOrder(deliveryOrder);
 
 
 
@@ -224,10 +236,10 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                                 {
                                     throw new Exception("Materiel name, Type and SerialNumber is required");
                                 }
-                                deliveryOrderMateriel.MaterielId = (await ITStockManagmentService.CreateMateriel(newMateriel)).Id;
+                                deliveryOrderMateriel.MaterielId = (await MaterielService.CreateMateriel(newMateriel)).Id;
 
                                 deliveryOrderMateriel.Qte = 1;
-                                await ITStockManagmentService.CreateDeliveryOrderMateriel(deliveryOrderMateriel);
+                                await DeliveryOrderMaterielService.CreateDeliveryOrderMateriel(deliveryOrderMateriel);
 
                             }
                         }
@@ -242,22 +254,26 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
                             if (MaterialSuggestions.Contains(materiel.Materiel.MaterielName))
                             {
-                                Models.ITStockManagment.Materiel oldMat = await ITStockManagmentService.GetMaterielByName(materiel.Materiel.MaterielName);
+                                Models.ITStockManagment.Materiel oldMat = await MaterielService.GetMaterielByName(materiel.Materiel.MaterielName);
+                                if (oldMat == null)
+                                {
+                                    throw new Exception("Existing material no longer available");
+                                }
 
                                 oldMat.QuantityPDRStock = oldMat.QuantityPDRStock + materiel.Materiel.QuantityPDRStock;
                                 deliveryOrderMateriel.MaterielId = oldMat.Id;
 
-                                await ITStockManagmentService.UpdateMateriel(oldMat.Id, oldMat);
+                                await MaterielService.UpdateMateriel(oldMat.Id, oldMat);
 
-                                await ITStockManagmentService.CreateDeliveryOrderMateriel(deliveryOrderMateriel);
+                                await DeliveryOrderMaterielService.CreateDeliveryOrderMateriel(deliveryOrderMateriel);
 
                             }
                             else
                             {
-                                deliveryOrderMateriel.MaterielId = (await ITStockManagmentService.CreateMateriel(materiel.Materiel)).Id;
+                                deliveryOrderMateriel.MaterielId = (await MaterielService.CreateMateriel(materiel.Materiel)).Id;
 
 
-                                await ITStockManagmentService.CreateDeliveryOrderMateriel(deliveryOrderMateriel);
+                                await DeliveryOrderMaterielService.CreateDeliveryOrderMateriel(deliveryOrderMateriel);
                             }
 
 
@@ -336,7 +352,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
             var result = await DialogService.OpenAsync<Supplier.AddSupplier>("", null, options);
             if (result != null)
             {
-                suppliersForSupplierName.Add(result);
+                suppliersForSupplierName = await SupplierService.GetSuppliersList();
             }
 
         }
@@ -347,7 +363,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
             if (!string.IsNullOrEmpty(materialName) && MaterialSuggestions.Contains(materialName))
             {
 
-                var material = await ITStockManagmentService.GetMaterielByName(materialName);
+                var material = await MaterielService.GetMaterielByName(materialName);
                 if (material != null)
                 {
                     MaterielsList[index].Materiel.Type = material.Type;

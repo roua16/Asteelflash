@@ -1,15 +1,15 @@
-            .datagrid-container :deep(.rz-datatable-thead th) {
+            .datagrid-container ::deep .rz-datatable-thead th {
                 background-color: var(--rz-base-200);
                 font-weight: 600;
                 padding: 1rem;
                 color: var(--rz-text-title-color);
             }
-            .datagrid-container :deep(.rz-grid-table td) {
+            .datagrid-container ::deep .rz-grid-table td {
                 padding: 1rem;
                 border-bottom: 1px solid var(--rz-base-300);
                 color: var(--rz-text-secondary-color);
             }
-            .datagrid-container :deep(.rz-datatable-data tr:hover) {
+            .datagrid-container ::deep .rz-datatable-data tr:hover {
                 background-color: var(--rz-base-200);
             }
             .kpi-icon {

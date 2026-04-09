@@ -207,7 +207,7 @@
         }
 
     .btn-cancel {
-        background-color: white;
+        background-color: var(--app-surface);
         color: var(--dark);
         border: 1px solid #e5e7eb;
         border-radius: 8px;
@@ -223,12 +223,12 @@
             background-color: var(--gray-light);
         }
 
-    :deep(.rz-dropdown), :deep(.rz-textbox), :deep(.rz-numeric), :deep(.rz-datepicker) {
+    ::deep .rz-dropdown, ::deep .rz-textbox, ::deep .rz-numeric, ::deep .rz-datepicker {
         width: 100%;
         border-radius: 8px !important;
     }
 
-    :deep(.rz-dropdown:focus), :deep(.rz-textbox:focus), :deep(.rz-numeric:focus), :deep(.rz-datepicker:focus) {
+    ::deep .rz-dropdown:focus, ::deep .rz-textbox:focus, ::deep .rz-numeric:focus, ::deep .rz-datepicker:focus {
         box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2) !important;
     }
 

@@ -1,5 +1,8 @@
-using ITStockM.Services;
 using ITStockM.Models.Constants;
+using ITStockM.Services.AssignmentMateriels;
+using ITStockM.Services.Assignments;
+using ITStockM.Services.Employees;
+using ITStockM.Services.Materiels;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Radzen;
@@ -14,7 +17,16 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         protected DialogService DialogService { get; set; }
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IAssignmentMaterielService AssignmentMaterielService { get; set; }
+
+        [Inject]
+        public IAssignmentService AssignmentService { get; set; }
+
+        [Inject]
+        public IMaterielService MaterielService { get; set; }
+
+        [Inject]
+        public IEmployeeService EmployeeService { get; set; }
 
         [Inject]
         protected IOperationNotificationService OperationNotificationService { get; set; }
@@ -26,7 +38,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
         protected override async Task OnInitializedAsync()
         {
-            assignmentMateriels = await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment" }); // change in the service to include employee
+            assignmentMateriels = await AssignmentMaterielService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment" }); // change in the service to include employee
 
             assignmentMateriels = assignmentMateriels.Where(assm => assm.Assignment.OnMission == true && assm.Assignment.RestoreDate == null && assm.Qte != 0 );
 
@@ -67,9 +79,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
                     mat.IrreparableQuantity = mat.IrreparableQuantity + result["qte"];
                 }
 
-
-
-                await ITStockManagmentService.UpdateMateriel(mat.Id, mat);
+                await MaterielService.UpdateMateriel(mat.Id, mat);
 
                 var assignment = assignmentMateriel.Assignment;
                 assignment.Descipriton = assignment.Descipriton + result["description"];
@@ -82,12 +92,10 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
                 }
 
 
+                await AssignmentService.UpdateAssignment(assignment.Id, assignment);
 
 
-                await ITStockManagmentService.UpdateAssignment(assignment.Id, assignment);
-
-
-                await ITStockManagmentService.UpdateAssignmentMateriel(assignmentMateriel.MaterielId, assignmentMateriel.AssignmentId, assignmentMateriel);
+                await AssignmentMaterielService.UpdateAssignmentMateriel(assignmentMateriel.MaterielId, assignmentMateriel.AssignmentId, assignmentMateriel);
 
                 // Prepare and send notifications if there were issues detected (missing/damaged)
                 var selectedOptLocal = result.ContainsKey("selectedOption") ? (string)result["selectedOption"] : "Good Conditions";
@@ -100,8 +108,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
                 if (!string.IsNullOrWhiteSpace(otherName) && otherQty > 0)
                 {
-                    // register returned material in inventory (create if missing) and send notifications
-                    _ = ITStockManagmentService.RegisterReturnedMaterial(otherName.Trim(), otherQty, selectedOptLocal);
+                    await RegisterReturnedMaterial(otherName.Trim(), otherQty, selectedOptLocal);
                 }
 
                 await HandleReturnIssues(assignment, assignmentMateriel, originalQte, selectedOptLocal, returnedQteLocal, descriptionLocal);
@@ -139,7 +146,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             var issueDetails = string.Join("\n", issues) + "\n\nNotes:\n" + description;
 
             // collect recipients: Admin + PDR + IT emails from personnel list
-            var employees = await ITStockManagmentService.GetEmployeesList();
+            var employees = await EmployeeService.GetEmployeesList();
             var recipients = employees.Where(e => e.Role == UserRoles.Admin || e.Role == UserRoles.PDR || e.Role == UserRoles.IT)
                 .Select(e => e.Email)
                 .Where(e => !string.IsNullOrWhiteSpace(e))
@@ -154,6 +161,52 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             }
 
             await OperationNotificationService.NotifyAssignmentReturnIssue(assignment, issueDetails, recipients);
+        }
+
+        private async Task RegisterReturnedMaterial(string materialName, int quantity, string condition)
+        {
+            var existing = await MaterielService.GetMaterielByName(materialName);
+
+            if (existing != null)
+            {
+                if (condition == "Good Conditions")
+                {
+                    existing.QuantityITStock += quantity;
+                }
+                else if (condition == "Need to be repaired")
+                {
+                    existing.Repairing_Quantity += quantity;
+                }
+                else
+                {
+                    existing.IrreparableQuantity += quantity;
+                }
+
+                await MaterielService.UpdateMateriel(existing.Id, existing);
+                return;
+            }
+
+            var newMateriel = new Models.ITStockManagment.Materiel
+            {
+                MaterielName = materialName,
+                Type = "Other",
+                Warranty = DateTime.Today
+            };
+
+            if (condition == "Good Conditions")
+            {
+                newMateriel.QuantityITStock = quantity;
+            }
+            else if (condition == "Need to be repaired")
+            {
+                newMateriel.Repairing_Quantity = quantity;
+            }
+            else
+            {
+                newMateriel.IrreparableQuantity = quantity;
+            }
+
+            await MaterielService.CreateMateriel(newMateriel);
         }
     }
 }

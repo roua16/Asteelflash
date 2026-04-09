@@ -1,4 +1,4 @@
-using ITStockM.Services;
+using ITStockM.Services.Suppliers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
@@ -11,7 +11,7 @@ namespace ITStockM.Components.Pages.Supplier
         protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
+        public ISupplierService SupplierService { get; set; } = default!;
 
         protected override Task OnInitializedAsync()
         {
@@ -25,7 +25,7 @@ namespace ITStockM.Components.Pages.Supplier
         {
             try
             {
-                await ITStockManagmentService.CreateSupplier(supplier);
+                await SupplierService.CreateSupplier(supplier);
                 DialogService.Close(supplier);
             }
             catch (Exception)

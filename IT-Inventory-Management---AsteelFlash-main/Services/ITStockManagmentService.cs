@@ -84,6 +84,23 @@ namespace ITStockM.Services
 
         public void Reset() => Context.ChangeTracker.Entries().Where(e => e.Entity != null).ToList().ForEach(e => e.State = EntityState.Detached);
 
+        private async Task RunNotificationSafely(Func<IOperationNotificationService, Task> notification)
+        {
+            if (operationNotificationService == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await notification(operationNotificationService);
+            }
+            catch
+            {
+                // Intentionally swallow notification errors to keep CRUD flow resilient.
+            }
+        }
+
 
         public async Task ExportAssignmentsToExcel(Query query = null, string fileName = null)
             => await exportService.ExportToExcel("export/itstockmanagment/assignments", query, fileName);
@@ -285,14 +302,7 @@ namespace ITStockM.Services
 
                 if (previousAvailable >= threshold && newAvailable < threshold)
                 {
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await operationNotificationService.NotifyMaterielLowStock(materiel, threshold);
-                        }
-                        catch { }
-                    });
+                    await RunNotificationSafely(service => service.NotifyMaterielLowStock(materiel, threshold));
                 }
             }
 
@@ -353,14 +363,7 @@ namespace ITStockM.Services
 
                     if (previousAvailable >= threshold && newAvailable < threshold)
                     {
-                        _ = Task.Run(async () =>
-                        {
-                            try
-                            {
-                                await operationNotificationService.NotifyMaterielLowStock(materiel, threshold);
-                            }
-                            catch { }
-                        });
+                        await RunNotificationSafely(service => service.NotifyMaterielLowStock(materiel, threshold));
                     }
                 }
             }
@@ -539,11 +542,7 @@ namespace ITStockM.Services
             OnAfterDeliveryOrderCreated(deliveryorder);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyDeliveryOrderCreated(deliveryorder);
-            });
+            await RunNotificationSafely(service => service.NotifyDeliveryOrderCreated(deliveryorder));
 
             return deliveryorder;
         }
@@ -574,11 +573,7 @@ namespace ITStockM.Services
             OnAfterDeliveryOrderUpdated(deliveryorder);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyDeliveryOrderUpdated(deliveryorder);
-            });
+            await RunNotificationSafely(service => service.NotifyDeliveryOrderUpdated(deliveryorder));
 
             return deliveryorder;
         }
@@ -882,11 +877,7 @@ namespace ITStockM.Services
             OnAfterMaterielCreated(materiel);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyMaterielCreated(materiel);
-            });
+            await RunNotificationSafely(service => service.NotifyMaterielCreated(materiel));
 
             return materiel;
         }
@@ -925,11 +916,7 @@ namespace ITStockM.Services
                 Context.SaveChanges();
 
                 // notify
-                _ = Task.Run(async () =>
-                {
-                    if (operationNotificationService != null)
-                        await operationNotificationService.NotifyMaterielCreated(newMat);
-                });
+                await RunNotificationSafely(service => service.NotifyMaterielCreated(newMat));
 
                 return newMat;
             }
@@ -945,11 +932,7 @@ namespace ITStockM.Services
 
                 Context.SaveChanges();
 
-                _ = Task.Run(async () =>
-                {
-                    if (operationNotificationService != null)
-                        await operationNotificationService.NotifyMaterielUpdated(existing);
-                });
+                await RunNotificationSafely(service => service.NotifyMaterielUpdated(existing));
 
                 return existing;
             }
@@ -984,11 +967,7 @@ namespace ITStockM.Services
             OnAfterMaterielUpdated(materiel);
 
             // Send material updated notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyMaterielUpdated(materiel);
-            });
+            await RunNotificationSafely(service => service.NotifyMaterielUpdated(materiel));
 
             // Send low-stock notification when crossing the configured threshold (default 10)
             var threshold = int.TryParse(Environment.GetEnvironmentVariable("LOW_STOCK_THRESHOLD"), out var envThreshold) ? envThreshold : 10;
@@ -996,18 +975,7 @@ namespace ITStockM.Services
 
             if (previousTotal >= threshold && newTotal < threshold)
             {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        if (operationNotificationService != null)
-                            await operationNotificationService.NotifyMaterielLowStock(materiel, threshold);
-                    }
-                    catch (Exception ex)
-                    {
-                        // ensure we don't break the main flow
-                    }
-                });
+                await RunNotificationSafely(service => service.NotifyMaterielLowStock(materiel, threshold));
             }
 
             return materiel;
@@ -1137,11 +1105,7 @@ namespace ITStockM.Services
             OnAfterOfferCreated(offer);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyOfferCreated(offer);
-            });
+            await RunNotificationSafely(service => service.NotifyOfferCreated(offer));
 
             return offer;
         }
@@ -1168,11 +1132,7 @@ namespace ITStockM.Services
             Context.SaveChanges();
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyOfferUpdated(offer);
-            });
+            await RunNotificationSafely(service => service.NotifyOfferUpdated(offer));
 
             return offer;
         }
@@ -1209,11 +1169,7 @@ namespace ITStockM.Services
             OnAfterOfferDeleted(itemToDelete);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyOfferDeleted(id);
-            });
+            await RunNotificationSafely(service => service.NotifyOfferDeleted(id));
 
             return itemToDelete;
         }
@@ -1338,11 +1294,7 @@ namespace ITStockM.Services
             OnAfterRequestCreated(request);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyRequestCreated(request);
-            });
+            await RunNotificationSafely(service => service.NotifyRequestCreated(request));
 
             return request;
         }
@@ -1379,11 +1331,7 @@ namespace ITStockM.Services
             OnAfterRequestUpdated(request);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyRequestUpdated(request);
-            });
+            await RunNotificationSafely(service => service.NotifyRequestUpdated(request));
 
             return request;
         }
@@ -1421,11 +1369,7 @@ namespace ITStockM.Services
             OnAfterRequestDeleted(itemToDelete);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyRequestDeleted(id);
-            });
+            await RunNotificationSafely(service => service.NotifyRequestDeleted(id));
 
             return itemToDelete;
         }
@@ -1542,11 +1486,7 @@ namespace ITStockM.Services
             OnAfterSupplierCreated(supplier);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifySupplierCreated(supplier);
-            });
+            await RunNotificationSafely(service => service.NotifySupplierCreated(supplier));
 
             return supplier;
         }
@@ -1589,11 +1529,7 @@ namespace ITStockM.Services
             OnAfterSupplierUpdated(supplier);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifySupplierUpdated(supplier);
-            });
+            await RunNotificationSafely(service => service.NotifySupplierUpdated(supplier));
 
             return supplier;
         }
@@ -1632,11 +1568,7 @@ namespace ITStockM.Services
             OnAfterSupplierDeleted(itemToDelete);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifySupplierDeleted(suppliername);
-            });
+            await RunNotificationSafely(service => service.NotifySupplierDeleted(suppliername));
 
             return itemToDelete;
         }
@@ -1734,11 +1666,7 @@ namespace ITStockM.Services
             OnAfterDeliveryOrderDeleted(itemToDelete);
 
             // Send email notification
-            _ = Task.Run(async () =>
-            {
-                if (operationNotificationService != null)
-                    await operationNotificationService.NotifyDeliveryOrderDeleted(deleveryordernumber);
-            });
+            await RunNotificationSafely(service => service.NotifyDeliveryOrderDeleted(deleveryordernumber));
 
             return itemToDelete;
         }

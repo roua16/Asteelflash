@@ -115,9 +115,15 @@
     padding: 0.78rem 0.9rem;
     border-radius: 12px;
     border: 1px solid rgba(194, 72, 72, 0.28);
-    background: #fff0f0;
-    color: #a53333;
+    background: rgba(244, 63, 94, 0.2);
+    color: #ffe4e6;
     font-weight: 620;
+}
+
+body.theme-light .assignments-page .warning-alert {
+    border-color: rgba(244, 63, 94, 0.24);
+    background: rgba(244, 63, 94, 0.14);
+    color: #9f1239;
 }
 
 .assignments-page .warning-icon {
@@ -176,13 +182,13 @@
 }
 
 .assignments-page .datagrid-container ::deep .rz-datatable-header {
-    background: #eef9f8;
-    border-bottom: 1px solid rgba(17, 72, 120, 0.13);
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.18), rgba(34, 211, 238, 0.14));
+    border-bottom: 1px solid var(--app-border);
 }
 
 .assignments-page .datagrid-container ::deep .rz-datatable-thead th {
-    background: #e7f4f2;
-    color: #214768;
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.18), rgba(34, 211, 238, 0.14));
+    color: var(--app-text);
     font-weight: 650;
 }
 

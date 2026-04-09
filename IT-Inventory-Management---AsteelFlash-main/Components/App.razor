@@ -6,17 +6,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="@NavigationManager.BaseUri" />
-    <RadzenTheme @rendermode="@InteractiveServer" Theme="humanistic" />
+    <RadzenTheme @rendermode="@InteractiveServer" Theme="humanistic-dark" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/site.css?v=@StaticAssetVersion" />
+    <link rel="stylesheet" href="css/ui-redesign-foundation.css?v=@StaticAssetVersion" />
     <link rel="stylesheet" href="ITStockM.styles.css?v=@StaticAssetVersion" />
     <link rel="icon" href="IconAsteel.ico" />
     <HeadOutlet @rendermode="@InteractiveServer" />
 </head>
 
-<body>
+<body class="@InitialBodyThemeClass">
     <Routes @rendermode="@InteractiveServer" />
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)"></script>
@@ -29,6 +30,7 @@
 
 @code {
     private static readonly string StaticAssetVersion = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+    private string InitialBodyThemeClass = "theme-dark";
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; }
@@ -47,6 +49,9 @@
             if (!string.IsNullOrEmpty(theme))
             {
                 ThemeService.SetTheme(theme, false);
+                InitialBodyThemeClass = theme.Contains("dark", StringComparison.OrdinalIgnoreCase)
+                    ? "theme-dark"
+                    : "theme-light";
             }
         }
     }

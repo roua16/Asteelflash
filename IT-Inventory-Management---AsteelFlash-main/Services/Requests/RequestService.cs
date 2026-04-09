@@ -76,11 +76,8 @@ public class RequestService : IRequestService
         await requestRepository.AddAsync(request);
         await requestRepository.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyRequestCreated(request);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyRequestCreated(request);
 
         return request;
     }
@@ -88,25 +85,22 @@ public class RequestService : IRequestService
     public async Task<Request> UpdateRequest(int id, Request request)
     {
             var itemToUpdate = requestRepository.Query().FirstOrDefault(i => i.Id == request.Id);
+            if (itemToUpdate == null)
+            {
+                throw new Exception("Item no longer available");
+            }
 
-        var ctx = (requestRepository as dynamic)?._context as Microsoft.EntityFrameworkCore.DbContext;
-        var entry = ctx.Entry(itemToUpdate);
-        var existingFile = itemToUpdate.File;
-        entry.CurrentValues.SetValues(request);
         if (request.File == null)
         {
-            entry.Property("File").CurrentValue = existingFile;
-            entry.Property("File").IsModified = false;
+            request.File = itemToUpdate.File;
         }
-        entry.State = EntityState.Modified;
+
+        requestRepository.Update(request);
 
         await requestRepository.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyRequestUpdated(request);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyRequestUpdated(request);
 
         return request;
     }
@@ -120,11 +114,8 @@ public class RequestService : IRequestService
         requestRepository.Remove(itemToDelete);
         await requestRepository.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyRequestDeleted(id);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyRequestDeleted(id);
 
         return itemToDelete;
     }

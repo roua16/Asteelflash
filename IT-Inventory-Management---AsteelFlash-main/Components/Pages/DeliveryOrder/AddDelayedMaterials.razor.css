@@ -442,7 +442,7 @@
         font-size: 0.875rem;
     }
 
-    :deep(.validation-message) {
+    ::deep .validation-message {
         color: var(--danger);
         font-size: 0.75rem;
         margin-top: 0.25rem;
@@ -451,24 +451,24 @@
         gap: 0.25rem;
     }
 
-        :deep(.validation-message)::before {
+        ::deep .validation-message::before {
             content: "⚠️";
             font-size: 0.75rem;
         }
 
-    :deep(.rz-fieldset) {
+    ::deep .rz-fieldset {
         border-radius: 12px !important;
         border: 1px solid #e5e7eb !important;
         margin-bottom: 1.5rem !important;
     }
 
-    :deep(.rz-fieldset-legend) {
+    ::deep .rz-fieldset-legend {
         font-weight: 600 !important;
         font-size: 1rem !important;
         padding: 0 1rem !important;
     }
 
-    :deep(.rz-fieldset-content) {
+    ::deep .rz-fieldset-content {
         padding: 1.5rem !important;
     }
 

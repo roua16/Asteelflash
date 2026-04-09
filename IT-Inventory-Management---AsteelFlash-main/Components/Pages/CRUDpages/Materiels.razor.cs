@@ -5,24 +5,29 @@ using Microsoft.AspNetCore.Components.Web;
 using Radzen;
 using Radzen.Blazor;
 using ITStockM.Services;
+using ITStockM.Services.Export;
+using ITStockM.Services.Materiels;
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class Materiels
     {
        
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IMaterielService MaterielService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Materiel> materiels;
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
-        protected RadzenDataGrid<Models.ITStockManagment.Materiel> grid0;
+        protected IEnumerable<Models.ITStockManagment.Materiel> materiels = new List<Models.ITStockManagment.Materiel>();
+
+        protected RadzenDataGrid<Models.ITStockManagment.Materiel> grid0 = default!;
 
         protected string search = "";
 
@@ -32,11 +37,11 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             await grid0.GoToPage(0);
 
-            materiels = await ITStockManagmentService.GetMateriels(new Query { Filter = $@"i => i.MaterielName.Contains(@0) || i.Type.Contains(@0) || i.SerialNumber.Contains(@0)", FilterParameters = new object[] { search } });
+            materiels = await MaterielService.GetMateriels(new Query { Filter = $@"i => i.MaterielName.Contains(@0) || i.Type.Contains(@0) || i.SerialNumber.Contains(@0)", FilterParameters = new object[] { search } });
         }
         protected override async Task OnInitializedAsync()
         {
-            materiels = await ITStockManagmentService.GetMateriels(new Query { Filter = $@"i => i.MaterielName.Contains(@0) || i.Type.Contains(@0) || i.SerialNumber.Contains(@0)", FilterParameters = new object[] { search } });
+            materiels = await MaterielService.GetMateriels(new Query { Filter = $@"i => i.MaterielName.Contains(@0) || i.Type.Contains(@0) || i.SerialNumber.Contains(@0)", FilterParameters = new object[] { search } });
         }
 
         protected async Task AddButtonClick(MouseEventArgs args)
@@ -56,7 +61,7 @@ namespace ITStockM.Components.Pages.CRUDpages
             {
                 if (await DialogService.Confirm("Are you sure you want to delete this record?") == true)
                 {
-                    var deleteResult = await ITStockManagmentService.DeleteMateriel(materiel.Id);
+                    var deleteResult = await MaterielService.DeleteMateriel(materiel.Id);
 
                     if (deleteResult != null)
                     {
@@ -79,7 +84,7 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportMaterielsToCSV(new Query
+                await ExportService.ExportToCSV("export/itstockmanagment/materiels", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",
@@ -90,7 +95,7 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportMaterielsToExcel(new Query
+                await ExportService.ExportToExcel("export/itstockmanagment/materiels", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",

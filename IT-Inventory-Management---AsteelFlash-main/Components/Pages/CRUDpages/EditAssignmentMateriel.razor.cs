@@ -3,17 +3,25 @@ using Microsoft.JSInterop;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
-using ITStockM.Services;
+using ITStockM.Services.AssignmentMateriels;
+using ITStockM.Services.Assignments;
+using ITStockM.Services.Materiels;
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class EditAssignmentMateriel
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IAssignmentMaterielService AssignmentMaterielService { get; set; } = default!;
+
+        [Inject]
+        public IMaterielService MaterielService { get; set; } = default!;
+
+        [Inject]
+        public IAssignmentService AssignmentService { get; set; } = default!;
 
         [Parameter]
         public int MaterielId { get; set; }
@@ -23,24 +31,24 @@ namespace ITStockM.Components.Pages.CRUDpages
 
         protected override async Task OnInitializedAsync()
         {
-            assignmentMateriel = await ITStockManagmentService.GetAssignmentMaterielByMaterielIdAndAssignmentId(MaterielId, AssignmentId);
+            assignmentMateriel = await AssignmentMaterielService.GetAssignmentMaterielByMaterielIdAndAssignmentId(MaterielId, AssignmentId) ?? new Models.ITStockManagment.AssignmentMateriel();
 
-            materielsForMaterielId = await ITStockManagmentService.GetMaterielsList();
+            materielsForMaterielId = (await MaterielService.GetMateriels()).ToList();
 
-            assignmentsForAssignmentId = await ITStockManagmentService.GetAssignmentsList();
+            assignmentsForAssignmentId = await AssignmentService.GetAssignments(new Query());
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.AssignmentMateriel assignmentMateriel;
+        protected Models.ITStockManagment.AssignmentMateriel assignmentMateriel = new();
 
-        protected IEnumerable<Models.ITStockManagment.Materiel> materielsForMaterielId;
+        protected IEnumerable<Models.ITStockManagment.Materiel> materielsForMaterielId = new List<Models.ITStockManagment.Materiel>();
 
-        protected IEnumerable<Models.ITStockManagment.Assignment> assignmentsForAssignmentId;
+        protected IEnumerable<Models.ITStockManagment.Assignment> assignmentsForAssignmentId = new List<Models.ITStockManagment.Assignment>();
 
         protected async Task FormSubmit()
         {
             try
             {
-                await ITStockManagmentService.UpdateAssignmentMateriel(MaterielId, AssignmentId, assignmentMateriel);
+                await AssignmentMaterielService.UpdateAssignmentMateriel(MaterielId, AssignmentId, assignmentMateriel);
                 DialogService.Close(assignmentMateriel);
             }
             catch (Exception ex)

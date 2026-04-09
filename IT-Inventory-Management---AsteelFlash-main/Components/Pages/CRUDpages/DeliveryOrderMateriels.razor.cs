@@ -4,24 +4,28 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
 using Radzen.Blazor;
-using ITStockM.Services;
+using ITStockM.Services.DeliveryOrderMateriels;
+using ITStockM.Services.Export;
 
-namespace ITStockM.Components.Pages.CRUDpages
+namespace ITStockM.Components.Pages.CrudPages
 {
     public partial class DeliveryOrderMateriels
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IDeliveryOrderMaterielService DeliveryOrderMaterielService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.DeliveryOrderMateriel> deliveryOrderMateriels;
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
-        protected RadzenDataGrid<Models.ITStockManagment.DeliveryOrderMateriel> grid0;
+        protected IEnumerable<Models.ITStockManagment.DeliveryOrderMateriel> deliveryOrderMateriels = new List<Models.ITStockManagment.DeliveryOrderMateriel>();
+
+        protected RadzenDataGrid<Models.ITStockManagment.DeliveryOrderMateriel> grid0 = default!;
 
         protected string search = "";
 
@@ -31,11 +35,11 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             await grid0.GoToPage(0);
 
-            deliveryOrderMateriels = await ITStockManagmentService.GetDeliveryOrderMateriels(new Query { Filter = $@"i => i.DeliveryOrderNumber.Contains(@0)", FilterParameters = new object[] { search }, Expand = "Materiel,DeliveryOrder" });
+            deliveryOrderMateriels = await DeliveryOrderMaterielService.GetDeliveryOrderMateriels(new Query { Filter = $@"i => i.DeliveryOrderNumber.Contains(@0)", FilterParameters = new object[] { search }, Expand = "Materiel,DeliveryOrder" });
         }
         protected override async Task OnInitializedAsync()
         {
-            deliveryOrderMateriels = await ITStockManagmentService.GetDeliveryOrderMateriels(new Query { Filter = $@"i => i.DeliveryOrderNumber.Contains(@0)", FilterParameters = new object[] { search }, Expand = "Materiel,DeliveryOrder" });
+            deliveryOrderMateriels = await DeliveryOrderMaterielService.GetDeliveryOrderMateriels(new Query { Filter = $@"i => i.DeliveryOrderNumber.Contains(@0)", FilterParameters = new object[] { search }, Expand = "Materiel,DeliveryOrder" });
         }
 
         protected async Task AddButtonClick(MouseEventArgs args)
@@ -55,7 +59,7 @@ namespace ITStockM.Components.Pages.CRUDpages
             {
                 if (await DialogService.Confirm("Are you sure you want to delete this record?") == true)
                 {
-                    var deleteResult = await ITStockManagmentService.DeleteDeliveryOrderMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.DeliveryOrderNumber);
+                    var deleteResult = await DeliveryOrderMaterielService.DeleteDeliveryOrderMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.DeliveryOrderNumber);
 
                     if (deleteResult != null)
                     {
@@ -78,7 +82,7 @@ namespace ITStockM.Components.Pages.CRUDpages
         {
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportDeliveryOrderMaterielsToCSV(new Query
+                await ExportService.ExportToCSV("export/itstockmanagment/deliveryordermateriels", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",
@@ -89,7 +93,7 @@ namespace ITStockM.Components.Pages.CRUDpages
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportDeliveryOrderMaterielsToExcel(new Query
+                await ExportService.ExportToExcel("export/itstockmanagment/deliveryordermateriels", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter)? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",

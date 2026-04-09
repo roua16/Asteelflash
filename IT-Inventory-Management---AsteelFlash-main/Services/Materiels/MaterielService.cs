@@ -59,11 +59,8 @@ public class MaterielService : IMaterielService
         await materielRepository.AddAsync(materiel);
         await materielRepository.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyMaterielCreated(materiel);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyMaterielCreated(materiel);
 
         return materiel;
     }
@@ -71,19 +68,17 @@ public class MaterielService : IMaterielService
     public async Task<Materiel> UpdateMateriel(int id, Materiel materiel)
     {
             var itemToUpdate = materielRepository.Query().FirstOrDefault(i => i.Id == materiel.Id);
+            if (itemToUpdate == null)
+            {
+                throw new Exception("Item no longer available");
+            }
 
-        var ctx = (materielRepository as dynamic)?._context as Microsoft.EntityFrameworkCore.DbContext;
-        var entry = ctx.Entry(itemToUpdate);
-        entry.CurrentValues.SetValues(materiel);
-        entry.State = EntityState.Modified;
+        materielRepository.Update(materiel);
 
         await materielRepository.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyMaterielUpdated(materiel);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyMaterielUpdated(materiel);
 
         return materiel;
     }
@@ -92,15 +87,16 @@ public class MaterielService : IMaterielService
     {
             var query = materielRepository.Query().Include(i => i.AssignmentMateriels).Include(i => i.DeliveryOrderMateriels);
             var itemToDelete = query.FirstOrDefault(i => i.Id == id);
+        if (itemToDelete == null)
+        {
+            throw new Exception("Item no longer available");
+        }
 
         materielRepository.Remove(itemToDelete);
         await materielRepository.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyMaterielDeleted(itemToDelete);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyMaterielDeleted(itemToDelete);
 
         return itemToDelete;
     }

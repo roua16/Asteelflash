@@ -1,29 +1,37 @@
 ﻿using ITStockM.Models.ITStockManagment;
-using ITStockM.Services;
+using ITStockM.Services.DeliveryOrderMateriels;
+using ITStockM.Services.DeliveryOrders;
+using ITStockM.Services.Materiels;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
 using Radzen.Blazor;
 
-namespace ITStockM.Components.Pages.DeleveryOrder
+namespace ITStockM.Components.Pages.DeliveryOrder
 {
     public partial class DeliveryOrderWithoutON
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IDeliveryOrderService DeliveryOrderService { get; set; } = default!;
+
+        [Inject]
+        public IDeliveryOrderMaterielService DeliveryOrderMaterielService { get; set; } = default!;
+
+        [Inject]
+        public IMaterielService MaterielService { get; set; } = default!;
 
         [Parameter]
-        public Models.ITStockManagment.DeliveryOrder DeliveryOrder { get; set; }
+        public Models.ITStockManagment.DeliveryOrder DeliveryOrder { get; set; } = new();
 
-        protected IEnumerable<DeliveryOrderMateriel> DeliveryOrderMateriels;
+        protected IEnumerable<DeliveryOrderMateriel> DeliveryOrderMateriels = new List<DeliveryOrderMateriel>();
 
-        protected RadzenDataGrid<DeliveryOrderMateriel> grid0;
+        protected RadzenDataGrid<DeliveryOrderMateriel> grid0 = default!;
 
         private bool showValidationError = false;
 
@@ -45,7 +53,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
             if (await DialogService.Confirm("Confirm OrderNumber ?") == true)
             {
-                await ITStockManagmentService.UpdateDeliveryOrder(DeliveryOrder.DeleveryOrderNumber, DeliveryOrder);
+                await DeliveryOrderService.UpdateDeliveryOrder(DeliveryOrder.DeleveryOrderNumber, DeliveryOrder);
                 DialogService.Close(null);
             }
 
@@ -57,7 +65,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
         }
 
 
-        protected async void ChangeValue(KeyboardEventArgs e, Models.ITStockManagment.DeliveryOrderMateriel deliveryOrderMateriel)
+        protected async Task ChangeValue(KeyboardEventArgs e, Models.ITStockManagment.DeliveryOrderMateriel deliveryOrderMateriel)
         {
             if (e.Key == "Enter")
             {
@@ -101,7 +109,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                             deliveryOrderMateriel.DeliveryOrder.HasDelayedM = true;
 
                         }
-                        await ITStockManagmentService.UpdateDeliveryOrderMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.DeliveryOrderNumber, deliveryOrderMateriel);
+                        await DeliveryOrderMaterielService.UpdateDeliveryOrderMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.DeliveryOrderNumber, deliveryOrderMateriel);
 
                     }
                     else
@@ -116,7 +124,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
             }
         }
 
-        protected async void DeleteDeliveryOrderMaterial(DeliveryOrderMateriel deliveryOrderMateriel)
+        protected async Task DeleteDeliveryOrderMaterial(DeliveryOrderMateriel deliveryOrderMateriel)
         {
 
             var options = new DialogOptions
@@ -138,7 +146,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                 }
                 deliveryOrderMateriel.Materiel.QuantityPDRStock = deliveryOrderMateriel.Materiel.QuantityPDRStock - deliveryOrderMateriel.Qte;
 
-                await ITStockManagmentService.UpdateMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.Materiel);
+                await MaterielService.UpdateMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.Materiel);
                 deliveryOrderMateriel.DeliveryOrder.Descriptoin = deliveryOrderMateriel.DeliveryOrder.Descriptoin + "\n" + DateTime.Now + ": removed " + deliveryOrderMateriel.Qte + " " + deliveryOrderMateriel.Materiel.MaterielName;
                 if (response)
                 {
@@ -146,9 +154,9 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
 
                 }
-                await ITStockManagmentService.UpdateDeliveryOrder(deliveryOrderMateriel.DeliveryOrder.DeleveryOrderNumber, deliveryOrderMateriel.DeliveryOrder);
+                await DeliveryOrderService.UpdateDeliveryOrder(deliveryOrderMateriel.DeliveryOrder.DeleveryOrderNumber, deliveryOrderMateriel.DeliveryOrder);
 
-                await ITStockManagmentService.DeleteDeliveryOrderMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.DeliveryOrderNumber);
+                await DeliveryOrderMaterielService.DeleteDeliveryOrderMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.DeliveryOrderNumber);
                 await grid0.Reload();
 
 

@@ -155,13 +155,13 @@
 }
 
 .materials-page .datagrid-container ::deep .rz-datatable-header {
-	background: #eef9f8;
-	border-bottom: 1px solid rgba(15, 118, 110, 0.14);
+	background: linear-gradient(90deg, rgba(99, 102, 241, 0.18), rgba(34, 211, 238, 0.14));
+	border-bottom: 1px solid var(--app-border);
 }
 
 .materials-page .datagrid-container ::deep .rz-datatable-thead th {
-	background: #e7f4f2;
-	color: #1f514f;
+	background: linear-gradient(90deg, rgba(99, 102, 241, 0.18), rgba(34, 211, 238, 0.14));
+	color: var(--app-text);
 	font-weight: 650;
 }
 

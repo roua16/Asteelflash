@@ -24,6 +24,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITStockM.Services.Materiels.IMaterielService, ITStockM.Services.Materiels.MaterielService>();
         services.AddScoped<ITStockM.Services.Requests.IRequestService, ITStockM.Services.Requests.RequestService>();
         services.AddScoped<ITStockM.Services.DeliveryOrders.IDeliveryOrderService, ITStockM.Services.DeliveryOrders.DeliveryOrderService>();
+        services.AddScoped<ITStockM.Services.Employees.IEmployeeService, ITStockM.Services.Employees.EmployeeService>();
+        services.AddScoped<ITStockM.Services.Projects.IProjectService, ITStockM.Services.Projects.ProjectService>();
+        services.AddScoped<ITStockM.Services.Suppliers.ISupplierService, ITStockM.Services.Suppliers.SupplierService>();
+        services.AddScoped<ITStockM.Services.Offers.IOfferService, ITStockM.Services.Offers.OfferService>();
+        services.AddScoped<ITStockM.Services.AssignmentMateriels.IAssignmentMaterielService, ITStockM.Services.AssignmentMateriels.AssignmentMaterielService>();
+        services.AddScoped<ITStockM.Services.DeliveryOrderMateriels.IDeliveryOrderMaterielService, ITStockM.Services.DeliveryOrderMateriels.DeliveryOrderMaterielService>();
 
         // Asset Lifecycle Module
         services.AddScoped<IAssetLifecycleService, AssetLifecycleService>();

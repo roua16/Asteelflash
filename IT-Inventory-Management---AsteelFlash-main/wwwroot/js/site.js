@@ -21,3 +21,10 @@ window.preventEnterKeyFormSubmission = function () {
         }
     });
 };
+
+window.applyThemeClass = function (themeName) {
+    var isDarkTheme = typeof themeName === 'string' && themeName.toLowerCase().includes('dark');
+
+    document.body.classList.toggle('theme-dark', isDarkTheme);
+    document.body.classList.toggle('theme-light', !isDarkTheme);
+};

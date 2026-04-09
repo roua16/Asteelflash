@@ -1,9 +1,9 @@
 .loading-screen {
     --primary: #0f766e;
     --secondary: #dc3545;
-    --background: #ffffff8a;
-    --text: #333333;
-    --shadow: rgba(0, 0, 0, 0.1);
+    --background: rgba(15, 23, 42, 0.82);
+    --text: var(--app-text);
+    --shadow: rgba(2, 8, 23, 0.42);
 
     margin: 0;
     padding: 0;
@@ -19,6 +19,12 @@
     justify-content: center;
     align-items: center;
     z-index: 9999;
+}
+
+body.theme-light .loading-screen {
+    --background: rgba(255, 255, 255, 0.94);
+    --text: #0f172a;
+    --shadow: rgba(15, 23, 42, 0.12);
 }
 
 .loading-card {
@@ -99,7 +105,7 @@
     border-radius: 50%;
     top: 4px;
     left: 4px;
-    background: white;
+    background: var(--app-surface);
 }
 
 .hexagon-loader {

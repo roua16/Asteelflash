@@ -1,4 +1,5 @@
-using ITStockM.Services;
+using ITStockM.Services.AssignmentMateriels;
+using ITStockM.Services.Export;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Radzen;
@@ -9,22 +10,25 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
     public partial class ArchivedMissions
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IAssignmentMaterielService AssignmentMaterielService { get; set; } = default!;
+
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
 
 
-        protected IEnumerable<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels;
+        protected IEnumerable<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels = new List<Models.ITStockManagment.AssignmentMateriel>();
 
-        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0;
+        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0 = default!;
 
         protected string search = "";
 
         protected override async Task OnInitializedAsync()
         {
-            assignmentMateriels = await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment" }); 
+            assignmentMateriels = await AssignmentMaterielService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment" }); 
             assignmentMateriels = assignmentMateriels.Where(assm => assm.Assignment.OnMission == true && (assm.Assignment.RestoreDate != null ||assm.Qte ==0)).OrderByDescending(assm => assm.Assignment.Date);
 
 
@@ -49,13 +53,13 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportAssignmentMaterielsToCSV(query, "Missions");
+                await ExportService.ExportToCSV("export/itstockmanagment/assignmentmateriels", query, "Missions");
 
             }
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportAssignmentMaterielsToExcel(query, "Missions");
+                await ExportService.ExportToExcel("export/itstockmanagment/assignmentmateriels", query, "Missions");
             }
         }
 

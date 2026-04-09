@@ -1,4 +1,5 @@
-using ITStockM.Services;
+using ITStockM.Services.Offers;
+using ITStockM.Services.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -9,19 +10,22 @@ namespace ITStockM.Components.Pages.PendingDeliveries
     public partial class PendingDeliveriesDetails
     {
         [Inject]
-        protected IJSRuntime JSRuntime { get; set; }
+        protected IJSRuntime JSRuntime { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IRequestService RequestService { get; set; } = default!;
+
+        [Inject]
+        public IOfferService OfferService { get; set; } = default!;
 
         [Parameter]
         public int Id { get; set; }
 
         protected bool errorVisible;
-        protected Models.ITStockManagment.Request request;
-        protected Models.ITStockManagment.Offer offer;
+        protected Models.ITStockManagment.Request request = new();
+        protected Models.ITStockManagment.Offer? offer;
 
         protected bool hasChanges = false;
         protected bool canEdit = true;
@@ -30,9 +34,9 @@ namespace ITStockM.Components.Pages.PendingDeliveries
         protected override async Task OnInitializedAsync()
         {
 
-            request = await ITStockManagmentService.GetRequestById(Id);
+            request = await RequestService.GetRequestById(Id) ?? new Models.ITStockManagment.Request();
 
-            offer = (await ITStockManagmentService.GetOffers(new Query
+            offer = (await OfferService.GetOffers(new Query
             {
                 Filter = "i => i.SupplierName.Contains(@0) &&  i.RequestId == @1 && i.Selected==true",
                 FilterParameters = new object[] { "", Id },

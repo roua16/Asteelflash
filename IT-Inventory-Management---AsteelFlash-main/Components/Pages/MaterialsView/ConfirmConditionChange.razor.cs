@@ -1,5 +1,6 @@
 ﻿using ITStockM.Models.ITStockManagment;
 using ITStockM.Services;
+using ITStockM.Services.Materiels;
 using Microsoft.AspNetCore.Components;
 using Radzen;
 using Radzen.Blazor;
@@ -13,7 +14,7 @@ namespace ITStockM.Components.Pages.MaterialsView
         [Inject]
         protected NotificationService NotificationService { get; set; } = default!;
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
+        public IMaterielService MaterielService { get; set; } = default!;
 
         [Parameter]
         public int MaxQte { get; set; }
@@ -61,7 +62,7 @@ namespace ITStockM.Components.Pages.MaterialsView
             myDropDowns.Add(new RadzenDropDownDataGrid<Materiel>());
         }
 
-        private async void deleteMaterial(int i)
+        private async Task deleteMaterial(int i)
         {
             listMaterials.RemoveAt(i);
             if (previouslySelectedMateriels[i] != null)
@@ -76,7 +77,7 @@ namespace ITStockM.Components.Pages.MaterialsView
             }
         }
 
-        protected async void RemoveMatOnSelect(object e, int i)
+        protected async Task RemoveMatOnSelect(object e, int i)
         {
             var newSelection = e as Materiel;
 
@@ -144,7 +145,7 @@ namespace ITStockM.Components.Pages.MaterialsView
             }
         }
 
-        protected async void submit()
+        protected async Task submit()
         {
             if (HasSN)
             {
@@ -159,7 +160,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                        
                         item.Materiel.QuantityITStock = item.Materiel.QuantityITStock - Qte;
                         item.Materiel.Repairing_Quantity = item.Materiel.Repairing_Quantity + Qte;
-                        await ITStockManagmentService.UpdateMateriel(item.Materiel.Id,item.Materiel);
+                        await MaterielService.UpdateMateriel(item.Materiel.Id,item.Materiel);
 
                     }
                     else if (selectedOption == "Repaired")
@@ -167,7 +168,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                         
                         item.Materiel.Repairing_Quantity = item.Materiel.Repairing_Quantity - Qte;
                         item.Materiel.QuantityITStock = item.Materiel.QuantityITStock + Qte;
-                        await ITStockManagmentService.UpdateMateriel(item.Materiel.Id, item.Materiel);
+                        await MaterielService.UpdateMateriel(item.Materiel.Id, item.Materiel);
                     }
                     else
                     {
@@ -176,14 +177,14 @@ namespace ITStockM.Components.Pages.MaterialsView
                             
                             item.Materiel.QuantityITStock = item.Materiel.QuantityITStock - Qte;
                             item.Materiel.IrreparableQuantity = item.Materiel.IrreparableQuantity + Qte;
-                            await ITStockManagmentService.UpdateMateriel(item.Materiel.Id, item.Materiel);
+                            await MaterielService.UpdateMateriel(item.Materiel.Id, item.Materiel);
                         }
                         else
                         {
                             
                             item.Materiel.Repairing_Quantity = item.Materiel.Repairing_Quantity - Qte;
                             item.Materiel.IrreparableQuantity = item.Materiel.IrreparableQuantity + Qte;
-                            await ITStockManagmentService.UpdateMateriel(item.Materiel.Id, item.Materiel);
+                            await MaterielService.UpdateMateriel(item.Materiel.Id, item.Materiel);
                         }
                     }
 
@@ -203,14 +204,14 @@ namespace ITStockM.Components.Pages.MaterialsView
                    
                     mat.QuantityITStock = mat.QuantityITStock - Qte;
                     mat.Repairing_Quantity = mat.Repairing_Quantity + Qte;
-                    await ITStockManagmentService.UpdateMateriel(mat.Id, mat);
+                    await MaterielService.UpdateMateriel(mat.Id, mat);
                 }
                 else if (selectedOption == "Repaired")
                 {
                     
                     mat.Repairing_Quantity = mat.Repairing_Quantity - Qte;
                     mat.QuantityITStock = mat.QuantityITStock + Qte;
-                    await ITStockManagmentService.UpdateMateriel(mat.Id, mat);
+                    await MaterielService.UpdateMateriel(mat.Id, mat);
                 }
                 else
                 {
@@ -219,14 +220,14 @@ namespace ITStockM.Components.Pages.MaterialsView
                         
                         mat.QuantityITStock = mat.QuantityITStock - Qte;
                         mat.IrreparableQuantity = mat.IrreparableQuantity + Qte;
-                        await ITStockManagmentService.UpdateMateriel(mat.Id, mat);
+                        await MaterielService.UpdateMateriel(mat.Id, mat);
                     }
                     else
                     {
                   
                         mat.Repairing_Quantity = mat.Repairing_Quantity - Qte;
                         mat.IrreparableQuantity = mat.IrreparableQuantity + Qte;
-                        await ITStockManagmentService.UpdateMateriel(mat.Id, mat);
+                        await MaterielService.UpdateMateriel(mat.Id, mat);
                     }
                 }
                

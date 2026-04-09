@@ -1,4 +1,6 @@
-using ITStockM.Services;
+using ITStockM.Services.Export;
+using ITStockM.Services.Offers;
+using ITStockM.Services.Requests;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Radzen;
@@ -10,19 +12,25 @@ namespace ITStockM.Components.Pages.Purchase
     {
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IRequestService RequestService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Request> requests;
+        [Inject]
+        public IOfferService OfferService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Offer> offers;
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
-        protected RadzenDataGrid<Models.ITStockManagment.Request> grid0;
+        protected IEnumerable<Models.ITStockManagment.Request> requests = new List<Models.ITStockManagment.Request>();
+
+        protected IEnumerable<Models.ITStockManagment.Offer> offers = new List<Models.ITStockManagment.Offer>();
+
+        protected RadzenDataGrid<Models.ITStockManagment.Request> grid0 = default!;
 
         protected string search = "";
 
@@ -41,13 +49,13 @@ namespace ITStockM.Components.Pages.Purchase
         }
         protected override async Task OnInitializedAsync()
         {
-            requests = (await ITStockManagmentService.GetRequests(new Query
+            requests = (await RequestService.GetRequests(new Query
             {
                 Filter = $@"i => i.Status != @0",
                 FilterParameters = new object[] { "Done" },
                 Expand = "Employee"
             })).OrderByDescending(r => r.Date);
-            offers = await ITStockManagmentService.GetOffers();
+            offers = await OfferService.GetOffers();
 
         }
 
@@ -104,7 +112,7 @@ namespace ITStockM.Components.Pages.Purchase
             {
                 if (await DialogService.Confirm("Are you sure you want to delete this record?") == true)
                 {
-                    var deleteResult = await ITStockManagmentService.DeleteRequest(request.Id);
+                    var deleteResult = await RequestService.DeleteRequest(request.Id);
 
                     if (deleteResult != null)
                     {
@@ -133,12 +141,12 @@ namespace ITStockM.Components.Pages.Purchase
             };
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportRequestsToExcel(query, "Purchase Requests");
+                await ExportService.ExportToCSV("export/itstockmanagment/requests", query, "Purchase Requests");
             }
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportRequestsToExcel(query, "Purchase Requests");
+                await ExportService.ExportToExcel("export/itstockmanagment/requests", query, "Purchase Requests");
             }
         }
 

@@ -1,5 +1,7 @@
 using ITStockM.Models.ITStockManagment;
-using ITStockM.Services;
+using ITStockM.Services.AssignmentMateriels;
+using ITStockM.Services.Assignments;
+using ITStockM.Services.Materiels;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.Components.Web;
@@ -18,7 +20,13 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
         protected ProtectedLocalStorage LocalStorage { get; set; }
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IAssignmentService AssignmentService { get; set; }
+
+        [Inject]
+        public IAssignmentMaterielService AssignmentMaterielService { get; set; }
+
+        [Inject]
+        public IMaterielService MaterielService { get; set; }
 
 
        
@@ -29,7 +37,7 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
             assignment = new Assignment();
 
            
-            materiels = (await ITStockManagmentService.GetMateriels()).Where(m => m.QuantityPDRStock != 0).OrderBy(m => m.Warranty).ToList();
+            materiels = (await MaterielService.GetMateriels()).Where(m => m.QuantityPDRStock != 0).OrderBy(m => m.Warranty).ToList();
 
 
 
@@ -60,7 +68,7 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
         protected List<Materiel> materiels;
         private List<RadzenDropDownDataGrid<Materiel>> myDropDowns;
         protected List<Materiel?> previouslySelectedMateriels;
-        protected async void RemoveMatOnSelect(object e, int i)
+        protected async Task RemoveMatOnSelect(object e, int i)
         {
             var newSelection = e as Materiel;
 
@@ -117,21 +125,21 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
             {
 
                 assignment.Date = DateTime.Now;
-                await ITStockManagmentService.CreateAssignment(assignment);
+                var createdAssignment = await AssignmentService.CreateAssignment(assignment);
 
                 foreach (var mat in listMaterials)
                 {
                     var newAssignmentMaterial = new ITStockM.Models.ITStockManagment.AssignmentMateriel
                     {
                         MaterielId = mat.Materiel.Id,
-                        AssignmentId = assignment.Id,
+                        AssignmentId = createdAssignment.Id,
                         Qte = mat.Qtee
 
                     };
                     mat.Materiel.QuantityPDRStock = mat.Materiel.QuantityPDRStock - mat.Qtee;
                     mat.Materiel.QuantityITStock = mat.Materiel.QuantityITStock + mat.Qtee;
-                    await ITStockManagmentService.UpdateMateriel(mat.Materiel.Id,mat.Materiel);
-                    await ITStockManagmentService.CreateAssignmentMateriel(newAssignmentMaterial);
+                    await MaterielService.UpdateMateriel(mat.Materiel.Id,mat.Materiel);
+                    await AssignmentMaterielService.CreateAssignmentMateriel(newAssignmentMaterial);
                    
 
                 }
@@ -152,7 +160,7 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
         }
 
 
-        private async void deleteMaterial(int i)
+        private async Task deleteMaterial(int i)
         {
             listMaterials.RemoveAt(i);
             if (previouslySelectedMateriels[i] != null)

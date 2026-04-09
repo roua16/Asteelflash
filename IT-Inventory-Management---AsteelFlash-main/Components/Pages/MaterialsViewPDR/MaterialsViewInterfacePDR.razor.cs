@@ -1,5 +1,8 @@
-using ITStockM.Components.Pages.CRUDpages;
-using ITStockM.Services;
+using ITStockM.Components.Pages.CrudPages;
+using ITStockM.Services.DeliveryOrderMateriels;
+using ITStockM.Services.Export;
+using ITStockM.Services.Materiels;
+using ITStockM.Services.Offers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.JSInterop;
@@ -18,7 +21,16 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
         protected DialogService DialogService { get; set; }
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IMaterielService MaterielService { get; set; }
+
+        [Inject]
+        public IDeliveryOrderMaterielService DeliveryOrderMaterielService { get; set; }
+
+        [Inject]
+        public IOfferService OfferService { get; set; }
+
+        [Inject]
+        public IExportService ExportService { get; set; }
 
         [Inject]
         protected ProtectedLocalStorage LocalStorage { get; set; }
@@ -39,8 +51,8 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
         {
             
             userAuth = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.Role;
-            var mats = (await ITStockManagmentService.GetMateriels()).Where(m => m.QuantityPDRStock != 0);
-            var deliveryOrders = await ITStockManagmentService.GetDeliveryOrderMateriels(new Query
+            var mats = (await MaterielService.GetMateriels()).Where(m => m.QuantityPDRStock != 0);
+            var deliveryOrders = await DeliveryOrderMaterielService.GetDeliveryOrderMateriels(new Query
             {
                 
                 Expand = "DeliveryOrder, Materiel"
@@ -64,7 +76,7 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
 
 
             
-            pendingDeliveries = (await ITStockManagmentService.GetOffers()).Where ( o =>  o.Selected == true && o.DeliveryDate.CompareTo(DateTime.Today)>0 ).Count() ;
+            pendingDeliveries = (await OfferService.GetOffers()).Where ( o =>  o.Selected == true && o.DeliveryDate.CompareTo(DateTime.Today)>0 ).Count() ;
 
 
             
@@ -86,7 +98,7 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
 
             var filter = $"i => {string.Join(" || ", matIds.Select(id => $"i.MaterielId == {id}"))}";
 
-            var dlom = await ITStockManagmentService.GetDeliveryOrderMateriels(new Query
+            var dlom = await DeliveryOrderMaterielService.GetDeliveryOrderMateriels(new Query
             {
                 Filter = filter,
                 Expand = "DeliveryOrder, Materiel"
@@ -123,8 +135,8 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
 
             await grid0.GoToPage(0);
 
-            var mats = await ITStockManagmentService.GetMateriels(new Query { Filter = $@"i => i.MaterielName.Contains(@0) || i.Type.Contains(@0) || i.SerialNumber.Contains(@0)  ", FilterParameters = new object[] { search } });
-            var deliveryOrderMateriels = await ITStockManagmentService.GetDeliveryOrderMateriels(new Query
+            var mats = await MaterielService.GetMateriels(new Query { Filter = $@"i => i.MaterielName.Contains(@0) || i.Type.Contains(@0) || i.SerialNumber.Contains(@0)  ", FilterParameters = new object[] { search } });
+            var deliveryOrderMateriels = await DeliveryOrderMaterielService.GetDeliveryOrderMateriels(new Query
             {
                 Expand = "DeliveryOrder, Materiel"
             });
@@ -148,11 +160,11 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
 
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportMaterielsPDRToCSV(new Query { }, "PDR - Materials");
+                await ExportService.ExportToCSV("export/itstockmanagment/materielspdr", new Query { }, "PDR - Materials");
             }
             else if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportMaterielsPDRToExcel(new Query { }, "PDR - Materials");
+                await ExportService.ExportToExcel("export/itstockmanagment/materielspdr", new Query { }, "PDR - Materials");
             }
         }
 

@@ -243,23 +243,23 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.datagrid-container :deep(.rz-datatable-header) {
+.datagrid-container ::deep .rz-datatable-header {
     padding: 1rem;
     border-bottom: 1px solid #e5e7eb;
 }
 
-.datagrid-container :deep(.rz-grid-table) {
+.datagrid-container ::deep .rz-grid-table {
     border-collapse: separate;
     border-spacing: 0;
 }
 
-.datagrid-container :deep(.rz-datatable-thead th) {
+.datagrid-container ::deep .rz-datatable-thead th {
     font-weight: 600;
     padding: 0.75rem;
     border-bottom: 1px solid #e5e7eb;
 }
 
-.datagrid-container :deep(.rz-grid-table td) {
+.datagrid-container ::deep .rz-grid-table td {
     padding: 0.75rem;
     border-bottom: 1px solid #e5e7eb;
 }
@@ -363,26 +363,26 @@
     text-align: center;
 }
 
-:deep(.rz-dropdown),
-:deep(.rz-textbox),
-:deep(.rz-numeric),
-:deep(.rz-datepicker) {
+::deep .rz-dropdown,
+::deep .rz-textbox,
+::deep .rz-numeric,
+::deep .rz-datepicker {
     width: 100%;
     border-radius: 8px !important;
 }
 
-:deep(.rz-dropdown:focus),
-:deep(.rz-textbox:focus),
-:deep(.rz-numeric:focus),
-:deep(.rz-datepicker:focus) {
+::deep .rz-dropdown:focus,
+::deep .rz-textbox:focus,
+::deep .rz-numeric:focus,
+::deep .rz-datepicker:focus {
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2) !important;
 }
 
-:deep(.rz-carousel) {
+::deep .rz-carousel {
     border-radius: 12px;
 }
 
-:deep(.rz-carousel-item) {
+::deep .rz-carousel-item {
     padding: 1rem;
 }
 

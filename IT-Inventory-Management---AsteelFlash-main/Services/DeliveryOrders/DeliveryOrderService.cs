@@ -98,11 +98,8 @@ public class DeliveryOrderService : IDeliveryOrderService
         await deliveryOrderRepository.AddAsync(deliveryorder);
         await deliveryOrderRepository.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyDeliveryOrderCreated(deliveryorder);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyDeliveryOrderCreated(deliveryorder);
 
         return deliveryorder;
     }
@@ -110,19 +107,17 @@ public class DeliveryOrderService : IDeliveryOrderService
     public async Task<DeliveryOrder> UpdateDeliveryOrder(string deleveryordernumber, DeliveryOrder deliveryorder)
     {
             var itemToUpdate = deliveryOrderRepository.Query().FirstOrDefault(i => i.DeleveryOrderNumber == deliveryorder.DeleveryOrderNumber);
+            if (itemToUpdate == null)
+            {
+                throw new Exception("Item no longer available");
+            }
 
-        var ctx = (deliveryOrderRepository as dynamic)?._context as Microsoft.EntityFrameworkCore.DbContext;
-        var entry = ctx.Entry(itemToUpdate);
-        entry.CurrentValues.SetValues(deliveryorder);
-        entry.State = EntityState.Modified;
+        deliveryOrderRepository.Update(deliveryorder);
 
         await deliveryOrderRepository.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyDeliveryOrderUpdated(deliveryorder);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyDeliveryOrderUpdated(deliveryorder);
 
         return deliveryorder;
     }
@@ -130,15 +125,16 @@ public class DeliveryOrderService : IDeliveryOrderService
     public async Task<DeliveryOrder> DeleteDeliveryOrder(string deleveryordernumber)
     {
             var itemToDelete = deliveryOrderRepository.QueryWithIncludes().FirstOrDefault(i => i.DeleveryOrderNumber == deleveryordernumber);
+        if (itemToDelete == null)
+        {
+            throw new Exception("Item no longer available");
+        }
 
         deliveryOrderRepository.Remove(itemToDelete);
         await deliveryOrderRepository.SaveChangesAsync();
 
-        _ = Task.Run(async () =>
-        {
-            if (operationNotificationService != null)
-                await operationNotificationService.NotifyDeliveryOrderDeleted(deleveryordernumber);
-        });
+        if (operationNotificationService != null)
+            await operationNotificationService.NotifyDeliveryOrderDeleted(deleveryordernumber);
 
         return itemToDelete;
     }

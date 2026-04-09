@@ -96,7 +96,7 @@
     height: 20px;
     border: 2px solid #6c757d;
     border-radius: 4px;
-    background-color: white;
+    background-color: var(--app-surface);
     cursor: pointer;
     position: relative;
     transition: all 0.2s ease;
@@ -147,7 +147,7 @@
 }
 
 .btn-secondary {
-    background-color: #f8f9fa !important;
+    background-color: var(--app-surface-soft) !important;
     color: #495057 !important;
     border: 1px solid #ced4da !important;
     padding: 10px 20px !important;

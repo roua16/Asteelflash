@@ -1,4 +1,6 @@
-using ITStockM.Services;
+using ITStockM.Services.AssignmentMateriels;
+using ITStockM.Services.Export;
+using ITStockM.Services.Materiels;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -14,8 +16,15 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
         [Inject]
         protected NotificationService NotificationService { get; set; } = default!;
+
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
+        public IAssignmentMaterielService AssignmentMaterielService { get; set; } = default!;
+
+        [Inject]
+        public IMaterielService MaterielService { get; set; } = default!;
+
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
         protected List<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels = new();
 
@@ -35,7 +44,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
         protected override async Task OnInitializedAsync()
         {
-            assignmentMateriels = (await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " })).ToList();
+            assignmentMateriels = (await AssignmentMaterielService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " })).ToList();
             //Count missions
             missions = assignmentMateriels.Count(assm => assm.Assignment?.OnMission == true && assm.Assignment?.RestoreDate == null && assm.Qte != 0);
 
@@ -52,7 +61,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
                 .ToList();
             activeAssignments = assignmentMateriels.Count();
 
-            var mats = await ITStockManagmentService.GetMateriels(new Query { });
+            var mats = await MaterielService.GetMateriels(new Query { });
 
             stockLeft = mats.Where(m => m.QuantityITStock != 0 || m.QuantityPDRStock != 0).Sum(m => m.QuantityPDRStock + m.QuantityITStock);
 
@@ -104,12 +113,12 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportAssignmentMaterielsToCSV(query, "Assignments");
+                await ExportService.ExportToCSV("export/itstockmanagment/assignmentmateriels", query, "Assignments");
             }
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportAssignmentMaterielsToExcel(query, "Assignments");
+                await ExportService.ExportToExcel("export/itstockmanagment/assignmentmateriels", query, "Assignments");
             }
         }
 
@@ -118,7 +127,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             search = args.Value?.ToString()?.Trim() ?? string.Empty;
 
             await grid0.GoToPage(0);
-            var assm = (await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " }))
+            var assm = (await AssignmentMaterielService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " }))
                 .AsEnumerable()
                 .Where(a => a.Assignment?.OnMission == false && a.Assignment?.AssignedTo != 6 && a.Qte != 0)
                 .ToList();

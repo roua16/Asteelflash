@@ -4,40 +4,47 @@ using Microsoft.AspNetCore.Components;
 using Radzen;
 using Radzen.Blazor;
 using ITStockM.Models.ViewModels;
-using ITStockM.Services;
+using ITStockM.Services.DeliveryOrderMateriels;
+using ITStockM.Services.DeliveryOrders;
+using ITStockM.Services.Materiels;
 
 
-namespace ITStockM.Components.Pages.DeleveryOrder
+namespace ITStockM.Components.Pages.DeliveryOrder
 {
-    public partial class AdddDelayedMaterials
+    public partial class AddDelayedMaterials
     {
         [Inject]
-        protected IJSRuntime JSRuntime { get; set; }
+        protected IJSRuntime JSRuntime { get; set; } = default!;
 
         
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public IDeliveryOrderService DeliveryOrderService { get; set; } = default!;
 
-        protected List<Models.ITStockManagment.DeliveryOrder> DeliveryOrders { get; set; }
+        [Inject]
+        public IDeliveryOrderMaterielService DeliveryOrderMaterielService { get; set; } = default!;
 
-        protected Models.ITStockManagment.DeliveryOrder SelectedDeliveryOrders { get; set; }
+        [Inject]
+        public IMaterielService MaterielService { get; set; } = default!;
+
+        protected List<Models.ITStockManagment.DeliveryOrder> DeliveryOrders { get; set; } = new();
+
+        protected Models.ITStockManagment.DeliveryOrder SelectedDeliveryOrders { get; set; } = new();
 
         protected List<MaterielViewModel> MaterielsList = new List<MaterielViewModel>();
-        private IEnumerable<string> MaterialSuggestions { get; set; }
+        private IEnumerable<string> MaterialSuggestions { get; set; } = Enumerable.Empty<string>();
         protected List<string> options = new List<string> { "HardWare", "SoftWare", "Mouse", "KeyBoard", "Laptop", "Mini Pc", "Backpack", "Headphone", "Monitor", "Network device", "Printer", "Consumables" };
 
-        private ElementReference formElement;
-        private RadzenTemplateForm<Models.ITStockManagment.DeliveryOrder> form;
+        private RadzenTemplateForm<Models.ITStockManagment.DeliveryOrder> form = default!;
         protected bool changeSR = true;
 
         protected override async Task OnInitializedAsync()
         {
-            DeliveryOrders = (await ITStockManagmentService.GetDeliveryOrders()).Where(dlo => dlo.HasDelayedM).ToList();
-            SelectedDeliveryOrders = DeliveryOrders.FirstOrDefault();
+            DeliveryOrders = (await DeliveryOrderService.GetDeliveryOrdersList()).Where(dlo => dlo.HasDelayedM).ToList();
+            SelectedDeliveryOrders = DeliveryOrders.FirstOrDefault() ?? new Models.ITStockManagment.DeliveryOrder();
 
             //---
             MaterielsList = new List<MaterielViewModel>
@@ -52,7 +59,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                                 }
                             };
 
-            var mats = await ITStockManagmentService.GetMateriels();
+            var mats = await MaterielService.GetMateriels();
 
             MaterialSuggestions = mats.Select(m => m.MaterielName).Distinct();
         }
@@ -113,7 +120,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
             if (!string.IsNullOrEmpty(materialName) && MaterialSuggestions.Contains(materialName))
             {
 
-                var material = await ITStockManagmentService.GetMaterielByName(materialName);
+                var material = await MaterielService.GetMaterielByName(materialName);
                 if (material != null)
                 {
                     MaterielsList[index].Materiel.Type = material.Type;
@@ -160,7 +167,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
             }
         }
 
-        public async void AddDelayedMats()
+        public async Task AddDelayedMats()
         {
 
             var options = new DialogOptions
@@ -187,7 +194,7 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                 {
 
                     await UpdateMaterialQte(mat);
-                    UpdateDLOM(mat);
+                    await UpdateDLOM(mat);
 
                 }
                 else if (!mat.HaveSr)
@@ -196,20 +203,20 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                     {
                         int ID = await UpdateMaterialQte(mat);
 
-                        CreateDLOM(mat,ID);
+                        await CreateDLOM(mat,ID);
 
 
                     }
                     else
                     {
                         mat.Materiel.Warranty = DateTime.Now.AddMonths((mat.Year * 12) + mat.Month);
-                        int id = (await ITStockManagmentService.CreateMateriel(mat.Materiel)).Id;
-                        CreateDLOM(mat, id);
+                        int id = (await MaterielService.CreateMateriel(mat.Materiel)).Id;
+                        await CreateDLOM(mat, id);
                     }
                 }
                 else 
                 {
-                    CreateMaterials(mat);
+                    await CreateMaterials(mat);
                 }
             }
             DialogService.Close(null);
@@ -217,27 +224,35 @@ namespace ITStockM.Components.Pages.DeleveryOrder
 
         protected async Task<int> UpdateMaterialQte(MaterielViewModel mat)
         {
-            var matToUpdate = await ITStockManagmentService.GetMaterielByName(mat.Materiel.MaterielName);
+            var matToUpdate = await MaterielService.GetMaterielByName(mat.Materiel.MaterielName);
+            if (matToUpdate == null)
+            {
+                return 0;
+            }
             matToUpdate.QuantityPDRStock = matToUpdate.QuantityPDRStock + mat.Materiel.QuantityPDRStock;
 
-            int id = (await ITStockManagmentService.UpdateMateriel(matToUpdate.Id, matToUpdate)).Id;
+            int id = (await MaterielService.UpdateMateriel(matToUpdate.Id, matToUpdate)).Id;
 
             return id;
         }
 
-        protected async void UpdateDLOM(MaterielViewModel mat)
+        protected async Task UpdateDLOM(MaterielViewModel mat)
         {
             var dlomToUpdate = SelectedDeliveryOrders.DeliveryOrderMateriels.Where(dlom => dlom.Materiel.MaterielName == mat.Materiel.MaterielName).FirstOrDefault();
+            if (dlomToUpdate == null)
+            {
+                return;
+            }
             dlomToUpdate.Qte = dlomToUpdate.Qte + mat.Materiel.QuantityPDRStock;
 
-            await ITStockManagmentService.UpdateDeliveryOrderMateriel(dlomToUpdate.MaterielId, dlomToUpdate.DeliveryOrderNumber, dlomToUpdate);
+            await DeliveryOrderMaterielService.UpdateDeliveryOrderMateriel(dlomToUpdate.MaterielId, dlomToUpdate.DeliveryOrderNumber, dlomToUpdate);
 
             dlomToUpdate.DeliveryOrder.Descriptoin = dlomToUpdate.DeliveryOrder.Descriptoin + "\n" + DateTime.Now + ": Added " + mat.Materiel.QuantityPDRStock + " " + mat.Materiel.MaterielName + ".";
 
-            await ITStockManagmentService.UpdateDeliveryOrder(dlomToUpdate.DeliveryOrderNumber, dlomToUpdate.DeliveryOrder);
+            await DeliveryOrderService.UpdateDeliveryOrder(dlomToUpdate.DeliveryOrderNumber, dlomToUpdate.DeliveryOrder);
         }
 
-        protected async void CreateDLOM (MaterielViewModel mat , int id)
+        protected async Task CreateDLOM (MaterielViewModel mat , int id)
         {
             var dlomToUpdate = new ITStockM.Models.ITStockManagment.DeliveryOrderMateriel
             {
@@ -246,14 +261,14 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                 Qte = mat.HaveSr ? 1 : mat.Materiel.QuantityPDRStock,
                 DeliveryOrder = SelectedDeliveryOrders
             };
-            await ITStockManagmentService.CreateDeliveryOrderMateriel(dlomToUpdate);
+            await DeliveryOrderMaterielService.CreateDeliveryOrderMateriel(dlomToUpdate);
 
             dlomToUpdate.DeliveryOrder.Descriptoin = dlomToUpdate.DeliveryOrder.Descriptoin + "\n" + DateTime.Now + ": Added " + mat.Materiel.QuantityPDRStock + " " + mat.Materiel.MaterielName + ".";
 
-            await ITStockManagmentService.UpdateDeliveryOrder(dlomToUpdate.DeliveryOrderNumber, dlomToUpdate.DeliveryOrder);
+            await DeliveryOrderService.UpdateDeliveryOrder(dlomToUpdate.DeliveryOrderNumber, dlomToUpdate.DeliveryOrder);
         }
 
-        protected async void CreateMaterials (MaterielViewModel mat)
+        protected async Task CreateMaterials (MaterielViewModel mat)
         {
             foreach(var sr in mat.SRList)
             {
@@ -271,8 +286,8 @@ namespace ITStockM.Components.Pages.DeleveryOrder
                     Repairing_Quantity = 0,
                     IrreparableQuantity = 0,
                 };
-                int id = (await ITStockManagmentService.CreateMateriel(newMateriel)).Id;
-                CreateDLOM(mat,  id);
+                int id = (await MaterielService.CreateMateriel(newMateriel)).Id;
+                await CreateDLOM(mat,  id);
             }
            
             

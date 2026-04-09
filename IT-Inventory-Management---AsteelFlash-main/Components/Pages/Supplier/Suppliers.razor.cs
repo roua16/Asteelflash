@@ -1,4 +1,5 @@
-using ITStockM.Services;
+using ITStockM.Services.Export;
+using ITStockM.Services.Suppliers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
@@ -11,17 +12,20 @@ namespace ITStockM.Components.Pages.Supplier
     {
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public ISupplierService SupplierService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Supplier> suppliers;
+        [Inject]
+        public IExportService ExportService { get; set; } = default!;
 
-        protected RadzenDataGrid<Models.ITStockManagment.Supplier> grid0;
+        protected IEnumerable<Models.ITStockManagment.Supplier> suppliers = new List<Models.ITStockManagment.Supplier>();
+
+        protected RadzenDataGrid<Models.ITStockManagment.Supplier> grid0 = default!;
 
         protected string search = "";
 
@@ -31,11 +35,11 @@ namespace ITStockM.Components.Pages.Supplier
 
             await grid0.GoToPage(0);
 
-            suppliers = await ITStockManagmentService.GetSuppliers(new Query { Filter = $@"i => i.SupplierName.Contains(@0) || i.Adress.Contains(@0) || i.Email.Contains(@0) || i.PhoneNumber.Contains(@0)", FilterParameters = new object[] { search } });
+            suppliers = await SupplierService.GetSuppliers(new Query { Filter = $@"i => i.SupplierName.Contains(@0) || i.Adress.Contains(@0) || i.Email.Contains(@0) || i.PhoneNumber.Contains(@0)", FilterParameters = new object[] { search } });
         }
         protected override async Task OnInitializedAsync()
         {
-            suppliers = await ITStockManagmentService.GetSuppliers(new Query { Filter = $@"i => i.SupplierName.Contains(@0) || i.Adress.Contains(@0) || i.Email.Contains(@0) || i.PhoneNumber.Contains(@0)", FilterParameters = new object[] { search } });
+            suppliers = await SupplierService.GetSuppliers(new Query { Filter = $@"i => i.SupplierName.Contains(@0) || i.Adress.Contains(@0) || i.Email.Contains(@0) || i.PhoneNumber.Contains(@0)", FilterParameters = new object[] { search } });
         }
 
         protected async Task AddButtonClick(MouseEventArgs args)
@@ -75,7 +79,7 @@ namespace ITStockM.Components.Pages.Supplier
             {
                 if (await DialogService.Confirm("Are you sure you want to delete this record?") == true)
                 {
-                    var deleteResult = await ITStockManagmentService.DeleteSupplier(supplier.SupplierName);
+                    var deleteResult = await SupplierService.DeleteSupplier(supplier.SupplierName);
 
                     if (deleteResult != null)
                     {
@@ -98,7 +102,7 @@ namespace ITStockM.Components.Pages.Supplier
         {
             if (args?.Value == "csv")
             {
-                await ITStockManagmentService.ExportSuppliersToCSV(new Query
+                await ExportService.ExportToCSV("export/itstockmanagment/suppliers", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter) ? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",
@@ -109,7 +113,7 @@ namespace ITStockM.Components.Pages.Supplier
 
             if (args == null || args.Value == "xlsx")
             {
-                await ITStockManagmentService.ExportSuppliersToExcel(new Query
+                await ExportService.ExportToExcel("export/itstockmanagment/suppliers", new Query
                 {
                     Filter = $@"{(string.IsNullOrEmpty(grid0.Query.Filter) ? "true" : grid0.Query.Filter)}",
                     OrderBy = $"{grid0.Query.OrderBy}",
