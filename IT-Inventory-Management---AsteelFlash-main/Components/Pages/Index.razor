@@ -256,49 +256,6 @@
                     </ChartCard>
 
                     <ChartCard
-                        Title="Top 3 Most Used Materials"
-                        Icon="trending_up"
-                        IconClass="bg-warning-light"
-                        SizeClass="kpi-card-md"
-                        CardClass="reveal-fade stagger-1">
-                        <ChildContent>
-                            @if (TopUsedMateriels != null && TopUsedMateriels.Any())
-                            {
-                                <table class="top-used-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Material</th>
-                                            <th>Used</th>
-                                            <th>Share</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var m in TopUsedMateriels)
-                                        {
-                                            <tr>
-                                                <td>@m.MaterielName</td>
-                                                <td>@m.UsageCount</td>
-                                                <td>
-                                                    <div class="table-share">
-                                                        <span>@($"{m.UsageShare * 100:F1}%")</span>
-                                                        <div class="mini-progress-track">
-                                                            <div class="mini-progress-fill" style="width: @(m.UsageShare * 100)%"></div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            }
-                            else
-                            {
-                                <div class="empty-state-inline">No usage data available yet.</div>
-                            }
-                        </ChildContent>
-                    </ChartCard>
-
-                    <ChartCard
                         Title="Monthly Assignments"
                         Icon="insert_chart"
                         IconClass="bg-success-light"
@@ -349,64 +306,46 @@
                     </ChartCard>
 
                     <ChartCard
-                        Title="Quick Actions"
-                        Icon="bolt"
-                        IconClass="bg-accent-light"
-                        SizeClass="kpi-card-lg"
-                        CardClass="reveal-fade stagger-2">
-                        <div class="quick-actions-grid mt-3">
-                            <a href="/delivery-order" class="quick-action">
-                                <div class="quick-action-icon bg-primary-light">
-                                    <RadzenIcon Icon="add_shopping_cart" />
-                                </div>
-                                <div class="quick-action-title">Add Delivery Order</div>
-                            </a>
-
-                            @if (userRole == "Purchasing")
+                        Title="Top 3 Most Used Materials"
+                        Icon="trending_up"
+                        IconClass="bg-warning-light"
+                        SizeClass="kpi-card-md"
+                        CardClass="reveal-fade stagger-2 dashboard-col-wide">
+                        <ChildContent>
+                            @if (TopUsedMateriels != null && TopUsedMateriels.Any())
                             {
-                                <a href="/pending-deliveries" class="quick-action">
-                                    <div class="quick-action-icon bg-success-light">
-                                        <RadzenIcon Icon="local_shipping" />
-                                    </div>
-                                    <div class="quick-action-title">Pending Deliveries</div>
-                                </a>
+                                <table class="top-used-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Material</th>
+                                            <th>Used</th>
+                                            <th>Share</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var m in TopUsedMateriels)
+                                        {
+                                            <tr>
+                                                <td>@m.MaterielName</td>
+                                                <td>@m.UsageCount</td>
+                                                <td>
+                                                    <div class="table-share">
+                                                        <span>@($"{m.UsageShare * 100:F1}%")</span>
+                                                        <div class="mini-progress-track">
+                                                            <div class="mini-progress-fill" style="width: @(m.UsageShare * 100)%"></div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
                             }
                             else
                             {
-                                <a href="/assignments-interface" class="quick-action">
-                                    <div class="quick-action-icon bg-success-light">
-                                        <RadzenIcon Icon="assignment" />
-                                    </div>
-                                    <div class="quick-action-title">Manage Assignments</div>
-                                </a>
+                                <div class="empty-state-inline">No usage data available yet.</div>
                             }
-
-                            <a href="/materials-view-interface" class="quick-action">
-                                <div class="quick-action-icon bg-warning-light">
-                                    <RadzenIcon Icon="build" />
-                                </div>
-                                <div class="quick-action-title">View Materials</div>
-                            </a>
-
-                            @if (userRole == "Admin" || userRole == "Infrastructure")
-                            {
-                                <a href="/infra-interface" class="quick-action">
-                                    <div class="quick-action-icon bg-info-light">
-                                        <RadzenIcon Icon="memory" />
-                                    </div>
-                                    <div class="quick-action-title">Infra Page</div>
-                                </a>
-                            }
-                            else
-                            {
-                                <a href="/purchase-page" class="quick-action">
-                                    <div class="quick-action-icon bg-info-light">
-                                        <RadzenIcon Icon="shopping_cart" />
-                                    </div>
-                                    <div class="quick-action-title">Purchase Requests</div>
-                                </a>
-                            }
-                        </div>
+                        </ChildContent>
                     </ChartCard>
 
                     <ChartCard
@@ -414,7 +353,7 @@
                         Icon="history"
                         IconClass="bg-info-light"
                         SizeClass="kpi-card-md"
-                        CardClass="reveal-fade stagger-3">
+                        CardClass="reveal-fade stagger-3 dashboard-col-narrow">
                         <div class="activity-scroll">
                             @foreach (var activity in recentActivity)
                             {
@@ -496,6 +435,67 @@
                                         </div>
                                     </div>
                                 }
+                            }
+                        </div>
+                    </ChartCard>
+
+                    <ChartCard
+                        Title="Quick Actions"
+                        Icon="bolt"
+                        IconClass="bg-accent-light"
+                        SizeClass="kpi-card-lg"
+                        CardClass="reveal-fade stagger-3">
+                        <div class="quick-actions-grid mt-3">
+                            <a href="/delivery-order" class="quick-action">
+                                <div class="quick-action-icon bg-primary-light">
+                                    <RadzenIcon Icon="add_shopping_cart" />
+                                </div>
+                                <div class="quick-action-title">Add Delivery Order</div>
+                            </a>
+
+                            @if (userRole == "Purchasing")
+                            {
+                                <a href="/pending-deliveries" class="quick-action">
+                                    <div class="quick-action-icon bg-success-light">
+                                        <RadzenIcon Icon="local_shipping" />
+                                    </div>
+                                    <div class="quick-action-title">Pending Deliveries</div>
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/assignments-interface" class="quick-action">
+                                    <div class="quick-action-icon bg-success-light">
+                                        <RadzenIcon Icon="assignment" />
+                                    </div>
+                                    <div class="quick-action-title">Manage Assignments</div>
+                                </a>
+                            }
+
+                            <a href="/materials-view-interface" class="quick-action">
+                                <div class="quick-action-icon bg-warning-light">
+                                    <RadzenIcon Icon="build" />
+                                </div>
+                                <div class="quick-action-title">View Materials</div>
+                            </a>
+
+                            @if (userRole == "Admin" || userRole == "Infrastructure")
+                            {
+                                <a href="/infra-interface" class="quick-action">
+                                    <div class="quick-action-icon bg-info-light">
+                                        <RadzenIcon Icon="memory" />
+                                    </div>
+                                    <div class="quick-action-title">Infra Page</div>
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/purchase-page" class="quick-action">
+                                    <div class="quick-action-icon bg-info-light">
+                                        <RadzenIcon Icon="shopping_cart" />
+                                    </div>
+                                    <div class="quick-action-title">Purchase Requests</div>
+                                </a>
                             }
                         </div>
                     </ChartCard>

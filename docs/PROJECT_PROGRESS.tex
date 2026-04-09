@@ -1,0 +1,287 @@
+% Project Progress - IT Inventory Management (AsteelFlash)
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\fancyhead[L]{AsteelFlash IT Inventory}
+\fancyhead[R]{Progress Report}
+\fancyfoot[C]{\thepage}
+
+\title{Project Progress Report\\[0.5em]\large IT Inventory Management --- AsteelFlash}
+\date{February 9, 2026}
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+%----------------------------------------------------------------------
+\section{Overview}
+\begin{itemize}
+  \item \textbf{Repository}: IT-Inventory-Management (AsteelFlash)
+  \item \textbf{Stack}: .NET 10 (Blazor Server), EF Core 8, Radzen UI, MailKit/MimeKit, Playwright (.NET)
+  \item \textbf{Goals}: Stabilize build/tests, add UI tests, implement email notifications, fix role-based access for all roles, unify dashboards
+\end{itemize}
+
+%----------------------------------------------------------------------
+\section{Work Completed}
+
+\subsection{Build \& Test Stabilization}
+\begin{itemize}
+  \item Fixed compile and test failures (missing imports, EF test package mismatch, Razor syntax errors).
+  \item Implemented Playwright UI test scaffolding (gated by \texttt{RUN\_UI\_TESTS}).
+  \item Unit tests pass (25 tests: 19 succeeded, 6 skipped---UI tests).
+\end{itemize}
+
+\subsection{Notifications \& Email}
+\begin{itemize}
+  \item Implemented \texttt{OperationNotificationService} and \texttt{EmailService} for operation notifications.
+  \item Low-stock email alerts (configurable via \texttt{LOW\_STOCK\_THRESHOLD}, default~10).
+  \item Assignment return issue detection: missing items, damaged, irreparable---alerts sent to Admin, PDR, IT.
+  \item ``Other material returned'' flow: creates/updates inventory with defaults and sends notifications.
+\end{itemize}
+
+\subsection{Role-Based Access \& Dashboard Fixes}
+\begin{itemize}
+  \item Normalized all roles to canonical constants: Admin, PDR, Purchasing, IT, Infrastructure, Employee.
+  \item Fixed Employee dashboard: moved into proper \texttt{<Authorized>} block with role check.
+  \item Employee dashboard shows: KPI cards, recent activity (filtered to own data), recent requests grid, quick actions.
+  \item Added Employee to sidebar navigation (Dashboard + Materials Assignments).
+  \item Added Employee role to AssignmentsInterface page (was Admin-only).
+  \item Added IT role to InfraInterface page access.
+  \item All dashboards use the same unified style/layout.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\section{Seeded Accounts \& Credentials}
+
+These demo accounts are created by \texttt{DatabaseInitializer} on first run (when the database is empty). Seeding is enabled via \texttt{appsettings.json} (\texttt{Seed:Enabled=true}, \texttt{Seed:DemoData=true}).
+
+\begin{longtable}{| l | l | l | l | l |}
+\hline
+\textbf{Role} & \textbf{Full Name} & \textbf{Email} & \textbf{Password} & \textbf{Notes} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Role} & \textbf{Full Name} & \textbf{Email} & \textbf{Password} & \textbf{Notes} \\
+\hline
+\endhead
+Admin & Admin User & admin@asteelflash.com & admin123 & All notifications \\
+\hline
+PDR & John Smith & john.smith@asteelflash.com & password123 & PDR Manager \\
+\hline
+PDR & Emma White & emma.white@asteelflash.com & password123 & PDR Technician \\
+\hline
+Purchasing & Sarah Johnson & sarah.johnson@asteelflash.com & password123 & Purchasing Mgr \\
+\hline
+Purchasing & Paul Green & paul.green@asteelflash.com & password123 & Purchasing Officer \\
+\hline
+IT & Mike Davis & mike.davis@asteelflash.com & password123 & IT Support \\
+\hline
+Infrastructure & Alice Brown & alice.brown@asteelflash.com & password123 & Infra Manager \\
+\hline
+Employee & Thomas Miller & thomas.miller@asteelflash.com & password123 & Generic employee \\
+\hline
+\end{longtable}
+
+\noindent\textit{Security note: These are demo/test accounts. Do NOT reuse real credentials in production.}
+
+%----------------------------------------------------------------------
+\section{Roles \& Access Definition}
+
+\subsection{Admin}
+\begin{itemize}
+  \item \textbf{Full access} to everything: all dashboards, materials, assignments, employees, suppliers, projects, offers, requests, delivery orders.
+  \item \textbf{Administration section}: Materials, Assignments, Assignment Materials, Delivery Orders, Requests, Employees, Offers, Projects, Suppliers (CRUD admin pages).
+  \item \textbf{Email}: receives all operation notifications (override: \texttt{SMTP\_ADMIN\_EMAIL}).
+\end{itemize}
+
+\subsection{PDR}
+\begin{itemize}
+  \item Full IT Inventory Dashboard (KPIs, quick actions, recent activity, charts).
+  \item Materials View (PDR), Suppliers, Delivery Orders, Pending Deliveries, D.O History.
+  \item Receives assignment return issue alerts.
+\end{itemize}
+
+\subsection{Purchasing}
+\begin{itemize}
+  \item Full IT Inventory Dashboard.
+  \item Materials View, Purchase Requests, Suppliers, Delivery Orders, Pending Deliveries, D.O History.
+  \item Archives: Archived Requests.
+\end{itemize}
+
+\subsection{IT}
+\begin{itemize}
+  \item Full IT Inventory Dashboard.
+  \item Materials View, Materials Assignments, Infrastructure.
+  \item Receives assignment return issue alerts.
+\end{itemize}
+
+\subsection{Infrastructure}
+\begin{itemize}
+  \item Full IT Inventory Dashboard.
+  \item Materials Assignments, Infrastructure.
+\end{itemize}
+
+\subsection{Employee}
+\begin{itemize}
+  \item Employee Dashboard (limited view---own assignments, own requests, own recent activity, quick actions).
+  \item Materials Assignments (view own assignments).
+  \item Return Materials via Mission Interface.
+  \item \textbf{No access to}: Administration, Purchase pages, Suppliers, Delivery Orders, Archives, Infrastructure.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\section{Page Access Matrix}
+
+\begin{longtable}{| l | l | l |}
+\hline
+\textbf{Page} & \textbf{Route} & \textbf{Roles Allowed} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Page} & \textbf{Route} & \textbf{Roles Allowed} \\
+\hline
+\endhead
+Dashboard & \texttt{/} & All roles \\
+\hline
+Materials View & \texttt{/materials-view-interface} & Admin, Purchasing, IT \\
+\hline
+Materials View (PDR) & \texttt{/materials-view-interface-pdr} & Admin, PDR, Purchasing \\
+\hline
+Materials Assignments & \texttt{/assignments-interface} & Admin, IT, Infra, Employee \\
+\hline
+Infrastructure & \texttt{/infra-interface} & Admin, IT, Infrastructure \\
+\hline
+Mission Interface & \texttt{/mission-interface} & All (no restriction) \\
+\hline
+Purchase Requests & \texttt{/purchase-page} & Admin, Purchasing \\
+\hline
+Suppliers & \texttt{/suppliers} & Admin, Purchasing, PDR \\
+\hline
+Add Delivery Orders & \texttt{/delivery-order} & Admin, Purchasing, PDR \\
+\hline
+D.O History & \texttt{/delivery-order-history} & Admin, Purchasing, PDR \\
+\hline
+Pending Deliveries & \texttt{/pending-deliveries} & Admin, Purchasing, PDR \\
+\hline
+Archived Requests & \texttt{/archived-requests-page} & Admin, Purchasing \\
+\hline
+Archived Assignments & \texttt{/assignments-archive} & Admin \\
+\hline
+Archived Missions & \texttt{/archived-missions} & Admin, Purchasing \\
+\hline
+Administration (CRUD) & \texttt{/materiels-super-admin}, etc. & Admin \\
+\hline
+\end{longtable}
+
+%----------------------------------------------------------------------
+\section{Email Notification Behavior}
+
+\begin{longtable}{| l | l | p{6cm} |}
+\hline
+\textbf{Event} & \textbf{Recipients} & \textbf{Details} \\
+\hline
+\endfirsthead
+Assignment CRUD & Admin & Standard operation notification \\
+\hline
+Return issues & Admin + PDR + IT & Missing, damaged, irreparable, remaining items \\
+\hline
+Low-stock alert & Admin & Quantity crosses \texttt{LOW\_STOCK\_THRESHOLD} \\
+\hline
+Other material returned & Admin + PDR + IT & New material registered with defaults \\
+\hline
+\end{longtable}
+
+\noindent Recipient overrides: \texttt{SMTP\_ADMIN\_EMAIL}, \texttt{SMTP\_PDR\_EMAIL}, \texttt{SMTP\_IT\_EMAIL}.
+
+%----------------------------------------------------------------------
+\section{Environment Variables}
+
+\begin{longtable}{| l | p{7cm} | l |}
+\hline
+\textbf{Variable} & \textbf{Purpose} & \textbf{Default} \\
+\hline
+\endfirsthead
+\texttt{SMTP\_SERVER} & SMTP server host & --- \\
+\hline
+\texttt{SMTP\_PORT} & SMTP server port & --- \\
+\hline
+\texttt{SMTP\_FROM\_EMAIL} & Sender email address & --- \\
+\hline
+\texttt{SMTP\_PASSWORD} & SMTP password & --- \\
+\hline
+\texttt{SMTP\_ADMIN\_EMAIL} & Admin notification recipient override & admin@... \\
+\hline
+\texttt{SMTP\_PDR\_EMAIL} & PDR notification recipient override & Auto \\
+\hline
+\texttt{SMTP\_IT\_EMAIL} & IT notification recipient override & Auto \\
+\hline
+\texttt{LOW\_STOCK\_THRESHOLD} & Low-stock alert threshold & 10 \\
+\hline
+\texttt{RUN\_UI\_TESTS} & Enable Playwright UI tests & false \\
+\hline
+\texttt{PLAYWRIGHT\_CHANNEL} & Browser channel for UI tests & --- \\
+\hline
+\end{longtable}
+
+%----------------------------------------------------------------------
+\section{Testing \& How to Run}
+\begin{itemize}
+  \item \textbf{Unit tests}: \texttt{dotnet test} (UI tests skipped by default).
+  \item \textbf{UI tests}: set \texttt{RUN\_UI\_TESTS=true}, optionally \texttt{PLAYWRIGHT\_CHANNEL=chrome}, then run \texttt{scripts/run-ui-tests.sh}.
+  \item \textbf{Email testing}: project uses \texttt{smtp4dev} on local dev via docker compose.
+\end{itemize}
+
+%----------------------------------------------------------------------
+\section{Key Files Changed}
+
+\begin{longtable}{| l | p{8cm} |}
+\hline
+\textbf{File} & \textbf{Description} \\
+\hline
+\endfirsthead
+\texttt{OperationNotificationService.cs} & Notifications (assignment issues, low-stock alerts) \\
+\hline
+\texttt{ITStockManagmentService.cs} & Low-stock detection, RegisterReturnedMaterial \\
+\hline
+\texttt{Index.razor / Index.razor.cs} & Unified dashboard for all roles, Employee dashboard \\
+\hline
+\texttt{SideLayout.razor} & Sidebar navigation with role-based menu items \\
+\hline
+\texttt{AssignmentsInterface.razor} & Added Employee role access \\
+\hline
+\texttt{InfraInterface.razor} & Added IT role access \\
+\hline
+\texttt{DatabaseInitializer.cs} & Seeding of demo accounts and materials \\
+\hline
+\texttt{UserRoles.cs} & Role constants and normalization \\
+\hline
+\texttt{ITStockM.Tests/} & Unit tests, Playwright UI tests, role access tests \\
+\hline
+\end{longtable}
+
+%----------------------------------------------------------------------
+\section{Remaining / Next Steps}
+\begin{enumerate}
+  \item Run full role-based UI checks across all 6 roles.
+  \item Test all CRUD flows (Create/Edit/Delete, filters, details) per role.
+  \item Confirm email delivery for return issues in smtp4dev.
+  \item Stabilize Playwright across CI hosts.
+  \item Optionally add per-material reorder level (\texttt{ReorderLevel}) for granular thresholds.
+  \item Optionally add de-duplication (last-notified timestamp) for low-stock alerts.
+  \item Address remaining nullability warnings if required.
+\end{enumerate}
+
+\vfill
+\noindent\rule{\textwidth}{0.4pt}\\
+\textit{Last updated: February 9, 2026}
+
+\end{document}

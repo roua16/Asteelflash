@@ -19,6 +19,20 @@
     --app-ring-strong: 0 0 0 4px rgba(214, 105, 29, 0.22);
     --app-gradient-primary: linear-gradient(135deg, #d6691d 0%, #f58f3b 50%, #d6691d 100%);
     --app-gradient-accent: linear-gradient(135deg, #f18f3f 0%, #f7ab65 50%, #df7f3f 100%);
+    --rz-text-color: #2e1f15;
+    --rz-text-title-color: #24180f;
+    --rz-text-secondary-color: #5f4a3b;
+    --rz-text-tertiary-color: #7a6453;
+    --rz-primary: #c95f19;
+    --rz-primary-dark: #8f400f;
+    --rz-primary-light: #f8dcc9;
+    --rz-primary-lighter: #fdf1e8;
+    --space-1: 0.5rem;
+    --space-2: 0.75rem;
+    --space-3: 1rem;
+    --space-4: 1.25rem;
+    --space-5: 1.5rem;
+    --space-6: 2rem;
 }
 
 html {
@@ -66,6 +80,157 @@ a {
 a:hover,
 a:focus {
     color: #0b5d56;
+}
+
+/* Keep all Radzen typography and form content readable across CRUD and dashboard pages. */
+.rz-label,
+.rz-form-field-label,
+.rz-text-h1,
+.rz-text-h2,
+.rz-text-h3,
+.rz-text-h4,
+.rz-column-title-content,
+.rz-cell-data,
+.rz-dropdown-label,
+.rz-dialog-title,
+.rz-dialog-content,
+.rz-paginator,
+.rz-datatable,
+.rz-data-grid {
+    color: var(--rz-text-color);
+}
+
+.rz-text-h1,
+.rz-text-h2,
+.rz-text-h3,
+.rz-text-h4 {
+    color: var(--rz-text-title-color);
+}
+
+.rz-alert {
+    color: var(--rz-text-color);
+}
+
+/* Shared spacing/layout system for dashboard + CRUD pages inside the main content shell. */
+.app-content-shell > * {
+    max-width: 100%;
+}
+
+.app-content-shell .rz-stack {
+    width: 100%;
+    gap: var(--space-4);
+}
+
+.app-content-shell .rz-row {
+    row-gap: var(--space-3);
+}
+
+.app-content-shell .rz-column {
+    min-width: 0;
+}
+
+.app-content-shell .rz-stack > .rz-textbox,
+.app-content-shell .rz-stack > .rz-dropdown,
+.app-content-shell .rz-stack > .rz-numeric,
+.app-content-shell .rz-stack > .rz-datepicker {
+    margin-top: var(--space-1);
+}
+
+.app-content-shell .rz-alert {
+    margin-bottom: var(--space-3);
+}
+
+.app-content-shell .rz-templateform {
+    margin-top: var(--space-2);
+    padding: var(--space-4);
+    border-radius: 16px;
+    border: 1px solid rgba(201, 95, 25, 0.18);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.app-content-shell .rz-templateform .rz-row {
+    row-gap: var(--space-2);
+}
+
+.app-content-shell .rz-templateform .rz-label {
+    display: inline-block;
+    margin-bottom: 0.4rem;
+    font-weight: 650;
+    color: var(--rz-text-secondary-color);
+}
+
+.app-content-shell .rz-templateform .rz-stack {
+    margin-top: var(--space-2);
+}
+
+.app-content-shell .rz-datatable,
+.app-content-shell .rz-data-grid {
+    margin-top: var(--space-2);
+}
+
+.rz-inputtext,
+.rz-textbox,
+.rz-dropdown,
+.rz-dropdown-label,
+.rz-numeric-input,
+.rz-datepicker-input,
+.rz-textarea {
+    color: var(--rz-text-color) !important;
+    background-color: #ffffff;
+}
+
+.rz-inputtext::placeholder,
+.rz-textbox::placeholder,
+.rz-textarea::placeholder,
+.rz-dropdown-label.rz-placeholder {
+    color: var(--rz-text-tertiary-color) !important;
+    opacity: 1;
+}
+
+.rz-dropdown-panel,
+.rz-multiselect-panel,
+.rz-autocomplete-panel,
+.rz-popup {
+    background: #ffffff;
+    color: var(--rz-text-color);
+    border: 1px solid var(--app-border);
+    z-index: 1400;
+}
+
+.rz-dropdown-items li,
+.rz-multiselect-items li,
+.rz-autocomplete-items li {
+    color: var(--rz-text-color);
+}
+
+.rz-dropdown-items li:hover,
+.rz-multiselect-items li:hover,
+.rz-autocomplete-items li:hover {
+    background: #f8efe7;
+}
+
+.rz-datatable-data td,
+.rz-datatable-data td .rz-cell-data,
+.rz-grid-table td,
+.rz-grid-table th {
+    color: var(--rz-text-color);
+}
+
+.rz-datatable-thead th,
+.rz-datatable-thead th .rz-column-title-content {
+    color: #1f4c49;
+}
+
+.rz-dialog-content {
+    background: #ffffff;
+}
+
+.rz-button.rz-light,
+.rz-button.rz-light:hover,
+.rz-button.rz-light:focus {
+    color: var(--rz-text-color);
+    background: #f7eee6;
+    border: 1px solid rgba(201, 95, 25, 0.26);
 }
 
 .blazor-error-boundary::after {
@@ -402,6 +567,14 @@ img {
 @media (max-width: 992px) {
     .responsive-row {
         flex-direction: column;
+    }
+
+    .app-content-shell .rz-stack {
+        gap: var(--space-3);
+    }
+
+    .app-content-shell .rz-templateform {
+        padding: var(--space-3);
     }
 }
 
