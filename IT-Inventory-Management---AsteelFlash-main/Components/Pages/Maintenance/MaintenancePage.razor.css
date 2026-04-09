@@ -1,0 +1,53 @@
+            .datagrid-container :deep(.rz-datatable-thead th) {
+                background-color: var(--rz-base-200);
+                font-weight: 600;
+                padding: 1rem;
+                color: var(--rz-text-title-color);
+            }
+            .datagrid-container :deep(.rz-grid-table td) {
+                padding: 1rem;
+                border-bottom: 1px solid var(--rz-base-300);
+                color: var(--rz-text-secondary-color);
+            }
+            .datagrid-container :deep(.rz-datatable-data tr:hover) {
+                background-color: var(--rz-base-200);
+            }
+            .kpi-icon {
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                width: 2.5rem;
+                height: 2.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.5rem;
+            }
+            .kpi-icon i { color: #fff !important; font-size: 1.1rem; }
+            .status-badge {
+                display: inline-block;
+                padding: 0.2rem 0.75rem;
+                border-radius: 9999px;
+                font-size: 0.75rem;
+                font-weight: 600;
+            }
+            .badge-open       { background: var(--rz-danger-lighter);  color: var(--rz-danger-dark); }
+            .badge-inprogress { background: var(--rz-warning-lighter); color: var(--rz-warning-dark); }
+            .badge-closed     { background: var(--rz-success-lighter); color: var(--rz-success-dark); }
+            .modal-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,.45);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            }
+            .modal-card {
+                background: var(--rz-base-background-color);
+                border-radius: 16px;
+                padding: 2rem;
+                min-width: 440px;
+                box-shadow: 0 8px 32px rgba(0,0,0,.18);
+            }
+        

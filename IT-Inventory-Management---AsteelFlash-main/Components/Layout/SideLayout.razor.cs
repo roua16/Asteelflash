@@ -23,11 +23,11 @@ namespace ITStockM.Components.Layout
 
         bool sidebarExpanded = true;
 
-        protected string user;
+        protected string user = "Guest";
 
         protected int orderNumbersNF = 0;
 
-        string theme;
+        protected string theme = "humanistic";
         protected override async Task OnInitializedAsync()
         {
             // NOTE: Do NOT call ProtectedLocalStorage here — it uses JS interop which is
@@ -76,7 +76,7 @@ namespace ITStockM.Components.Layout
             sidebarExpanded = !sidebarExpanded;
         }
 
-        async void ChangeTheme()
+        async Task ChangeTheme()
         {
             if (ThemeService.Theme == "humanistic")
             {

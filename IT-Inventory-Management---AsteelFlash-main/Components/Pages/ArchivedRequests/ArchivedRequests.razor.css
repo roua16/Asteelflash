@@ -1,0 +1,70 @@
+.archived-requests-page .archived-requests-card {
+    border-radius: 12px;
+    border: none;
+}
+
+.archived-requests-page .page-heading {
+    margin: 0;
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.archived-requests-page .export-btn {
+    border-radius: 8px;
+}
+
+.archived-requests-page .request-search {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.archived-requests-page .search-indicator {
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.archived-requests-page .archived-requests-grid {
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
+}
+
+.archived-requests-page .text-medium {
+    font-weight: 500;
+}
+
+.archived-requests-page .description-ellipsis {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.archived-requests-page .status-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.archived-requests-page .archived-status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.archived-requests-page .details-btn {
+    border-radius: 8px;
+}
+
+.archived-requests-page .empty-icon {
+    font-size: 3rem;
+    opacity: 0.5;
+}

@@ -179,7 +179,7 @@ namespace ITStockM.Tests.Services
                 Warranty = DateTime.UtcNow.AddYears(1)
             };
 
-            var assignment = new Assignment { Id = 1, Date = DateTime.UtcNow, OnMission = false };
+            var assignment = new Assignment { Id = 1, Date = DateTime.UtcNow, OnMission = false, Descipriton = "Test assignment" };
 
             await ctx.Materiels.AddAsync(materiel);
             await ctx.Assignments.AddAsync(assignment);
@@ -234,7 +234,7 @@ namespace ITStockM.Tests.Services
                 Warranty = DateTime.UtcNow.AddYears(1)
             };
 
-            var assignment = new Assignment { Id = 2, Date = DateTime.UtcNow, OnMission = false };
+            var assignment = new Assignment { Id = 2, Date = DateTime.UtcNow, OnMission = false, Descipriton = "Test assignment" };
 
             await ctx.Materiels.AddAsync(materiel);
             await ctx.Assignments.AddAsync(assignment);
@@ -278,8 +278,8 @@ namespace ITStockM.Tests.Services
             // Arrange
             var ctx = CreateInMemoryContext("lowstock_send_summary_db");
 
-            var m1 = new Materiel { Id = 101, MaterielName = "Low A", QuantityITStock = 2, QuantityPDRStock = 0, Warranty = DateTime.UtcNow };
-            var m2 = new Materiel { Id = 102, MaterielName = "OK B", QuantityITStock = 20, QuantityPDRStock = 0, Warranty = DateTime.UtcNow };
+            var m1 = new Materiel { Id = 101, MaterielName = "Low A", Type = "Consumable", QuantityITStock = 2, QuantityPDRStock = 0, Warranty = DateTime.UtcNow };
+            var m2 = new Materiel { Id = 102, MaterielName = "OK B", Type = "Consumable", QuantityITStock = 20, QuantityPDRStock = 0, Warranty = DateTime.UtcNow };
 
             await ctx.Materiels.AddRangeAsync(m1, m2);
             await ctx.SaveChangesAsync();

@@ -1,0 +1,28 @@
+@using Microsoft.AspNetCore.Components.Authorization
+
+@if (string.IsNullOrWhiteSpace(Roles))
+{
+    <RadzenPanelMenuItem Text="@Text" Icon="@Icon" Path="@Path" />
+}
+else
+{
+    <AuthorizeView Roles="@Roles">
+        <Authorized>
+            <RadzenPanelMenuItem Text="@Text" Icon="@Icon" Path="@Path" />
+        </Authorized>
+    </AuthorizeView>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Icon { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Path { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Roles { get; set; }
+}

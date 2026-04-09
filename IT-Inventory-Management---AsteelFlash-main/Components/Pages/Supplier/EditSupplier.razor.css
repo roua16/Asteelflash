@@ -1,0 +1,121 @@
+.edit-supplier-page {
+    --primary: #0f766e;
+    --accent: #dc3545;
+    --surface: #ffffff;
+    --surface-soft: #f8fafc;
+    --border: #e2e8f0;
+    --text-muted: #64748b;
+    --error-bg: #fff1f2;
+    --error-border: #fecdd3;
+    --error-text: #be123c;
+}
+
+.edit-supplier-page .supplier-card {
+    border-radius: 12px;
+    border: none;
+    background: var(--surface);
+}
+
+.edit-supplier-page .page-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 1.25rem;
+}
+
+.edit-supplier-page .page-title {
+    text-align: center;
+    margin-bottom: 1.25rem;
+}
+
+.edit-supplier-page .page-heading {
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.edit-supplier-page .error-alert {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    border-radius: 10px;
+    border: 1px solid var(--error-border);
+    background: var(--error-bg);
+    color: var(--error-text);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.edit-supplier-page .error-icon {
+    font-size: 1.1rem;
+}
+
+.edit-supplier-page .supplier-fieldset {
+    margin: 0 0 20px 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.edit-supplier-page .fieldset-content {
+    padding: 1rem;
+}
+
+.edit-supplier-page .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.edit-supplier-page .form-field-full {
+    grid-column: 1 / -1;
+}
+
+.edit-supplier-page .field-label {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.edit-supplier-page .required-indicator {
+    color: var(--accent);
+    margin-left: 0.25rem;
+}
+
+.edit-supplier-page .field-input {
+    width: 100%;
+}
+
+.edit-supplier-page .field-helper {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+}
+
+.edit-supplier-page .form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.edit-supplier-page .action-button {
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    .edit-supplier-page .page-container {
+        padding: 1rem;
+    }
+
+    .edit-supplier-page .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .edit-supplier-page .form-field-full {
+        grid-column: auto;
+    }
+
+    .edit-supplier-page .form-actions {
+        flex-direction: column;
+    }
+}

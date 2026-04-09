@@ -1,120 +1,27 @@
 @inherits LayoutComponentBase
 
-
-<style>
-    ::deep .rz-body {
-        background-color: var(--rz-body-background-color);
-        transition: all 0.3s ease;
-    }
-
-    ::deep .rz-layout {
-        background-color: var(--rz-body-background-color);
-    }
-
-    .content-container {
-        transition: all 0.3s ease;
-        animation: fadeIn 0.5s ease-out;
-    }
-
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    ::deep .page-header {
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--rz-border-200);
-    }
-
-    ::deep .page-title {
-        font-size: 1.75rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        color: var(--rz-text-title-color);
-    }
-
-    ::deep .page-subtitle {
-        color: var(--rz-text-secondary-color);
-        font-size: 0.875rem;
-    }
-
-    ::deep .rz-card {
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        transition: all 0.2s ease;
-    }
-
-        ::deep .rz-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-            transform: translateY(-2px);
-        }
-
-    ::deep .rz-button {
-        border-radius: 6px;
-        transition: all 0.2s ease;
-    }
-
-        ::deep .rz-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-    ::deep .rz-datatable {
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    }
-
-    ::deep .rz-datatable-header {
-        background-color: var(--rz-base-100);
-        padding: 1rem;
-    }
-
-    ::deep .rz-datatable-thead th {
-        background-color: var(--rz-base-100);
-        font-weight: 600;
-    }
-
-    @@media (max-width: 768px) {
-        :: deep .rz-row {
-            padding-left: 0.75rem !important;
-            padding-right: 0.75rem !important;
-        }
-    }</style>
-
 <RadzenComponents />
-@if (NavigationManager.Uri.Contains("access-denied")){
+@if (NavigationManager.Uri.Contains("access-denied"))
+{
     <ITStockM.Components.Pages.auth.AccessDenied />
 }
-else{
+else
+{
     <AuthorizeView>
         <Authorized>
-            <RadzenLayout style="grid-template-areas: 'rz-sidebar rz-header' 'rz-sidebar rz-body';">
-            <SideLayout />
-            <RadzenBody Expanded="@sidebarExpanded">
-                <RadzenRow class="rz-mx-auto rz-px-4 rz-pt-2 rz-pt-md-4 rz-pt-lg-6 rz-pt-xl-12 rz-pb-2 rz-pb-lg-12" Style="max-width: 1440px;">
-                    <RadzenColumn Size="12">
-
+            <RadzenLayout class="app-shell">
+                <SideLayout />
+                <RadzenBody class="app-body">
+                    <div class="app-content-shell">
                         @Body
-
-
-                    </RadzenColumn>
-                </RadzenRow>
-            </RadzenBody>
-
-        </RadzenLayout>
+                    </div>
+                </RadzenBody>
+            </RadzenLayout>
         </Authorized>
         <NotAuthorized>
-            <ITStockM.Components.Pages.auth.Login/>
+            <ITStockM.Components.Pages.auth.Login />
         </NotAuthorized>
     </AuthorizeView>
-    }
-    
+}
+
+

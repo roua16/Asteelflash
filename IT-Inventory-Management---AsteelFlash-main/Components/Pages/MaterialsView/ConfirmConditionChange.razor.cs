@@ -9,11 +9,11 @@ namespace ITStockM.Components.Pages.MaterialsView
     public partial class ConfirmConditionChange
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
 
         [Parameter]
         public int MaxQte { get; set; }
@@ -22,22 +22,22 @@ namespace ITStockM.Components.Pages.MaterialsView
         public bool HasSN { get; set; }
 
         [Parameter]
-        public List<Materiel> materiels { get; set; }
+        public List<Materiel> materiels { get; set; } = new();
 
         [Parameter]
-        public string CurrentCondition { get; set; }
+        public string CurrentCondition { get; set; } = string.Empty;
 
 
         protected int Qte = 1;
 
-        protected List<string> options ;
+        protected List<string> options = new();
 
-        protected string selectedOption;
-        private List<RadzenDropDownDataGrid<Materiel>> myDropDowns;
-        protected List<Materiel?> previouslySelectedMateriels;
+        protected string selectedOption = string.Empty;
+        private List<RadzenDropDownDataGrid<Materiel>> myDropDowns = new();
+        protected List<Materiel?> previouslySelectedMateriels = new();
 
        
-        protected List<MatList> listMaterials;
+        protected List<MatList> listMaterials = new();
 
 
         protected override async Task OnInitializedAsync()
@@ -50,6 +50,8 @@ namespace ITStockM.Components.Pages.MaterialsView
             {
                 options = new List<string> { "Repaired",  "Unrepairable" };
             }
+
+            selectedOption = options.FirstOrDefault() ?? string.Empty;
 
                 listMaterials = new List<MatList>();
             previouslySelectedMateriels = new List<Materiel?>();
@@ -235,7 +237,7 @@ namespace ITStockM.Components.Pages.MaterialsView
     }
     public class MatList
     {
-        public Materiel Materiel { get; set; }
+        public Materiel Materiel { get; set; } = new();
         
 
 

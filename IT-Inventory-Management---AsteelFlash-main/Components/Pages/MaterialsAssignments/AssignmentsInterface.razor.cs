@@ -10,16 +10,16 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
     public partial class AssignmentsInterface
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
 
-        protected List<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels;
+        protected List<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels = new();
 
-        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0;
+        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0 = default!;
 
         protected int stockLeft;
 
@@ -37,16 +37,19 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         {
             assignmentMateriels = (await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " })).ToList();
             //Count missions
-            missions = assignmentMateriels.Where(assm => assm.Assignment.OnMission == true && assm.Assignment.RestoreDate == null && assm.Qte != 0).Count();
+            missions = assignmentMateriels.Count(assm => assm.Assignment?.OnMission == true && assm.Assignment?.RestoreDate == null && assm.Qte != 0);
 
             //Count total assignments
-            totalAssignments = assignmentMateriels.Where(assm => assm.Qte != 0 && assm.Assignment.RestoreDate == null ).Count();
+            totalAssignments = assignmentMateriels.Count(assm => assm.Qte != 0 && assm.Assignment?.RestoreDate == null);
 
             //Check if there is a mission that will end in less than 7 days
-            dangerMission = 0 != assignmentMateriels.Where(assm => assm.Assignment.RestoreDate == null && assm.Assignment.RestoreDateLimit < DateTime.Today.AddDays(7)).Count();
+            dangerMission = assignmentMateriels.Any(assm => assm.Assignment?.RestoreDate == null && assm.Assignment?.RestoreDateLimit < DateTime.Today.AddDays(7));
 
             //Specify the assignments only
-            assignmentMateriels = assignmentMateriels.Where(assm => assm.Assignment.OnMission == false &&  assm.Assignment.AssignedTo != 6 && assm.Qte != 0).OrderByDescending(assm => assm.Assignment.Date).ToList();
+            assignmentMateriels = assignmentMateriels
+                .Where(assm => assm.Assignment?.OnMission == false && assm.Assignment?.AssignedTo != 6 && assm.Qte != 0)
+                .OrderByDescending(assm => assm.Assignment?.Date)
+                .ToList();
             activeAssignments = assignmentMateriels.Count();
 
             var mats = await ITStockManagmentService.GetMateriels(new Query { });
@@ -112,11 +115,27 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
         protected async Task Search(ChangeEventArgs args)
         {
-            search = $"{args.Value}".ToLower();
+            search = args.Value?.ToString()?.Trim() ?? string.Empty;
 
             await grid0.GoToPage(0);
-            var assm = (await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " })).Where(assm => assm.Assignment.OnMission == false && assm.Assignment.AssignedTo != 6 && assm.Qte != 0).ToList();
-            assignmentMateriels = assm.Where(assignmentMateriels => assignmentMateriels.Assignment.AssignedTo != 6 && (assignmentMateriels.Materiel.Type.Contains(search, StringComparison.CurrentCultureIgnoreCase) || assignmentMateriels.Materiel.MaterielName.Contains(search, StringComparison.CurrentCultureIgnoreCase) || assignmentMateriels.Assignment.Employee.FullName.Contains(search, StringComparison.CurrentCultureIgnoreCase) || (assignmentMateriels.Materiel.SerialNumber != null && assignmentMateriels.Materiel.SerialNumber.Contains(search, StringComparison.CurrentCultureIgnoreCase)) || (assignmentMateriels.Assignment.AssignedEmployee != null && assignmentMateriels.Assignment.AssignedEmployee.FullName.Contains(search, StringComparison.CurrentCultureIgnoreCase)) || (assignmentMateriels.Assignment.Project!=null && assignmentMateriels.Assignment.Project.ProjectName.Contains(search, StringComparison.CurrentCultureIgnoreCase)))).ToList();
+            var assm = (await ITStockManagmentService.GetAssignmentMateriels(new Query { Expand = "Materiel,Assignment " }))
+                .AsEnumerable()
+                .Where(a => a.Assignment?.OnMission == false && a.Assignment?.AssignedTo != 6 && a.Qte != 0)
+                .ToList();
+
+            if (string.IsNullOrWhiteSpace(search))
+            {
+                assignmentMateriels = assm;
+                return;
+            }
+
+            assignmentMateriels = assm.Where(a =>
+                ContainsText(a.Materiel?.Type, search) ||
+                ContainsText(a.Materiel?.MaterielName, search) ||
+                ContainsText(a.Assignment?.Employee?.FullName, search) ||
+                ContainsText(a.Materiel?.SerialNumber, search) ||
+                ContainsText(a.Assignment?.AssignedEmployee?.FullName, search) ||
+                ContainsText(a.Assignment?.Project?.ProjectName, search)).ToList();
         }
 
 
@@ -169,6 +188,11 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
 
 
+
+        private static bool ContainsText(string? source, string query)
+        {
+            return !string.IsNullOrWhiteSpace(source) && source.Contains(query, StringComparison.CurrentCultureIgnoreCase);
+        }
 
 
     }

@@ -4,34 +4,14 @@
 <AuthorizeView Roles="Admin,IT">
     <Authorized>
         <PageTitle>Asset Lifecycle</PageTitle>
-
-        <style>
-            .stage-badge {
-                display: inline-block;
-                padding: 0.25rem 0.75rem;
-                border-radius: 4px;
-                font-weight: 500;
-                font-size: 0.875rem;
-            }
-            .badge-purchased  { background: var(--rz-info-lighter);    color: var(--rz-info-dark); }
-            .badge-instock    { background: var(--rz-success-lighter);  color: var(--rz-success-dark); }
-            .badge-assigned   { background: var(--rz-warning-lighter);  color: var(--rz-warning-dark); }
-            .badge-maintenance{ background: var(--rz-danger-lighter);   color: var(--rz-danger-dark); }
-            .badge-retired    { background: var(--rz-base-300);         color: var(--rz-text-secondary-color); }
-            .datagrid-container :deep(.rz-datatable-thead th) { background-color: var(--rz-base-200); font-weight:600; padding:1rem; }
-            .datagrid-container :deep(.rz-grid-table td)      { padding:1rem; border-bottom:1px solid var(--rz-base-300); }
-            .datagrid-container :deep(.rz-datatable-data tr:hover) { background-color: var(--rz-base-200); }
-            .kpi-icon { position:absolute; top:1rem; right:1rem; width:2.5rem; height:2.5rem; display:flex; align-items:center; justify-content:center; border-radius:0.5rem; }
-        </style>
-
-        <div class="container-fluid py-4">
+        <div class="container-fluid py-4 lifecycle-page">
             <RadzenCard class="mb-4 rz-shadow-2" Style="border-radius:12px;border:none">
                 <div class="p-2">
 
                     <RadzenText Text="Asset Lifecycle Tracker" TextStyle="TextStyle.H4" TagName="TagName.H1"
                                 Style="text-transform:uppercase;font-weight:600;letter-spacing:1px;margin-bottom:1.5rem" />
 
-                    <div class="search-export-container" style="margin-bottom:1.5rem">
+                    <div class="search-export-container">
                         <div class="search-container">
                             <span class="search-icon">🔍</span>
                             <RadzenTextBox Placeholder="Search asset or serial…"
@@ -52,7 +32,7 @@
                         </div>
                     </div>
 
-                    <div class="datagrid-container" style="border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.05)">
+                    <div class="datagrid-container">
                         <RadzenDataGrid Data="@records" TItem="AssetLifecycleRecord"
                                         AllowPaging="true" PageSize="15" PageSizeOptions="@(new int[]{10,15,25,50})"
                                         ShowPagingSummary="true"

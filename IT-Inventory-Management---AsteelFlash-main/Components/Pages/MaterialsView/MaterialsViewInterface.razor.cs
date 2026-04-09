@@ -11,18 +11,18 @@ namespace ITStockM.Components.Pages.MaterialsView
     {
 
         [Inject]
-        protected NavigationManager NavigationManager { get; set; }
+        protected NavigationManager NavigationManager { get; set; } = default!;
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected ProtectedLocalStorage LocalStorage { get; set; }
+        protected ProtectedLocalStorage LocalStorage { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
 
-        protected IEnumerable<Models.ViewModels.MaterialsListViewModel> materielsList;
+        protected IEnumerable<Models.ViewModels.MaterialsListViewModel> materielsList = Enumerable.Empty<Models.ViewModels.MaterialsListViewModel>();
 
         protected int pendingRequests;
         protected int pendingDeliveries;
@@ -35,14 +35,14 @@ namespace ITStockM.Components.Pages.MaterialsView
 
         protected string search = "";
 
-        protected string userAuth = "";
+        protected string userAuth = string.Empty;
 
-        protected RadzenDataGrid<Models.ViewModels.MaterialsListViewModel> grid0;
+        protected RadzenDataGrid<Models.ViewModels.MaterialsListViewModel> grid0 = default!;
 
         protected override async Task OnInitializedAsync()
         {
 
-            userAuth = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.Role;
+            userAuth = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value?.Role ?? string.Empty;
 
             var mats = (await ITStockManagmentService.GetMateriels()).Where(m => m.QuantityITStock != 0 || m.QuantityPDRStock !=0);
             var deliveryOrders = await ITStockManagmentService.GetDeliveryOrderMateriels(new Query
@@ -58,7 +58,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                                    Qte = g.Sum(m =>  m.QuantityITStock),
                                    Mats = g.ToList(),
                                    Type = g.First().Type,
-                                   DeliveryOrders = deliveryOrders.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList() 
+                                   DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrders, g)
 
                                }).Where(ml => ml.Qte != 0);
 
@@ -109,7 +109,7 @@ namespace ITStockM.Components.Pages.MaterialsView
 
         protected async Task Search(ChangeEventArgs args)
         {
-            search = $"{args.Value}";
+            search = args.Value?.ToString() ?? string.Empty;
 
             await grid0.GoToPage(0);
             var mats = await ITStockManagmentService.GetMateriels(new Query { Filter = $@"i => i.MaterielName.Contains(@0) || i.Type.Contains(@0) || i.SerialNumber.Contains(@0)  ", FilterParameters = new object[] { search } });
@@ -129,7 +129,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                                       Qte = g.Sum(dlo => dlo.QuantityPDRStock + dlo.QuantityITStock),
                                       Mats = g.ToList(),
                                       Type = g.First().Type,
-                                      DeliveryOrders = deliveryOrderMateriels.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList()
+                                      DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrderMateriels, g)
                                   });
             }
             else if (selectedStorage == "PDR")
@@ -142,7 +142,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                                   Qte = g.Sum(dlo => dlo.QuantityPDRStock),
                                   Mats = g.ToList(),
                                   Type = g.First().Type,
-                                  DeliveryOrders = deliveryOrderMateriels.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList() 
+                                  DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrderMateriels, g)
 
                               });
             }
@@ -156,7 +156,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                                  Qte = g.Sum(gItem => gItem.QuantityITStock),
                                  Mats = g.ToList(),
                                  Type = g.First().Type,
-                                 DeliveryOrders = deliveryOrderMateriels.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList() 
+                                 DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrderMateriels, g)
 
                              });
             }
@@ -170,7 +170,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                                   Qte = g.Sum(m => m.IrreparableQuantity),
                                   Mats = g.ToList(),
                                   Type = g.First().Type,
-                                  DeliveryOrders = deliveryOrderMateriels.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList()
+                                  DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrderMateriels, g)
 
                               }).Where(m => m.Qte != 0);
             }
@@ -184,7 +184,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                                   Qte = g.Sum(m => m.Repairing_Quantity),
                                   Mats = g.ToList(),
                                   Type = g.First().Type,
-                                  DeliveryOrders = deliveryOrderMateriels.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList()
+                                  DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrderMateriels, g)
 
                               }).Where(m => m.Qte != 0);
             }
@@ -242,25 +242,25 @@ namespace ITStockM.Components.Pages.MaterialsView
         }
        
 
-        protected async void NavToRequests()
+        protected void NavToRequests()
         {
-            
+
             if (userAuth != "Admin")
             {
                 NavigationManager.NavigateTo("/purchase-page");
             }
         }
 
-        protected async void NavToPendingDeliveries()
+        protected void NavToPendingDeliveries()
         {
-            
+
             if (userAuth != "Admin")
             {
                 NavigationManager.NavigateTo("/pending-deliveries");
             }
         }
 
-        protected async void MaterialFilter()
+        protected async Task MaterialFilter()
         {
             var mats = await ITStockManagmentService.GetMateriels();
             var deliveryOrders = await ITStockManagmentService.GetDeliveryOrderMateriels(new Query
@@ -278,7 +278,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                                        Qte = g.Sum(m => m.QuantityPDRStock + m.QuantityITStock),
                                        Mats = g.ToList(),
                                        Type = g.First().Type,
-                                       DeliveryOrders = deliveryOrders.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList() 
+                                       DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrders, g)
 
                                    }).Where( m => m.Qte != 0);
             }
@@ -293,7 +293,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                                   Qte =  g.Sum(m => m.QuantityITStock),
                                   Mats = g.ToList(),
                                   Type = g.First().Type,
-                                  DeliveryOrders = deliveryOrders.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList() 
+                                  DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrders, g)
 
                               }).Where(m => m.Qte != 0);
             }
@@ -308,7 +308,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                                   Qte = g.Sum(m => m.QuantityPDRStock) ,
                                   Mats = g.ToList(),
                                   Type = g.First().Type,
-                                  DeliveryOrders = deliveryOrders.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList() 
+                                  DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrders, g)
 
                               }).Where(m => m.Qte != 0);
             }
@@ -322,7 +322,7 @@ namespace ITStockM.Components.Pages.MaterialsView
                                   Qte = g.Sum(m => m.IrreparableQuantity),
                                   Mats = g.ToList(),
                                   Type = g.First().Type,
-                                  DeliveryOrders = deliveryOrders.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList()
+                                  DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrders, g)
 
                               }).Where(m => m.Qte != 0);
             }
@@ -335,12 +335,28 @@ namespace ITStockM.Components.Pages.MaterialsView
                                   Qte = g.Sum(m => m.Repairing_Quantity),
                                   Mats = g.ToList(),
                                   Type = g.First().Type,
-                                  DeliveryOrders = deliveryOrders.Where(dlo => dlo.Materiel.MaterielName == g.FirstOrDefault().MaterielName).Select(dlo => dlo.DeliveryOrder).ToList()
+                                  DeliveryOrders = GetDeliveryOrdersForGroup(deliveryOrders, g)
 
                               }).Where(m => m.Qte != 0);
             }
 
 
+        }
+
+        private static List<Models.ITStockManagment.DeliveryOrder> GetDeliveryOrdersForGroup(
+            IEnumerable<Models.ITStockManagment.DeliveryOrderMateriel> deliveryOrderMateriels,
+            IGrouping<string, Models.ITStockManagment.Materiel> group)
+        {
+            var materielName = group.FirstOrDefault()?.MaterielName;
+            if (string.IsNullOrWhiteSpace(materielName))
+            {
+                return new List<Models.ITStockManagment.DeliveryOrder>();
+            }
+
+            return deliveryOrderMateriels
+                .Where(dlo => dlo.Materiel != null && dlo.DeliveryOrder != null && string.Equals(dlo.Materiel.MaterielName, materielName, StringComparison.OrdinalIgnoreCase))
+                .Select(dlo => dlo.DeliveryOrder!)
+                .ToList();
         }
 
 

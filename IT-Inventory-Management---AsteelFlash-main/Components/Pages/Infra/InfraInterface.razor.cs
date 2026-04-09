@@ -14,33 +14,29 @@ namespace ITStockM.Components.Pages.Infra
     public partial class InfraInterface
     {
         [Inject]
-        protected IJSRuntime JSRuntime { get; set; }
+        protected IJSRuntime JSRuntime { get; set; } = default!;
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected NotificationService NotificationService { get; set; }
+        protected NotificationService NotificationService { get; set; } = default!;
 
         [Inject]
-        protected ProtectedLocalStorage LocalStorage { get; set; }
+        protected ProtectedLocalStorage LocalStorage { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
 
         [Inject]
-        public INotificationService AdminNotificationService { get; set; }
+        public INotificationService AdminNotificationService { get; set; } = default!;
 
         protected bool errorVisible;
         protected List<string> requestOptions = new List<string>() { "Update project", "Existing Project" };
         protected List<string> materialTypes = new List<string>() { "HardWare", "SoftWare", "Mosue", "KeyBoard", "Laptop", "Mini Pc", "Backpack", "Headphone", "Monitor" };
         protected List<string> status = new List<string>() { "Normal", "Urgent", "Critical" };
 
-        string fileName;
-        long? fileSize;
-        string filevalue;
-
-        protected List<string> projectNames;
+        protected List<string> projectNames = new();
 
 
 
@@ -50,21 +46,21 @@ namespace ITStockM.Components.Pages.Infra
 
 
         //Requets list
-        protected IEnumerable<Models.ITStockManagment.Request> requests;
+        protected IEnumerable<Models.ITStockManagment.Request> requests = Enumerable.Empty<Models.ITStockManagment.Request>();
 
-        protected RadzenDataGrid<Models.ITStockManagment.Request> grid0;
+        protected RadzenDataGrid<Models.ITStockManagment.Request> grid0 = default!;
 
 
         //Offers
-        protected RadzenDataGrid<Models.ViewModels.InfraViewModel> grid1;
+        protected RadzenDataGrid<Models.ViewModels.InfraViewModel> grid1 = default!;
 
         protected Models.ITStockManagment.Request request = new();
-        protected IEnumerable<Models.ITStockManagment.Offer> offers;
+        protected IEnumerable<Models.ITStockManagment.Offer> offers = Enumerable.Empty<Models.ITStockManagment.Offer>();
 
-        protected IEnumerable<Models.ViewModels.InfraViewModel> groupedOffers;
+        protected IEnumerable<Models.ViewModels.InfraViewModel> groupedOffers = Enumerable.Empty<Models.ViewModels.InfraViewModel>();
 
-        RadzenCarousel carousel;
-        RadzenCarousel carousel1;
+        RadzenCarousel carousel = default!;
+        RadzenCarousel carousel1 = default!;
 
         bool auto = true;
         bool auto1 = true;
@@ -157,7 +153,7 @@ namespace ITStockM.Components.Pages.Infra
             }
 
             // Get all offers and materialize safely
-            List<Models.ITStockManagment.Offer> allOffersList = null;
+            List<Models.ITStockManagment.Offer> allOffersList;
 
             try
             {
@@ -180,7 +176,7 @@ namespace ITStockM.Components.Pages.Infra
             requests = allRequestsList.Where(r => !requestIdsWithOffers.Contains(r.Id) && r.Status != "Done").OrderByDescending(r => r.Date).ToList();
 
             groupedOffers = offers
-                .GroupBy(o => new { o.RequestId, o.Request.Title })
+                .GroupBy(o => new { o.RequestId, Title = o.Request?.Title ?? "Unknown Request" })
                 .Select(group => new
                 {
                     RequestId = group.Key.RequestId,
@@ -215,6 +211,11 @@ namespace ITStockM.Components.Pages.Infra
                 await InvokeAsync(async () =>
                 {
                     var session = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value;
+                    if (session == null)
+                    {
+                        throw new InvalidOperationException("User session is missing.");
+                    }
+
                     request.EmployeeId = session.Id;
                     request.Date = DateTime.Now;
                     request = await ITStockManagmentService.CreateRequest(request);
@@ -556,7 +557,7 @@ namespace ITStockM.Components.Pages.Infra
                 using (var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024))
                 {
                     var buffer = new byte[stream.Length];
-                    await stream.ReadAsync(buffer, 0, buffer.Length);
+                    await stream.ReadExactlyAsync(buffer, 0, buffer.Length);
                     request.File = buffer;
 
                     request.FileExtension = Path.GetExtension(file.Name);

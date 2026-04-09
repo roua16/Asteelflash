@@ -1,31 +1,23 @@
-<style>
-    :root {
-        --primary: #4f46e5;
-        --primary-transp: #4F46E529;
-        --primary-light: #e0e7ff;
-    }
-</style>
-
 <PageTitle>Pending Deliveries Details</PageTitle>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 pending-deliveries-details-page">
     <RadzenRow>
         <RadzenColumn Size="12" SizeLG="10" OffsetLG="1">
-            <RadzenCard class="rz-shadow-3 p-0 m-0" Style="border-radius: 16px; overflow: hidden;">
+            <RadzenCard class="rz-shadow-3 p-0 m-0 details-shell-card">
 
                 <div class=" p-4">
                     <RadzenRow>
                         <RadzenColumn Size="12" SizeMD="8">
                             <RadzenStack Orientation="Orientation.Vertical" JustifyContent="JustifyContent.Start" Gap="0.5rem">
-                                <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="letter-spacing: 1px;">For</RadzenText>
-                                <RadzenText TextStyle="TextStyle.H5" Style="font-weight: 600; margin-bottom: 1.5rem;">@request.Employee.FullName</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary overline-spaced">For</RadzenText>
+                                <RadzenText TextStyle="TextStyle.H5" Class="heading-name">@request.Employee.FullName</RadzenText>
                             </RadzenStack>
                         </RadzenColumn>
-                        <RadzenColumn Size="12" SizeMD="4" Style="text-align: right;">
+                        <RadzenColumn Size="12" SizeMD="4" Class="status-column">
                             <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem" AlignItems="AlignItems.End">
                                 <RadzenBadge Shade="Shade.Lighter"
                                              BadgeStyle="@GetStatusStyle(request.Status)"
-                                             Style="border-radius: 8px; padding: 0.5rem 1rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;"
+                                             Class="status-badge"
                                              Text="@request.Status" />
                             </RadzenStack>
                         </RadzenColumn>
@@ -40,34 +32,34 @@
 
                         <RadzenStack Gap="1rem" Orientation="Orientation.Vertical">
 
-                            <RadzenCard class="rz-shadow-1" Style="border-radius: 12px; overflow: hidden; border-left: 4px solid var(--rz-primary); transition: transform 0.2s ease-in-out;">
+                            <RadzenCard class="rz-shadow-1 detail-card-primary">
                                 <RadzenRow>
 
                                     <RadzenColumn Size="10" SizeSM="10">
                                         <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
-                                            <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="font-weight: 500;">TITLE</RadzenText>
-                                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 600;">@request.Title</RadzenText>
+                                            <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary text-medium">TITLE</RadzenText>
+                                            <RadzenText TextStyle="TextStyle.Body1" Class="text-semibold">@request.Title</RadzenText>
                                         </RadzenStack>
                                     </RadzenColumn>
                                     
                                         
                                             <RadzenColumn Size="6" SizeSM="3">
                                                 <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
-                                                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="font-weight: 500;">MAT TYPE</RadzenText>
+                                                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary text-medium">MAT TYPE</RadzenText>
                                                     <RadzenText TextStyle="TextStyle.Body1">@request.MaterialType</RadzenText>
                                                 </RadzenStack>
                                             </RadzenColumn>
                                    
                                         <RadzenColumn Size="6" SizeSM="4">
                                             <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
-                                                <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="font-weight: 500;">DATE</RadzenText>
+                                                <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary text-medium">DATE</RadzenText>
                                                 <RadzenText TextStyle="TextStyle.Body1">@(request.Date.ToString("MMMM dd, yyyy"))</RadzenText>
                                             </RadzenStack>
                                         </RadzenColumn>
                                     
                                     <RadzenColumn Size="6" SizeSM="10">
                                         <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
-                                            <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="font-weight: 500;">DESCRIPTION</RadzenText>
+                                            <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary text-medium">DESCRIPTION</RadzenText>
                                             <RadzenText TextStyle="TextStyle.Body1" >@request.Description</RadzenText>
                                         </RadzenStack>
                                     </RadzenColumn>
@@ -77,31 +69,30 @@
                         </RadzenStack>
 
                         <div>
-                            <RadzenText TextStyle="TextStyle.H6" Style="margin-bottom: 1rem; font-weight: 600;">Selected Offer</RadzenText>
+                            <RadzenText TextStyle="TextStyle.H6" Class="section-title">Selected Offer</RadzenText>
 
                            
                                 <RadzenStack Gap="1rem" Orientation="Orientation.Vertical">
                                   
-                                        <RadzenCard class="rz-shadow-1" Style="border-radius: 12px; overflow: hidden; border-left: 4px solid var(--rz-primary); transition: transform 0.2s ease-in-out;"
-                                                   >
+                                        <RadzenCard class="rz-shadow-1 detail-card-primary">
                                             <RadzenRow>
                                               
                                                 <RadzenColumn Size="10" SizeSM="4">
                                                     <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
-                                                        <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="font-weight: 500;">SUPPLIER</RadzenText>
-                                                        <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">@offer.SupplierName</RadzenText>
+                                                        <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary text-medium">SUPPLIER</RadzenText>
+                                                        <RadzenText TextStyle="TextStyle.Body1" Class="text-medium">@offer.SupplierName</RadzenText>
                                                     </RadzenStack>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="6" SizeSM="4">
                                                     <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
-                                                        <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="font-weight: 500;">DELIVERY DATE</RadzenText>
+                                                        <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary text-medium">DELIVERY DATE</RadzenText>
                                                         <RadzenText TextStyle="TextStyle.Body1">@(offer.DeliveryDate.ToString("MMM dd, yyyy"))</RadzenText>
                                                     </RadzenStack>
                                                 </RadzenColumn>
                                                 <RadzenColumn Size="6" SizeSM="3">
                                                     <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem">
-                                                        <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary" Style="font-weight: 500;">PRICE</RadzenText>
-                                                        <RadzenText TextStyle="TextStyle.Body1" class="rz-color-primary-dark" Style="font-weight: 600;">@offer.Price.ToString()</RadzenText>
+                                                        <RadzenText TextStyle="TextStyle.Overline" class="rz-color-text-tertiary text-medium">PRICE</RadzenText>
+                                                        <RadzenText TextStyle="TextStyle.Body1" class="rz-color-primary-dark text-semibold">@offer.Price.ToString()</RadzenText>
                                                     </RadzenStack>
                                                 </RadzenColumn>
                                             </RadzenRow>
@@ -118,10 +109,9 @@
                             <div class="d-flex justify-content-end">
                                 <RadzenButton Click=@(() => DownloadFile(request))
                                               ButtonStyle="ButtonStyle.Light"
-                                              Style="border-radius: 8px;"
-                                              class="rz-border rz-shadow-0">
+                                              class="rz-border rz-shadow-0 attachment-button">
                                     <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
-                                        <RadzenImage Path="images/attach1.png" Style="width: 20px; height: 20px;" />
+                                        <RadzenImage Path="images/attach1.png" Class="attachment-icon" />
                                         <RadzenText TextStyle="TextStyle.Body1">Download Attachment : @request.FileName</RadzenText>
                                     </RadzenStack>
                                 </RadzenButton>

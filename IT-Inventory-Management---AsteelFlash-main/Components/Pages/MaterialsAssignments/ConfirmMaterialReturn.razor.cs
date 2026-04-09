@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 using Radzen;
 
 namespace ITStockM.Components.Pages.MaterialsAssignments
@@ -7,7 +6,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
     public partial class ConfirmMaterialReturn
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Parameter]
         public bool HasSN { get; set; }
@@ -16,7 +15,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         public int MaxQte { get; set; }
 
         [Parameter]
-        public string MaterialName { get; set; }
+        public string MaterialName { get; set; } = string.Empty;
 
   
         protected List<string> options = new List<string> { "Good Conditions", "Need to be repaired", "Unrepairable" };
@@ -25,11 +24,11 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
         protected int qte = 1;
 
-        protected string description;
-        protected string otherName;
+        protected string description = string.Empty;
+        protected string otherName = string.Empty;
         protected int otherQty;
 
-        public async  void Submit()
+        public void Submit()
         {
             
             description = "\n--\n" + qte + " " +MaterialName + ", Returned at: " + DateTime.Now + " ("+selectedOption+")"+"\n";

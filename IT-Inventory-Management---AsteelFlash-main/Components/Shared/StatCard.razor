@@ -1,0 +1,45 @@
+<div class="kpi-card @SizeClass stat-card @CardClass">
+    <div class="kpi-card-top-row">
+        <div>
+            <div class="kpi-title">@Title</div>
+            <div class="kpi-value">@Value</div>
+        </div>
+        <div class="kpi-icon @IconClass">
+            <RadzenIcon Icon="@Icon" />
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(TrendText))
+    {
+        <div class="kpi-trend @(PositiveTrend ? "kpi-trend-up" : "kpi-trend-down")">
+            <RadzenIcon Icon="@(PositiveTrend ? "trending_up" : "trending_down")" Class="kpi-trend-icon" />
+            <span>@TrendText</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Icon { get; set; } = string.Empty;
+
+    [Parameter]
+    public string IconClass { get; set; } = "bg-primary-light";
+
+    [Parameter]
+    public string SizeClass { get; set; } = "kpi-card-sm";
+
+    [Parameter]
+    public string CardClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? TrendText { get; set; }
+
+    [Parameter]
+    public bool PositiveTrend { get; set; } = true;
+}

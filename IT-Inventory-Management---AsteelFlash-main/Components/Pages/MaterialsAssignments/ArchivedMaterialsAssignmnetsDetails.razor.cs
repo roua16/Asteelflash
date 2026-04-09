@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
-using Radzen;
 
 namespace ITStockM.Components.Pages.MaterialsAssignments
 {
@@ -8,7 +6,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
     {
 
         [Parameter]
-        public Models.ITStockManagment.AssignmentMateriel AssignmentMateriel { get; set; }
+        public Models.ITStockManagment.AssignmentMateriel AssignmentMateriel { get; set; } = new();
 
         
 

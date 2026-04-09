@@ -1,214 +1,14 @@
 ﻿
-<style>
-    .material-details-container {
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-    width: 100%;
-    }
+@{
+    var firstDelivery = deliveryOrderMateriels.FirstOrDefault();
+    var firstMateriel = firstDelivery?.Materiel;
+    var showSerialNumber = !string.IsNullOrEmpty(firstMateriel?.SerialNumber);
+}
 
-    .material-details-container::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 6px;
-    height: 100%;
-    background: var(--rz-primary);
-    border-radius: 3px 0 0 3px;
-    }
-
-    .material-details-header {
-    position: relative;
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    }
-
-    .material-details-header::after {
-    position: absolute;
-    top: 0;
-    right: 0;
-    font-size: 1.5rem;
-    opacity: 0.7;
-
-    }
-
-    .material-property {
-    margin-bottom: 1.25rem;
-    position: relative;
-    }
-
-    .material-property-label {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.25rem;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--rz-text-tertiary-color);
-    }
-
-    .material-property-label::before {
-    content: "";
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    margin-right: 0.5rem;
-    background-color: var(--rz-primary);
-    border-radius: 50%;
-    opacity: 0.7;
-    }
-
-    .material-property-value {
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--rz-text-color);
-    padding-left: 1rem;
-    }
-
-
-
-    .datagrid-container {
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .datagrid-container :deep(.rz-datatable-header) {
-    background-color: #f9fafb;
-    padding: 1rem;
-    border-bottom: 1px solid #e5e7eb;
-    }
-
-    .datagrid-container :deep(.rz-grid-table) {
-    border-collapse: separate;
-    border-spacing: 0;
-    }
-
-    .datagrid-container :deep(.rz-datatable-thead th) {
-    background-color: #f3f4f6;
-    font-weight: 600;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #e5e7eb;
-    }
-
-    .datagrid-container :deep(.rz-grid-table td) {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #e5e7eb;
-    }
-
-    .datagrid-container :deep(.rz-datatable-data tr:hover) {
-    background-color: #f9fafb;
-    }
-
-    .QuantityPDRStock-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 2rem;
-    height: 2rem;
-    padding: 0 0.5rem;
-    border-radius: 4px;
-    font-weight: 600;
-    font-size: 0.875rem;
-    }
-
-    .QuantityPDRStock-high {
-    background-color: #d1fae5;
-    color: #065f46;
-    }
-
-    .QuantityPDRStock-medium {
-    background-color: #fef3c7;
-    color: #92400e;
-    }
-
-    .QuantityPDRStock-low {
-    background-color: #fee2e2;
-    color: #b91c1c;
-    }
-
-    .material-meta {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px dashed rgba(0, 0, 0, 0.1);
-    }
-
-    .meta-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.5rem;
-    border-radius: 8px;
-    min-width: 80px;
-    }
-
-    .meta-label {
-    font-size: 0.7rem;
-    color: var(--rz-text-tertiary-color);
-    text-transform: uppercase;
-    }
-
-    .meta-value {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--rz-primary);
-    }
-
-    .properties-container {
-    display: flex;
-    flex-wrap: wrap;
-    }
-
-    .property-column {
-    flex: 1;
-    min-width: 200px;
-    }
-
-    .ChangeLink:hover {
-    cursor: pointer;
-    text-decoration: underline;
-    }
-
-    .change-link {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 12px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--rz-primary);
-    background-color: var(--rz-primary-lighter);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    }
-
-    .change-link:hover {
-    background-color: var(--rz-primary-light);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
-    }
-
-    .change-link span {
-    margin-left: 4px;
-    }
-</style>
-
-<RadzenStack Gap="1.5rem" Orientation="Orientation.Vertical" JustifyContent="JustifyContent.SpaceBetween">
+<RadzenStack Class="materials-view-details-page" Gap="1.5rem" Orientation="Orientation.Vertical" JustifyContent="JustifyContent.SpaceBetween">
     <div class="material-details-container">
         <div class="material-details-header">
-            <RadzenText TextStyle="TextStyle.H6" Style="margin: 0; font-weight: 600;">Material Details</RadzenText>
+            <RadzenText TextStyle="TextStyle.H6" Class="section-heading">Material Details</RadzenText>
             <RadzenIcon Icon="Assignment"></RadzenIcon>
         </div>
 
@@ -216,14 +16,14 @@
             <div class="property-column">
                 <div class="material-property">
                     <div class="material-property-label">Material Name</div>
-                    <div class="material-property-value">@deliveryOrderMateriels.FirstOrDefault().Materiel.MaterielName</div>
+                    <div class="material-property-value">@(firstMateriel?.MaterielName ?? "N/A")</div>
                 </div>
             </div>
 
             <div class="property-column">
                 <div class="material-property">
                     <div class="material-property-label">Type</div>
-                    <div class="material-property-value">@deliveryOrderMateriels.FirstOrDefault().Materiel.Type</div>
+                    <div class="material-property-value">@(firstMateriel?.Type ?? "N/A")</div>
                 </div>
             </div>
             @if (Role != "Purchasing" && (CurrentCondition == "IT" || CurrentCondition == "Repairing" || CurrentCondition == "Irreparable"))
@@ -232,14 +32,12 @@
                     <div class="material-property">
                         <div class="material-property-label">Condition</div>
 
-
-
-                        <div class="material-property-value" style="display: flex; align-items: center;">
+                        <div class="material-property-value value-inline">
                             <span>@(CurrentCondition == "IT" ? "Good" : CurrentCondition)</span>
                             @if (CurrentCondition != "Irreparable")
                             {
                                 <span class="change-link" @onclick="ChangeCondition">
-                                    <RadzenIcon Icon="edit" Style="font-size: 14px; margin-left: 8px;" />
+                                    <RadzenIcon Icon="edit" Class="edit-icon" />
                                     <span>Change</span>
                                 </span>
                             }
@@ -273,7 +71,7 @@
     
     </div>
     <div class="material-details-header">
-        <RadzenText TextStyle="TextStyle.H6" Style="margin: 0; font-weight: 600;">Delivery Order Details</RadzenText>
+        <RadzenText TextStyle="TextStyle.H6" Class="section-heading">Delivery Order Details</RadzenText>
         <RadzenIcon Icon="notes"></RadzenIcon>
     </div>
     <!-- Data Grid -->
@@ -316,17 +114,17 @@
                 
                 <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Materiel.Warranty" Title="Warranty">
                     <Template Context="data">
-                        <div style="display: flex; align-items: center;">
+                        <div class="inline-center">
                             <span> @data.Materiel.Warranty.ToString("MMM dd, yyyy")</span>
                         </div>
                     </Template>
                 </RadzenDataGridColumn>
                 
-                @if (!string.IsNullOrEmpty(deliveryOrderMateriels.FirstOrDefault().Materiel.SerialNumber))
+                @if (showSerialNumber)
                 {
                     <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Materiel.SerialNumber" Title="SN">
                         <Template Context="data">
-                            <div style="display: flex; align-items: center;" >
+                            <div class="inline-center" >
                                 <span>@data.Materiel.SerialNumber</span> 
                             </div>
                         </Template>

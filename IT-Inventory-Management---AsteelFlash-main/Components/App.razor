@@ -7,7 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="@NavigationManager.BaseUri" />
     <RadzenTheme @rendermode="@InteractiveServer" Theme="humanistic" />
-    <link rel="stylesheet" href="css/site.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/site.css?v=@StaticAssetVersion" />
+    <link rel="stylesheet" href="ITStockM.styles.css?v=@StaticAssetVersion" />
     <link rel="icon" href="IconAsteel.ico" />
     <HeadOutlet @rendermode="@InteractiveServer" />
 </head>
@@ -24,6 +28,8 @@
 </html>
 
 @code {
+    private static readonly string StaticAssetVersion = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+
     [CascadingParameter]
     private HttpContext HttpContext { get; set; }
 

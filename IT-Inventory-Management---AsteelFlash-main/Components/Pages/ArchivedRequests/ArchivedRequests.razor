@@ -6,15 +6,15 @@
         
         <PageTitle>Archived Requests</PageTitle>
 
-        <div class="container-fluid py-4">
-            <RadzenCard class="mb-4 rz-shadow-2" Style="border-radius: 12px; border: none;">
+        <div class="container-fluid py-4 archived-requests-page">
+            <RadzenCard class="mb-4 rz-shadow-2 archived-requests-card">
 
                 <RadzenRow AlignItems="AlignItems.Center" class="mb-4">
                     <RadzenColumn Size="12" SizeMD="6">
                         <RadzenText Text="Archived Requests"
                                     TextStyle="TextStyle.H3"
                                     TagName="TagName.H1"
-                                    Style="margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 1px; margin-bottom:25px;" />
+                                    Class="page-heading" />
                     </RadzenColumn>
                     <RadzenColumn Size="12" SizeMD="6" Class="d-flex justify-content-md-end mt-3 mt-md-0">
                         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="1rem">
@@ -22,7 +22,7 @@
                                                Icon="download"
                                                Text="Export"
                                                Click="@ExportClick"
-                                               Style="border-radius: 8px;">
+                                               Class="export-btn">
                                 <RadzenSplitButtonItem Text="Excel" Value="xlsx" Icon="table_view" />
                                 <RadzenSplitButtonItem Text="CSV" Value="csv" Icon="description" />
                             </RadzenSplitButton>
@@ -34,8 +34,8 @@
                     <RadzenColumn Size="12">
                         <div class="position-relative">
                             <RadzenTextBox Placeholder="🔍 Search requests..." @oninput="@Search" aria-label="Search by all string columns"
-                                           Style="display: block;width: 100%;padding: 10px;border: 1px solid #ccc;border-radius: 8px;  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);" Icon="find_in_page" />
-                            <i class="rzi rzi-search position-absolute" style="left: 0.75rem; top: 50%; transform: translateY(-50%);"></i>
+                                           Class="request-search" Icon="find_in_page" />
+                            <i class="rzi rzi-search position-absolute search-indicator"></i>
                         </div>
                     </RadzenColumn>
                 </RadzenRow>
@@ -50,25 +50,25 @@
                                 PageSizeOptions="@(new int[]{5, 10, 20, 30})"
                                 Data="@requests"
                                 TItem="ITStockM.Models.ITStockManagment.Request"
-                                Style="border-radius: 10px; overflow: hidden; border: none;"
+                                Class="archived-requests-grid"
                                 EmptyText="No purchase requests found">
                     <Columns>
                         <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Employee.FullName" Title="Employee" Width="150px">
                             <Template Context="request">
                                 <div class="d-flex align-items-center">
-                                    <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">@request.Employee.FullName</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Body1" Class="text-medium">@request.Employee.FullName</RadzenText>
                                 </div>
                             </Template>
                         </RadzenDataGridColumn>
 
                         <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Title" Title="Title" Width="180px">
                             <Template Context="request">
-                                <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">@request.Title</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1" Class="text-medium">@request.Title</RadzenText>
                             </Template>
                         </RadzenDataGridColumn>
                         <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Description" Title="Description" Width="200px" Visible="false">
                             <Template Context="request">
-                                <div style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <div class="description-ellipsis">
                                     @request.Description
                                 </div>
                             </Template>
@@ -87,10 +87,10 @@
 
                         <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Status" Title="Status" Width="120px">
                             <Template Context="request">
-                                <div style="display: flex; justify-content: center; align-items: center;">
+                                <div class="status-center">
                                     <RadzenBadge BadgeStyle="BadgeStyle.Success"
                                                  Shade="Shade.Lighter"
-                                                 Style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500;"
+                                                 Class="archived-status-badge"
                                                  Text="@request.Status" />
                                 </div>
                             </Template>
@@ -103,7 +103,7 @@
                                     <RadzenButton ButtonStyle="ButtonStyle.Info"
                                                   Icon="info"
                                                   Size="ButtonSize.Medium"
-                                                  Style="border-radius: 8px;"
+                                                  Class="details-btn"
                                                   Shade="Shade.Lighter"
                                                   Variant="Variant.Flat"
                                                   Title="View Details"
@@ -114,7 +114,7 @@
                     </Columns>
                     <EmptyTemplate>
                         <div class="d-flex flex-column align-items-center justify-content-center py-5">
-                            <i class="rzi rzi-shopping-cart-2 mb-3" style="font-size: 3rem; opacity: 0.5;"></i>
+                            <i class="rzi rzi-shopping-cart-2 mb-3 empty-icon"></i>
                             <RadzenText TextStyle="TextStyle.H6">No purchase requests found</RadzenText>
                             <RadzenText TextStyle="TextStyle.Body1" class="rz-color-text-secondary">Try adjusting your search or filters</RadzenText>
                         </div>

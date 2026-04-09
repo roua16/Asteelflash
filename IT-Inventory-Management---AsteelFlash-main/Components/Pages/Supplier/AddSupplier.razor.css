@@ -1,0 +1,128 @@
+.add-supplier-page {
+    --primary: #0f766e;
+    --accent: #dc3545;
+    --success: #16a34a;
+    --warning-bg: #fff4e5;
+    --warning-text: #9a3412;
+    --surface: #ffffff;
+    --surface-soft: #f8fafc;
+    --border: #e2e8f0;
+    --text-muted: #64748b;
+}
+
+.add-supplier-page .supplier-card {
+    border-radius: 12px;
+    border: none;
+    background: var(--surface);
+}
+
+.add-supplier-page .form-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.add-supplier-page .form-header {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.add-supplier-page .form-heading {
+    font-weight: 600;
+    margin: 0;
+}
+
+.add-supplier-page .error-alert {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    border-radius: 10px;
+    border: 1px solid #fed7aa;
+    background: var(--warning-bg);
+    color: var(--warning-text);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.add-supplier-page .error-icon {
+    font-size: 1.1rem;
+}
+
+.add-supplier-page .form-section {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-soft);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.add-supplier-page .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.add-supplier-page .section-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+}
+
+.add-supplier-page .icon-basic {
+    background: rgba(0, 85, 164, 0.12);
+    color: var(--primary);
+}
+
+.add-supplier-page .icon-contact {
+    background: rgba(220, 53, 69, 0.12);
+    color: var(--accent);
+}
+
+.add-supplier-page .form-field {
+    margin-bottom: 0.9rem;
+}
+
+.add-supplier-page .field-label {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.add-supplier-page .required-indicator {
+    color: var(--accent);
+    margin-left: 0.25rem;
+}
+
+.add-supplier-page .field-input {
+    width: 100%;
+}
+
+.add-supplier-page .field-helper {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+}
+
+.add-supplier-page .form-actions {
+    margin-top: 2rem;
+}
+
+.add-supplier-page .action-button {
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    .add-supplier-page .form-container {
+        padding: 1rem;
+    }
+
+    .add-supplier-page .section-title {
+        font-size: 0.95rem;
+    }
+}

@@ -7,7 +7,7 @@ namespace ITStockM.Components.Pages.auth
     {
    
         [Inject]
-        protected NavigationManager NavigationManager { get; set; }
+        protected NavigationManager NavigationManager { get; set; } = default!;
 
 
 

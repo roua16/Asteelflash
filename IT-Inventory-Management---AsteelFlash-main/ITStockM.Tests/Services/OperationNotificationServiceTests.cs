@@ -228,11 +228,11 @@ namespace ITStockM.Tests.Services
             capturedSubject.Should().Contain("Top 3 Most Used Materials");
             capturedBody.Should().Contain("Laptop");
             capturedBody.Should().Contain("50");
-            capturedBody.Should().Contain("50.0%");
+            capturedBody.Should().MatchRegex(@"50[\.,]0%");
             capturedBody.Should().Contain("Mouse");
-            capturedBody.Should().Contain("30.0%");
+            capturedBody.Should().MatchRegex(@"30[\.,]0%");
             capturedBody.Should().Contain("Keyboard");
-            capturedBody.Should().Contain("20.0%");
+            capturedBody.Should().MatchRegex(@"20[\.,]0%");
         }
 
         [Fact]

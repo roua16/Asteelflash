@@ -14,11 +14,11 @@ namespace ITStockM.Components.Pages
     {
 
         [Inject]
-        protected NavigationManager NavigationManager { get; set; }
+        protected NavigationManager NavigationManager { get; set; } = default!;
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
         [Inject]
-        protected ProtectedLocalStorage LocalStorage { get; set; }
+        protected ProtectedLocalStorage LocalStorage { get; set; } = default!;
 
         private List<string> months = new List<string> {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec" }; 
 
@@ -36,15 +36,15 @@ namespace ITStockM.Components.Pages
         
         protected int pendingDeliveries;
 
-        private List<ChartDataItem> inventoryByType;
+        private List<ChartDataItem> inventoryByType = new();
 
         protected double growthAssignment;
 
         private List<MonthlyData> monthlyAssignments = new List<MonthlyData> { };
 
-        protected IEnumerable<Request> topRequests;
+        protected IEnumerable<Request> topRequests = Enumerable.Empty<Request>();
 
-        protected IEnumerable<AssignmentMateriel> AssignmentMateriel;
+        protected IEnumerable<AssignmentMateriel> AssignmentMateriel = Enumerable.Empty<AssignmentMateriel>();
 
         protected List<(object AnyData, DateTime Date)> recentActivity = new List<(object AnyData, DateTime Date)> { };
 
@@ -54,22 +54,22 @@ namespace ITStockM.Components.Pages
         protected List<string> materialConditions = new List<string> { "Good", "Repairing", "Irreparable" };
         protected string selectedMaterialCondition = "Good";
 
-        protected List<Materiel> Materiels;
+        protected List<Materiel> Materiels = new();
 
-        protected string userRole;
+        protected string userRole = string.Empty;
 
         // id of current user (set from protected local storage UserSession)
         protected int userId; 
 
-        protected IEnumerable<Models.ViewModels.MaterialsListViewModel> materielsList;
+        protected IEnumerable<Models.ViewModels.MaterialsListViewModel> materielsList = Enumerable.Empty<Models.ViewModels.MaterialsListViewModel>();
 
         // Top-3 predicted most-used materiels (usage share = usage / total usage)
-        protected List<Models.ViewModels.MaterielUsageViewModel> TopUsedMateriels;
+        protected List<Models.ViewModels.MaterielUsageViewModel> TopUsedMateriels = new();
 
         protected async void RedirectPDR()
         {
            
-            var userRoleLocal = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.Role;
+            var userRoleLocal = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value?.Role;
             if (string.Equals(userRoleLocal, UserRoles.PDR, StringComparison.OrdinalIgnoreCase))
             {
                 NavigationManager.NavigateTo("/materials-view-interface-pdr");
@@ -209,13 +209,17 @@ namespace ITStockM.Components.Pages
                            }).Where(nm => nm.Qte < 10);
 
             var userSession = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value;
-            userRole = userSession.Role;
-            userId = userSession.Id;
+            if (userSession != null)
+            {
+                userRole = userSession.Role;
+                userId = userSession.Id;
+            }
 
             // compute top-3 used materiels and (for Admin/PDR) send daily summary email once per day
             TopUsedMateriels = await ITStockManagmentService.GetTopUsedMateriels(3);
-            if (string.Equals(userRole, UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(userRole, UserRoles.PDR, StringComparison.OrdinalIgnoreCase))
+            if (userSession != null &&
+                (string.Equals(userRole, UserRoles.Admin, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(userRole, UserRoles.PDR, StringComparison.OrdinalIgnoreCase)))
             {
                 // operationNotificationService + IMemoryCache ensure email is sent at most once per day per recipient
                 await ITStockManagmentService.SendTopUsedMaterielsEmailIfNotSentToday(userSession.Email);
@@ -387,43 +391,41 @@ namespace ITStockM.Components.Pages
 
         protected string assignmentText(Assignment assm)
         {
-
-            string materialmessage = "";
-
-            var materialsview = assm.AssignmentMateriels.Select(assmm => new { MatName = assmm.Materiel.MaterielName, Qte = assmm.Qte });
-
-            foreach (var matv in materialsview)
+            if (assm?.AssignmentMateriels == null || !assm.AssignmentMateriels.Any())
             {
-                
-                materialmessage = materialmessage + matv.Qte + " " + matv.MatName + ", ";
+                return "No materials";
             }
 
-            return materialmessage.Substring(0, materialmessage.Length - 2);
+            var materialParts = assm.AssignmentMateriels
+                .Where(assmm => assmm.Materiel != null)
+                .Select(assmm => $"{assmm.Qte} {assmm.Materiel.MaterielName}")
+                .Where(part => !string.IsNullOrWhiteSpace(part));
+
+            return string.Join(", ", materialParts);
 
 
         }
 
-        protected string deliveryOrderToText (DeliveryOrder deliveryOrder) // will be fixed
+        protected string deliveryOrderToText(DeliveryOrder deliveryOrder)
         {
-
-            string materialmessage = "";
-
-            var deliveryOrderView = deliveryOrder.DeliveryOrderMateriels.Select(delOrd => new { MatName = delOrd.Materiel.MaterielName, Qte = delOrd.Qte });
-
-            foreach (var delOrd in deliveryOrderView)
+            if (deliveryOrder?.DeliveryOrderMateriels == null || !deliveryOrder.DeliveryOrderMateriels.Any())
             {
-                materialmessage = materialmessage + delOrd.Qte + " " + delOrd.MatName + ", ";
+                return "No materials";
             }
-           
-           
-            return materialmessage;
+
+            var materialParts = deliveryOrder.DeliveryOrderMateriels
+                .Where(delOrd => delOrd.Materiel != null)
+                .Select(delOrd => $"{delOrd.Qte} {delOrd.Materiel.MaterielName}")
+                .Where(part => !string.IsNullOrWhiteSpace(part));
+
+            return string.Join(", ", materialParts);
 
         }
 
     
 
         
-        private string GetStatusBadgeClass(string status)
+        private string GetStatusBadgeClass(string? status)
         {
             return status switch
             {
@@ -437,13 +439,13 @@ namespace ITStockM.Components.Pages
     }
     public class ChartDataItem
     {
-        public string Category { get; set; }
+        public string Category { get; set; } = string.Empty;
         public double Value { get; set; }
     }
 
     public class MonthlyData
     {
-        public string Month { get; set; }
+        public string Month { get; set; } = string.Empty;
         public int Count { get; set; }
     }
 

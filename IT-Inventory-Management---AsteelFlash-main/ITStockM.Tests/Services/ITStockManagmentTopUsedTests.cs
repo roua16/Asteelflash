@@ -41,10 +41,10 @@ namespace ITStockM.Tests.Services
             // Arrange
             var ctx = CreateInMemoryContext("topused_db_1");
 
-            var m1 = new Materiel { Id = 1, MaterielName = "A", QuantityITStock = 10, QuantityPDRStock = 0, Warranty = System.DateTime.UtcNow };
-            var m2 = new Materiel { Id = 2, MaterielName = "B", QuantityITStock = 5, QuantityPDRStock = 0, Warranty = System.DateTime.UtcNow };
-            var m3 = new Materiel { Id = 3, MaterielName = "C", QuantityITStock = 2, QuantityPDRStock = 0, Warranty = System.DateTime.UtcNow };
-            var m4 = new Materiel { Id = 4, MaterielName = "D", QuantityITStock = 1, QuantityPDRStock = 0, Warranty = System.DateTime.UtcNow };
+            var m1 = new Materiel { Id = 1, MaterielName = "A", Type = "Consumable", QuantityITStock = 10, QuantityPDRStock = 0, Warranty = System.DateTime.UtcNow };
+            var m2 = new Materiel { Id = 2, MaterielName = "B", Type = "Consumable", QuantityITStock = 5, QuantityPDRStock = 0, Warranty = System.DateTime.UtcNow };
+            var m3 = new Materiel { Id = 3, MaterielName = "C", Type = "Consumable", QuantityITStock = 2, QuantityPDRStock = 0, Warranty = System.DateTime.UtcNow };
+            var m4 = new Materiel { Id = 4, MaterielName = "D", Type = "Consumable", QuantityITStock = 1, QuantityPDRStock = 0, Warranty = System.DateTime.UtcNow };
 
             await ctx.Materiels.AddRangeAsync(m1, m2, m3, m4);
 
@@ -103,7 +103,7 @@ namespace ITStockM.Tests.Services
             // Arrange
             var ctx = CreateInMemoryContext("topused_db_2");
 
-            var m1 = new Materiel { Id = 1, MaterielName = "A", QuantityITStock = 10, QuantityPDRStock = 0, Warranty = System.DateTime.UtcNow };
+            var m1 = new Materiel { Id = 1, MaterielName = "A", Type = "Consumable", QuantityITStock = 10, QuantityPDRStock = 0, Warranty = System.DateTime.UtcNow };
             await ctx.Materiels.AddAsync(m1);
             await ctx.AssignmentMateriels.AddAsync(new AssignmentMateriel { MaterielId = 1, Qte = 1, AssignmentId = 1 });
             await ctx.SaveChangesAsync();

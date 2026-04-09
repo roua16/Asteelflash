@@ -1,0 +1,254 @@
+.archived-materials-assignment-details-page {
+    --primary: #4f46e5;
+    --primary-transp: #4f46e529;
+    --primary-light: #e0e7ff;
+    --success: #10b981;
+    --success-transp: #10b98130;
+    --success-light: #d1fae5;
+    --warning: #f59e0b;
+    --warning-transp: #f59e0b3b;
+    --warning-light: #faead9;
+    --danger: #ef4444;
+    --danger-transp: #ef44443b;
+    --danger-light: #fee2e2;
+    --gray-light: #f3f4f6;
+    --gray: #9ca3af;
+    --dark: #1f2937;
+}
+
+.archived-materials-assignment-details-page .page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.archived-materials-assignment-details-page .page-title {
+    position: relative;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.archived-materials-assignment-details-page .page-title::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background-color: var(--rz-primary);
+    border-radius: 3px;
+}
+
+.archived-materials-assignment-details-page .details-card {
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    width: 100%;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.archived-materials-assignment-details-page .details-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: var(--rz-primary);
+    border-radius: 3px 0 0 3px;
+}
+
+.archived-materials-assignment-details-page .material-card::before {
+    background: #4f46e5;
+}
+
+.archived-materials-assignment-details-page .employee-card::before {
+    background: #0ea5e9;
+}
+
+.archived-materials-assignment-details-page .card-header {
+    position: relative;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.archived-materials-assignment-details-page .card-header-icon {
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-size: 1.5rem;
+    opacity: 0.7;
+}
+
+.archived-materials-assignment-details-page .section-heading {
+    margin: 0;
+    font-weight: 600;
+}
+
+.archived-materials-assignment-details-page .property-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.archived-materials-assignment-details-page .property-item {
+    margin-bottom: 1.25rem;
+    position: relative;
+}
+
+.archived-materials-assignment-details-page .property-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--rz-text-tertiary-color);
+}
+
+.archived-materials-assignment-details-page .property-label::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 0.5rem;
+    background-color: var(--rz-primary);
+    border-radius: 50%;
+    opacity: 0.7;
+}
+
+.archived-materials-assignment-details-page .material-property .property-label::before {
+    background-color: #4f46e5;
+}
+
+.archived-materials-assignment-details-page .employee-property .property-label::before {
+    background-color: #0ea5e9;
+}
+
+.archived-materials-assignment-details-page .property-value {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--rz-text-color);
+    padding-left: 1rem;
+}
+
+.archived-materials-assignment-details-page .assignment-connector {
+    position: relative;
+    height: 40px;
+    margin: -20px 0;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.archived-materials-assignment-details-page .connector-line {
+    width: 2px;
+    height: 100%;
+}
+
+.archived-materials-assignment-details-page .connector-circle {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border: 2px solid #0ea5e9;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.25rem;
+}
+
+.archived-materials-assignment-details-page .description-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed rgba(0, 0, 0, 0.1);
+}
+
+.archived-materials-assignment-details-page .description-value {
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.archived-materials-assignment-details-page .no-description {
+    font-style: italic;
+}
+
+.archived-materials-assignment-details-page .assignment-details {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    background-color: var(--primary-light);
+    border-radius: 8px;
+    position: relative;
+}
+
+.archived-materials-assignment-details-page .assignment-details-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.archived-materials-assignment-details-page .assignment-details-header .icon {
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.archived-materials-assignment-details-page .assignment-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.archived-materials-assignment-details-page .assignment-info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.archived-materials-assignment-details-page .assignment-info-label {
+    font-size: 0.75rem;
+    color: var(--primary);
+    margin-bottom: 0.25rem;
+}
+
+.archived-materials-assignment-details-page .assignment-info-value {
+    font-weight: 500;
+}
+
+.archived-materials-assignment-details-page .mission-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.archived-materials-assignment-details-page .mission-badge.on-mission {
+    background-color: var(--warning-light);
+    color: var(--warning);
+}
+
+.archived-materials-assignment-details-page .mission-badge.not-on-mission {
+    background-color: var(--success-light);
+    color: var(--success);
+}
+
+.archived-materials-assignment-details-page .mission-badge .icon {
+    margin-right: 0.25rem;
+}

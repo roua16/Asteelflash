@@ -6,24 +6,7 @@
 @using ITStockM.Models.Constants
 <AuthorizeView Roles="@($"{UserRoles.Admin},{UserRoles.Purchasing}")">
     <Authorized>
-        <style>
-             :root {
-                --primary: #4f46e5;
-                --primary-transp: #4F46E529;
-                --primary-light: #e0e7ff;
-              
-            }
-            .quantity-badge {
-                display: inline-block;
-                padding: 0.25rem 0.75rem;
-                border-radius: 4px;
-                font-weight: 500;
-                font-size: 0.875rem;
-                text-align: center;
-                background-color: var(--primary-light);
-                color: var(--primary);
-            }
-        </style>        
+                
         <PageTitle>Archived Missions</PageTitle>
 
         <div class="container-fluid py-4">

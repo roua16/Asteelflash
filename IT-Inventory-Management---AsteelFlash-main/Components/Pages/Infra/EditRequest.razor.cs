@@ -9,13 +9,13 @@ namespace ITStockM.Components.Pages.Infra
     public partial class EditRequest
     {
         [Inject]
-        protected IJSRuntime JSRuntime { get; set; }
+        protected IJSRuntime JSRuntime { get; set; } = default!;
 
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
 
         [Parameter]
         public int Id { get; set; }
@@ -25,10 +25,9 @@ namespace ITStockM.Components.Pages.Infra
         protected List<string> status = new List<string>() { "Normal", "Urgent", "Critical" };
 
         protected bool errorVisible;
-        protected Models.ITStockManagment.Request request;
+        protected Models.ITStockManagment.Request request = new();
 
-
-        protected List<string> projectNames;
+        protected List<string> projectNames = new();
         protected override async Task OnInitializedAsync()
         {
             projectNames = new List<string>();
@@ -56,7 +55,7 @@ namespace ITStockM.Components.Pages.Infra
                 using (var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024))
                 {
                     var buffer = new byte[stream.Length];
-                    await stream.ReadAsync(buffer, 0, buffer.Length);
+                    await stream.ReadExactlyAsync(buffer, 0, buffer.Length);
                     request.File = buffer;
                     request.FileExtension = System.IO.Path.GetExtension(file.Name);
                     request.FileName = file.Name;

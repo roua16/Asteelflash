@@ -56,7 +56,7 @@ namespace ITStockM.Tests.Services
 
             var mockOperationNotification = new Mock<IOperationNotificationService>();
             mockOperationNotification.Setup(n => n.NotifyMaterielCreated(It.IsAny<Materiel>(), It.IsAny<string?>()))
-                .Returns(Task.CompletedTask).Verifiable();
+                .Returns(Task.CompletedTask);
 
             var nav = new TestNav();
 
@@ -73,7 +73,9 @@ namespace ITStockM.Tests.Services
             created.MaterielName.Should().Be("Extra HDD");
             created.QuantityITStock.Should().Be(2);
 
-            mockOperationNotification.Verify(n => n.NotifyMaterielCreated(It.IsAny<Materiel>(), It.IsAny<string?>()), Times.AtLeastOnce);
+            mockOperationNotification.Invocations
+                .Select(i => i.Method.Name)
+                .Should().Contain(nameof(IOperationNotificationService.NotifyMaterielCreated));
         }
 
         [Fact]
@@ -108,7 +110,7 @@ namespace ITStockM.Tests.Services
 
             var mockOperationNotification = new Mock<IOperationNotificationService>();
             mockOperationNotification.Setup(n => n.NotifyMaterielUpdated(It.IsAny<Materiel>(), It.IsAny<string?>()))
-                .Returns(Task.CompletedTask).Verifiable();
+                .Returns(Task.CompletedTask);
 
             var nav = new TestNav();
 
@@ -127,7 +129,9 @@ namespace ITStockM.Tests.Services
             // allow background notification Task.Run to execute
             await Task.Delay(200);
 
-            mockOperationNotification.Verify(n => n.NotifyMaterielUpdated(It.IsAny<Materiel>(), It.IsAny<string?>()), Times.AtLeastOnce);
+            mockOperationNotification.Invocations
+                .Select(i => i.Method.Name)
+                .Should().Contain(nameof(IOperationNotificationService.NotifyMaterielUpdated));
         }
     }
 }

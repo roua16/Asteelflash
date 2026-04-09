@@ -1,7 +1,6 @@
 using ITStockM.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.JSInterop;
 using Radzen;
 
 namespace ITStockM.Components.Pages.Supplier
@@ -9,17 +8,18 @@ namespace ITStockM.Components.Pages.Supplier
     public partial class AddSupplier
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        public ITStockManagmentService ITStockManagmentService { get; set; }
+        public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
 
-        protected override async Task OnInitializedAsync()
+        protected override Task OnInitializedAsync()
         {
             supplier = new Models.ITStockManagment.Supplier();
+            return Task.CompletedTask;
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Supplier supplier;
+        protected Models.ITStockManagment.Supplier supplier = new();
 
         protected async Task FormSubmit()
         {
@@ -28,15 +28,16 @@ namespace ITStockM.Components.Pages.Supplier
                 await ITStockManagmentService.CreateSupplier(supplier);
                 DialogService.Close(supplier);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 errorVisible = true;
             }
         }
 
-        protected async Task CancelButtonClick(MouseEventArgs args)
+        protected Task CancelButtonClick(MouseEventArgs args)
         {
             DialogService.Close(null);
+            return Task.CompletedTask;
         }
     }
 }

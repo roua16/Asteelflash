@@ -1,8 +1,5 @@
-using ITStockM.Components.Pages.CRUDpages;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.JSInterop;
 using Radzen;
 using Radzen.Blazor;
 
@@ -11,40 +8,60 @@ namespace ITStockM.Components.Pages.MaterialsView
     public partial class MaterialsViewDetails
     {
         [Inject]
-        protected DialogService DialogService { get; set; }
+        protected DialogService DialogService { get; set; } = default!;
 
         [Inject]
-        protected ProtectedLocalStorage LocalStorage { get; set; }
+        protected ProtectedLocalStorage LocalStorage { get; set; } = default!;
 
         [Parameter]
-        public List<Models.ITStockManagment.DeliveryOrderMateriel>  deliveryOrderMateriels { get; set; }
-        
+        public List<Models.ITStockManagment.DeliveryOrderMateriel> deliveryOrderMateriels { get; set; } = new();
+
         [Parameter]
-        public string CurrentCondition { get; set; }
+        public string CurrentCondition { get; set; } = string.Empty;
 
-        protected RadzenDataGrid<Models.ITStockManagment.DeliveryOrderMateriel> grid0;
+        protected RadzenDataGrid<Models.ITStockManagment.DeliveryOrderMateriel> grid0 = default!;
 
 
-        protected string Role;
+        protected string Role = string.Empty;
 
         protected override async Task OnInitializedAsync()
         {
-            Role = (await LocalStorage.GetAsync<UserSession>("UserSession")).Value.Role;
+            var userSession = await LocalStorage.GetAsync<UserSession>("UserSession");
+            Role = userSession.Success && userSession.Value is not null
+                ? userSession.Value.Role ?? string.Empty
+                : string.Empty;
         }
 
-        protected async void  ChangeCondition()
+        protected async Task ChangeCondition()
         {
+            var firstMateriel = deliveryOrderMateriels.FirstOrDefault()?.Materiel;
+            if (firstMateriel is null)
+            {
+                return;
+            }
+
             var options = new DialogOptions
             {
-                Style = "min-width: 600px;", 
+                Style = "min-width: 600px;",
                 CssClass = "dialog-animation",
                 CloseDialogOnOverlayClick = true,
                 Resizable = true,
                 Draggable = true,
                 CloseDialogOnEsc = true
             };
-            var updated = await DialogService.OpenAsync<ConfirmConditionChange>("", new Dictionary<string, object> { { "MaxQte", deliveryOrderMateriels.FirstOrDefault().Materiel.QuantityITStock }, { "HasSN", deliveryOrderMateriels.FirstOrDefault().Materiel.SerialNumber != null },{ "materiels", deliveryOrderMateriels.Select(dlm => dlm.Materiel).Where(m => m.QuantityITStock != 0).ToList() },{ "CurrentCondition",CurrentCondition  } }, options);
-            if (updated != null && updated == true)
+
+            var updated = await DialogService.OpenAsync<ConfirmConditionChange>(
+                "",
+                new Dictionary<string, object>
+                {
+                    { "MaxQte", firstMateriel.QuantityITStock },
+                    { "HasSN", !string.IsNullOrEmpty(firstMateriel.SerialNumber) },
+                    { "materiels", deliveryOrderMateriels.Select(dlm => dlm.Materiel).Where(m => m.QuantityITStock != 0).ToList() },
+                    { "CurrentCondition", CurrentCondition }
+                },
+                options);
+
+            if (updated is bool isUpdated && isUpdated)
             {
                 DialogService.Close(true);
             }

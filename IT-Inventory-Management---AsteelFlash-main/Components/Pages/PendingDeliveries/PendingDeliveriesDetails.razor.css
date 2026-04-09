@@ -1,0 +1,66 @@
+.pending-deliveries-details-page .details-shell-card {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.pending-deliveries-details-page .overline-spaced {
+    letter-spacing: 1px;
+}
+
+.pending-deliveries-details-page .heading-name {
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.pending-deliveries-details-page .status-column {
+    text-align: right;
+}
+
+.pending-deliveries-details-page .status-badge {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pending-deliveries-details-page .detail-card-primary {
+    border-radius: 12px;
+    overflow: hidden;
+    border-left: 4px solid var(--rz-primary);
+    transition: transform 0.2s ease-in-out;
+}
+
+.pending-deliveries-details-page .detail-card-primary:hover {
+    transform: translateY(-2px);
+}
+
+.pending-deliveries-details-page .text-medium {
+    font-weight: 500;
+}
+
+.pending-deliveries-details-page .text-semibold {
+    font-weight: 600;
+}
+
+.pending-deliveries-details-page .section-title {
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.pending-deliveries-details-page .attachment-button {
+    transition: all 0.2s ease;
+    border: 1px solid var(--rz-base-300);
+    background-color: var(--rz-base-100);
+    border-radius: 8px;
+}
+
+.pending-deliveries-details-page .attachment-button:hover {
+    background-color: var(--rz-base-200);
+    transform: translateY(-2px);
+}
+
+.pending-deliveries-details-page .attachment-icon {
+    width: 20px;
+    height: 20px;
+}

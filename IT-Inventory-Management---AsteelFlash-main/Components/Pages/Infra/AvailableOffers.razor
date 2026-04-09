@@ -1,170 +1,9 @@
 @page "/available-offers"
 
 <PageTitle>Available Offers</PageTitle>
-
-<style>
-    .offers-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-    }
-
-    .page-header {
-    position: relative;
-    padding-bottom: 1rem;
-    margin-bottom: 2rem;
-    text-align: center;
-    }
-
-    .page-header::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 4px;
-    background: linear-gradient(to right, #6366f1, #a5b4fc);
-    border-radius: 2px;
-    }
-
-
-    .carousel-custom {
-    height: 100%;
-    }
-
-    .offer-card-alt {
-    border-radius: 12px;
-    width:350px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-    max-width: 500px;
-    margin: 0 auto;
-    border: 1px solid #f1f5f9;
-    display: flex;
-    flex-direction: column;
-    overflow-y: hidden;
-    }
-
-    .card-content {
-    padding: 1.5rem;
-    overflow: hidden;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    }
-
-    .offer-info {
-    display: flex;
-    justify-content: space-between;
-    margin: 1.5rem 0;
-    padding: 1rem;
-    border-radius: 8px;
-    }
-
-    .info-item {
-    text-align: center;
-    flex: 1;
-    }
-
-    .info-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.25rem;
-    }
-
-    .info-value {
-    font-size: 1.125rem;
-    font-weight: 600;
-    }
-
-    .price-tag {
-    display: inline-block;
-    background-color: #dbeafe;
-    color: #2563eb;
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    font-weight: 600;
-    margin-top: 1.5rem;
-    }
-
-    .card-actions {
-    padding: 1rem;
-    border-top: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: center;
-    }
-
-    .btn-confirm-alt {
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.75rem 2rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
-    }
-
-    .btn-confirm-alt:hover {
-    background-color: #2563eb;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 8px rgba(59, 130, 246, 0.3);
-    }
-
-    .carousel-nav {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 2rem;
-    gap: 1rem;
-    }
-
-    .nav-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: white;
-    border: 1px solid #e2e8f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: #64748b;
-    }
-
-    .nav-btn:hover {
-    background-color: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
-    }
-
-    .nav-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    }
-
-    .indicator-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #e2e8f0;
-    transition: all 0.2s;
-    }
-
-    .indicator-dot.active {
-    background-color: #3b82f6;
-    transform: scale(1.5);
-    }
-</style>
-
-    <div class="offers-container">
+<div class="offers-page offers-container">
     <div class="page-header">
-        <RadzenText Text="Available Offers" TextStyle="TextStyle.H3" TagName="TagName.H1"
-                    Style="margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;" />
+        <RadzenText Text="Available Offers" TextStyle="TextStyle.H3" TagName="TagName.H1" Class="page-heading" />
     </div>
 
     <div class="offers-wrapper">
@@ -177,8 +16,8 @@
                         <RadzenCarouselItem>
                             <div class="offer-card-alt">
                                 <div class="card-content">
-                                    <div style="text-align: center;">
-                                        <RadzenText TextStyle="TextStyle.H5" Style="margin: 0; font-weight: 600;">
+                                    <div class="offer-header-center">
+                                        <RadzenText TextStyle="TextStyle.H5" Class="offer-title">
                                             @item.Request.Title
                                         </RadzenText>
                                         <div class="price-tag">
@@ -206,7 +45,6 @@
                                                   ButtonStyle="ButtonStyle.Info"
                                                   ButtonType="ButtonType.Submit"
                                                   Icon="check_circle"
-                                                  Style="border-radius: 8px;"
                                                   Shade="Shade.Darker" Variant="Variant.Filled"
                                                   Class="btn-confirm-alt"
                                                   Click="@(() => ChooseOffer(item))" />

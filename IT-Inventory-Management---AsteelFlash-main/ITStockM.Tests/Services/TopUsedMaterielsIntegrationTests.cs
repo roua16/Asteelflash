@@ -55,10 +55,10 @@ namespace ITStockM.Tests.Services
             var ctx = CreateInMemoryContext("integration_admin_dashboard");
 
             // Create materials
-            var m1 = new Materiel { Id = 1, MaterielName = "Laptop", QuantityITStock = 10, QuantityPDRStock = 5, Warranty = DateTime.UtcNow };
-            var m2 = new Materiel { Id = 2, MaterielName = "Mouse", QuantityITStock = 20, QuantityPDRStock = 10, Warranty = DateTime.UtcNow };
-            var m3 = new Materiel { Id = 3, MaterielName = "Keyboard", QuantityITStock = 15, QuantityPDRStock = 8, Warranty = DateTime.UtcNow };
-            var m4 = new Materiel { Id = 4, MaterielName = "Monitor", QuantityITStock = 8, QuantityPDRStock = 4, Warranty = DateTime.UtcNow };
+            var m1 = new Materiel { Id = 1, MaterielName = "Laptop", Type = "Consumable", QuantityITStock = 10, QuantityPDRStock = 5, Warranty = DateTime.UtcNow };
+            var m2 = new Materiel { Id = 2, MaterielName = "Mouse", Type = "Consumable", QuantityITStock = 20, QuantityPDRStock = 10, Warranty = DateTime.UtcNow };
+            var m3 = new Materiel { Id = 3, MaterielName = "Keyboard", Type = "Consumable", QuantityITStock = 15, QuantityPDRStock = 8, Warranty = DateTime.UtcNow };
+            var m4 = new Materiel { Id = 4, MaterielName = "Monitor", Type = "Consumable", QuantityITStock = 8, QuantityPDRStock = 4, Warranty = DateTime.UtcNow };
             await ctx.Materiels.AddRangeAsync(m1, m2, m3, m4);
 
             // Create assignments with usage
@@ -125,13 +125,14 @@ namespace ITStockM.Tests.Services
             top3.Should().HaveCount(3);
             top3[0].MaterielName.Should().Be("Mouse"); // 25 + 10 = 35
             top3[0].UsageCount.Should().Be(35);
-            top3[1].MaterielName.Should().Be("Keyboard"); // 15
-            top3[1].UsageCount.Should().Be(15);
-            top3[2].MaterielName.Should().Be("Laptop"); // 10 + 5 = 15 (tie with Keyboard, but order depends on DB)
+
+            // The next two entries are tied at 15, so ordering is not guaranteed.
+            top3.Skip(1).Select(t => t.MaterielName)
+                .Should().BeEquivalentTo(new[] { "Keyboard", "Laptop" });
+            top3.Skip(1).All(t => t.UsageCount == 15).Should().BeTrue();
             
-            // Verify usage share
-            var totalUsage = top3.Sum(t => t.UsageCount);
-            top3[0].UsageShare.Should().BeApproximately(35.0 / totalUsage, 0.001);
+            // Verify usage share: the service computes share against total usage across all used materials.
+            top3[0].UsageShare.Should().BeApproximately(0.5, 0.001);
         }
 
         /// <summary>
@@ -144,8 +145,8 @@ namespace ITStockM.Tests.Services
             // Arrange
             var ctx = CreateInMemoryContext("integration_pdr_dashboard");
 
-            var m1 = new Materiel { Id = 1, MaterielName = "Laptop", QuantityITStock = 10, QuantityPDRStock = 5, Warranty = DateTime.UtcNow };
-            var m2 = new Materiel { Id = 2, MaterielName = "Mouse", QuantityITStock = 20, QuantityPDRStock = 10, Warranty = DateTime.UtcNow };
+            var m1 = new Materiel { Id = 1, MaterielName = "Laptop", Type = "Consumable", QuantityITStock = 10, QuantityPDRStock = 5, Warranty = DateTime.UtcNow };
+            var m2 = new Materiel { Id = 2, MaterielName = "Mouse", Type = "Consumable", QuantityITStock = 20, QuantityPDRStock = 10, Warranty = DateTime.UtcNow };
             await ctx.Materiels.AddRangeAsync(m1, m2);
 
             await ctx.AssignmentMateriels.AddRangeAsync(
@@ -207,7 +208,7 @@ namespace ITStockM.Tests.Services
             // Arrange
             var ctx = CreateInMemoryContext("integration_employee_dashboard");
 
-            var m1 = new Materiel { Id = 1, MaterielName = "Laptop", QuantityITStock = 10, QuantityPDRStock = 5, Warranty = DateTime.UtcNow };
+            var m1 = new Materiel { Id = 1, MaterielName = "Laptop", Type = "Consumable", QuantityITStock = 10, QuantityPDRStock = 5, Warranty = DateTime.UtcNow };
             await ctx.Materiels.AddAsync(m1);
 
             await ctx.AssignmentMateriels.AddAsync(
@@ -267,7 +268,7 @@ namespace ITStockM.Tests.Services
             // Arrange
             var ctx = CreateInMemoryContext("integration_same_day");
 
-            var m1 = new Materiel { Id = 1, MaterielName = "Laptop", QuantityITStock = 10, QuantityPDRStock = 5, Warranty = DateTime.UtcNow };
+            var m1 = new Materiel { Id = 1, MaterielName = "Laptop", Type = "Consumable", QuantityITStock = 10, QuantityPDRStock = 5, Warranty = DateTime.UtcNow };
             await ctx.Materiels.AddAsync(m1);
 
             await ctx.AssignmentMateriels.AddAsync(
@@ -330,9 +331,9 @@ namespace ITStockM.Tests.Services
             // Arrange
             var ctx = CreateInMemoryContext("integration_email_content");
 
-            var m1 = new Materiel { Id = 1, MaterielName = "Laptop", QuantityITStock = 10, QuantityPDRStock = 5, Warranty = DateTime.UtcNow };
-            var m2 = new Materiel { Id = 2, MaterielName = "Mouse", QuantityITStock = 20, QuantityPDRStock = 10, Warranty = DateTime.UtcNow };
-            var m3 = new Materiel { Id = 3, MaterielName = "Keyboard", QuantityITStock = 15, QuantityPDRStock = 8, Warranty = DateTime.UtcNow };
+            var m1 = new Materiel { Id = 1, MaterielName = "Laptop", Type = "Consumable", QuantityITStock = 10, QuantityPDRStock = 5, Warranty = DateTime.UtcNow };
+            var m2 = new Materiel { Id = 2, MaterielName = "Mouse", Type = "Consumable", QuantityITStock = 20, QuantityPDRStock = 10, Warranty = DateTime.UtcNow };
+            var m3 = new Materiel { Id = 3, MaterielName = "Keyboard", Type = "Consumable", QuantityITStock = 15, QuantityPDRStock = 8, Warranty = DateTime.UtcNow };
             await ctx.Materiels.AddRangeAsync(m1, m2, m3);
 
             // Usage: Laptop=10, Mouse=20, Keyboard=5
@@ -396,9 +397,9 @@ namespace ITStockM.Tests.Services
             capturedBody.Should().Contain("5");
 
             // Verify percentages (Mouse: 20/35 = 57.1%, Laptop: 10/35 = 28.6%, Keyboard: 5/35 = 14.3%)
-            capturedBody.Should().Contain("57.1%");
-            capturedBody.Should().Contain("28.6%");
-            capturedBody.Should().Contain("14.3%");
+            capturedBody.Should().MatchRegex("57[\\.,]1%");
+            capturedBody.Should().MatchRegex("28[\\.,]6%");
+            capturedBody.Should().MatchRegex("14[\\.,]3%");
         }
     }
 }
