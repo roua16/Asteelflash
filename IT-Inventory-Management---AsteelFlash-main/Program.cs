@@ -20,6 +20,7 @@ builder.Services.AddRadzenComponents();
 // HTTP Client
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<AppThemeService>();
 
 // Services
 // EmailOptions: bind from appsettings + allow env-var overrides at startup

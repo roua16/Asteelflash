@@ -10,7 +10,7 @@ using Radzen;
 
 namespace ITStockM.Components.Pages
 {
-    public partial class Index
+    public partial class Index : IDisposable
     {
 
         [Inject]
@@ -19,6 +19,10 @@ namespace ITStockM.Components.Pages
         public ITStockManagmentService ITStockManagmentService { get; set; } = default!;
         [Inject]
         protected ProtectedLocalStorage LocalStorage { get; set; } = default!;
+        [Inject]
+        protected AppThemeService AppThemeService { get; set; } = default!;
+
+        protected string DashboardThemeClass => AppThemeService.IsDark ? "dashboard-theme-dark" : "dashboard-theme-light";
 
         private List<string> months = new List<string> {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec" }; 
 
@@ -54,6 +58,13 @@ namespace ITStockM.Components.Pages
         protected List<string> materialConditions = new List<string> { "Good", "Repairing", "Irreparable" };
         protected string selectedMaterialCondition = "Good";
 
+        protected int SelectedConditionTotal => selectedMaterialCondition switch
+        {
+            "Repairing" => Materiels.Sum(m => m.Repairing_Quantity),
+            "Irreparable" => Materiels.Sum(m => m.IrreparableQuantity),
+            _ => Materiels.Sum(m => m.QuantityPDRStock + m.QuantityITStock)
+        };
+
         protected List<Materiel> Materiels = new();
 
         protected string userRole = string.Empty;
@@ -75,6 +86,12 @@ namespace ITStockM.Components.Pages
                 NavigationManager.NavigateTo("/materials-view-interface-pdr");
             }
         }
+
+        protected override void OnInitialized()
+        {
+            AppThemeService.ThemeChanged += OnThemeChanged;
+        }
+
         protected override async Task OnInitializedAsync()
         {
             
@@ -233,6 +250,16 @@ namespace ITStockM.Components.Pages
 
 
 
+        }
+
+        private void OnThemeChanged()
+        {
+            _ = InvokeAsync(StateHasChanged);
+        }
+
+        public void Dispose()
+        {
+            AppThemeService.ThemeChanged -= OnThemeChanged;
         }
 
 

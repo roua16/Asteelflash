@@ -27,24 +27,3 @@
     </CascadingAuthenticationState>
 
 
-@code {
-    [CascadingParameter]
-    private HttpContext? HttpContext { get; set; }
-
-    [Inject]
-    private ThemeService? ThemeService { get; set; }
-
-    protected override void OnInitialized()
-    {
-        if (HttpContext != null && ThemeService != null)
-        {
-            var theme = HttpContext.Request.Cookies["ITStockMTheme"];
-            if (!string.IsNullOrEmpty(theme))
-            {
-                ThemeService.SetTheme(theme, false);
-            }
-        }
-    }
-}
-
-

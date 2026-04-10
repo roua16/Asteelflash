@@ -17,42 +17,17 @@
     <HeadOutlet @rendermode="@InteractiveServer" />
 </head>
 
-<body class="@InitialBodyThemeClass">
+<body class="theme-dark">
     <Routes @rendermode="@InteractiveServer" />
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)"></script>
     <!--  ~~Sound for troll~~ -->
-    <script src="js/site.js?v=2.0.11"></script>
-    <script src="js/download.js?v=1.0.1"></script>
+    <script src="js/site.js?v=@StaticAssetVersion"></script>
+    <script src="js/download.js?v=@StaticAssetVersion"></script>
 </body>
 
 </html>
 
 @code {
     private static readonly string StaticAssetVersion = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-    private string InitialBodyThemeClass = "theme-dark";
-
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; }
-
-    [Inject]
-    private ThemeService ThemeService { get; set; }
-
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-
-        if (HttpContext != null)
-        {
-            var theme = HttpContext.Request.Cookies["ITStockMTheme"];
-
-            if (!string.IsNullOrEmpty(theme))
-            {
-                ThemeService.SetTheme(theme, false);
-                InitialBodyThemeClass = theme.Contains("dark", StringComparison.OrdinalIgnoreCase)
-                    ? "theme-dark"
-                    : "theme-light";
-            }
-        }
-    }
 }

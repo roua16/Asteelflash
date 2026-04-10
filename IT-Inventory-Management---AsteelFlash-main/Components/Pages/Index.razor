@@ -6,7 +6,7 @@
     <Authorized>
         @if (userRole == "Employee")
         {
-            <RadzenCard class="mb-4 dashboard-shell-card">
+            <RadzenCard class="@($"mb-4 dashboard-shell-card {DashboardThemeClass}")">
                 <div class="dashboard-container">
                     <div class="dashboard-header reveal-fade">
                         <div>
@@ -147,7 +147,7 @@
         }
         else
         {
-            <RadzenCard class="mb-4 dashboard-shell-card">
+            <RadzenCard class="@($"mb-4 dashboard-shell-card {DashboardThemeClass}")">
                 <div class="dashboard-container">
                     <div class="dashboard-header reveal-fade">
                         <div>
@@ -218,6 +218,10 @@
                                         <RadzenSeriesDataLabels Visible="true" />
                                     </RadzenPieSeries>
                                 </RadzenChart>
+                                <div class="donut-center-stat" aria-hidden="true">
+                                    <div class="donut-center-value">@SelectedConditionTotal</div>
+                                    <div class="donut-center-label">Items</div>
+                                </div>
                             </div>
                             <div class="donut-legend">
                                 @foreach (var segment in inventoryByType.Where(i => i.Value > 0).Take(6))
@@ -236,20 +240,7 @@
                                 <div class="summary-stat-label">Categories</div>
                             </div>
                             <div class="summary-stat">
-                                <div class="summary-stat-value">
-                                    @if (selectedMaterialCondition == "Good")
-                                    {
-                                        @Materiels.Sum(m => m.QuantityPDRStock + m.QuantityITStock)
-                                    }
-                                    else if (selectedMaterialCondition == "Repairing")
-                                    {
-                                        @Materiels.Sum(m => m.Repairing_Quantity)
-                                    }
-                                    else
-                                    {
-                                        @Materiels.Sum(m => m.IrreparableQuantity)
-                                    }
-                                </div>
+                                <div class="summary-stat-value">@SelectedConditionTotal</div>
                                 <div class="summary-stat-label">Total Items</div>
                             </div>
                         </FooterContent>
@@ -302,8 +293,8 @@
                         Title="Monthly Assignments"
                         Icon="insert_chart"
                         IconClass="bg-success-light"
-                        SizeClass="kpi-card-md"
-                        CardClass="reveal-fade stagger-2">
+                        SizeClass="kpi-card-lg"
+                        CardClass="reveal-fade stagger-2 full-width-trend-card">
                         <HeaderActions>
                             <RadzenDropDown
                                 Data="@materialTypes"
@@ -315,12 +306,12 @@
                                 Change="AssignmentFilter" />
                         </HeaderActions>
                         <ChildContent>
-                            <div class="chart-shell bar-chart-shell">
+                            <div class="chart-shell bar-chart-shell elevated-chart-shell">
                                 <RadzenChart>
                                     <RadzenColumnSeries Data="@monthlyAssignments" CategoryProperty="Month" Title="Assignments" ValueProperty="Count">
                                         <RadzenSeriesDataLabels Visible="true" />
                                     </RadzenColumnSeries>
-                                    <RadzenColumnOptions Radius="5" />
+                                    <RadzenColumnOptions Radius="12" />
                                     <RadzenValueAxis>
                                         <RadzenGridLines Visible="true" />
                                         <RadzenAxisTitle Text="Number of Assignments" />
@@ -349,78 +340,17 @@
                     </ChartCard>
 
                     <ChartCard
-                        Title="Quick Actions"
-                        Icon="bolt"
-                        IconClass="bg-accent-light"
-                        SizeClass="kpi-card-lg"
-                        CardClass="reveal-fade stagger-2">
-                        <div class="quick-actions-grid mt-3">
-                            <a href="/delivery-order" class="quick-action">
-                                <div class="quick-action-icon bg-primary-light">
-                                    <RadzenIcon Icon="add_shopping_cart" />
-                                </div>
-                                <div class="quick-action-title">Add Delivery Order</div>
-                            </a>
-
-                            @if (userRole == "Purchasing")
-                            {
-                                <a href="/pending-deliveries" class="quick-action">
-                                    <div class="quick-action-icon bg-success-light">
-                                        <RadzenIcon Icon="local_shipping" />
-                                    </div>
-                                    <div class="quick-action-title">Pending Deliveries</div>
-                                </a>
-                            }
-                            else
-                            {
-                                <a href="/assignments-interface" class="quick-action">
-                                    <div class="quick-action-icon bg-success-light">
-                                        <RadzenIcon Icon="assignment" />
-                                    </div>
-                                    <div class="quick-action-title">Manage Assignments</div>
-                                </a>
-                            }
-
-                            <a href="/materials-view-interface" class="quick-action">
-                                <div class="quick-action-icon bg-warning-light">
-                                    <RadzenIcon Icon="build" />
-                                </div>
-                                <div class="quick-action-title">View Materials</div>
-                            </a>
-
-                            @if (userRole == "Admin" || userRole == "Infrastructure")
-                            {
-                                <a href="/infra-interface" class="quick-action">
-                                    <div class="quick-action-icon bg-info-light">
-                                        <RadzenIcon Icon="memory" />
-                                    </div>
-                                    <div class="quick-action-title">Infra Page</div>
-                                </a>
-                            }
-                            else
-                            {
-                                <a href="/purchase-page" class="quick-action">
-                                    <div class="quick-action-icon bg-info-light">
-                                        <RadzenIcon Icon="shopping_cart" />
-                                    </div>
-                                    <div class="quick-action-title">Purchase Requests</div>
-                                </a>
-                            }
-                        </div>
-                    </ChartCard>
-
-                    <ChartCard
                         Title="Recent Activity"
                         Icon="history"
                         IconClass="bg-info-light"
                         SizeClass="kpi-card-md"
-                        CardClass="reveal-fade stagger-3">
-                        <div class="activity-scroll">
+                        CardClass="reveal-fade stagger-3 timeline-card">
+                        <div class="activity-scroll activity-timeline">
                             @foreach (var activity in recentActivity)
                             {
                                 if (activity.AnyData is ITStockM.Models.ITStockManagment.Assignment assm)
                                 {
-                                    <div class="activity-item">
+                                    <div class="activity-item timeline-entry">
                                         <div class="activity-icon bg-success-light">
                                             <RadzenIcon Icon="assignment_turned_in" />
                                         </div>
@@ -446,7 +376,7 @@
                                 }
                                 else if (activity.AnyData is ITStockM.Models.ITStockManagment.DeliveryOrder delOrd)
                                 {
-                                    <div class="activity-item">
+                                    <div class="activity-item timeline-entry">
                                         <div class="activity-icon bg-primary-light">
                                             <RadzenIcon Icon="inventory_2" />
                                         </div>
@@ -472,7 +402,7 @@
                                 }
                                 else if (activity.AnyData is ITStockM.Models.ITStockManagment.Request req)
                                 {
-                                    <div class="activity-item">
+                                    <div class="activity-item timeline-entry">
                                         <div class="activity-icon bg-info-light">
                                             <RadzenIcon Icon="shopping_cart" />
                                         </div>
@@ -505,7 +435,7 @@
                         Icon="warning"
                         IconClass="bg-warning-light"
                         SizeClass="kpi-card-md"
-                        CardClass="reveal-fade stagger-3">
+                        CardClass="reveal-fade stagger-3 low-stock-card">
                         <div class="activity-scroll">
                             @foreach (var mat in materielsList)
                             {
@@ -529,11 +459,79 @@
                     </ChartCard>
 
                     <ChartCard
+                        Title="Quick Actions"
+                        Icon="bolt"
+                        IconClass="bg-accent-light"
+                        SizeClass="kpi-card-lg"
+                        CardClass="reveal-fade stagger-4 quick-actions-panel">
+                        <div class="quick-actions-strip mt-3">
+                            <a href="/delivery-order" class="quick-action quick-action-pill">
+                                <div class="quick-action-icon bg-primary-light">
+                                    <RadzenIcon Icon="add_shopping_cart" />
+                                </div>
+                                <div class="quick-action-title">Add Delivery Order</div>
+                            </a>
+
+                            @if (userRole == "Purchasing")
+                            {
+                                <a href="/pending-deliveries" class="quick-action quick-action-pill">
+                                    <div class="quick-action-icon bg-success-light">
+                                        <RadzenIcon Icon="local_shipping" />
+                                    </div>
+                                    <div class="quick-action-title">Pending Deliveries</div>
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/assignments-interface" class="quick-action quick-action-pill">
+                                    <div class="quick-action-icon bg-success-light">
+                                        <RadzenIcon Icon="assignment" />
+                                    </div>
+                                    <div class="quick-action-title">Manage Assignments</div>
+                                </a>
+                            }
+
+                            <a href="/materials-view-interface" class="quick-action quick-action-pill">
+                                <div class="quick-action-icon bg-warning-light">
+                                    <RadzenIcon Icon="build" />
+                                </div>
+                                <div class="quick-action-title">View Materials</div>
+                            </a>
+
+                            @if (userRole == "Admin" || userRole == "Infrastructure")
+                            {
+                                <a href="/infra-interface" class="quick-action quick-action-pill">
+                                    <div class="quick-action-icon bg-info-light">
+                                        <RadzenIcon Icon="memory" />
+                                    </div>
+                                    <div class="quick-action-title">Infrastructure</div>
+                                </a>
+                            }
+                            else
+                            {
+                                <a href="/purchase-page" class="quick-action quick-action-pill">
+                                    <div class="quick-action-icon bg-info-light">
+                                        <RadzenIcon Icon="shopping_cart" />
+                                    </div>
+                                    <div class="quick-action-title">Purchase Requests</div>
+                                </a>
+                            }
+
+                            <a href="/delivery-order-history" class="quick-action quick-action-pill">
+                                <div class="quick-action-icon bg-accent-light">
+                                    <RadzenIcon Icon="history" />
+                                </div>
+                                <div class="quick-action-title">Delivery History</div>
+                            </a>
+                        </div>
+                    </ChartCard>
+
+                    <ChartCard
                         Title="Recent Requests"
                         Icon="description"
                         IconClass="bg-primary-light"
                         SizeClass="kpi-card-lg"
-                        CardClass="reveal-fade stagger-4">
+                        CardClass="reveal-fade stagger-4 requests-table-card">
                         <RadzenDataGrid Data="@topRequests" TItem="ITStockM.Models.ITStockManagment.Request">
                             <Columns>
                                 <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Title" Title="Title" />

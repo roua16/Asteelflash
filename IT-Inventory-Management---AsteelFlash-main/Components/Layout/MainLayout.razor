@@ -9,13 +9,17 @@ else
 {
     <AuthorizeView>
         <Authorized>
-            <RadzenLayout class="app-shell">
-                <SideLayout />
-                <RadzenBody class="app-body">
-                    <div class="app-content-shell">
-                        @Body
-                    </div>
-                </RadzenBody>
+            <RadzenLayout class="@($"app-shell {ThemeClass}")" data-theme="@ThemeDataAttribute">
+                <CascadingValue Value="ThemeProvider" IsFixed="false">
+                    <SideLayout />
+                    <RadzenBody class="app-body">
+                        <main class="app-scroll-area">
+                            <div class="app-content-shell">
+                                @Body
+                            </div>
+                        </main>
+                    </RadzenBody>
+                </CascadingValue>
             </RadzenLayout>
         </Authorized>
         <NotAuthorized>

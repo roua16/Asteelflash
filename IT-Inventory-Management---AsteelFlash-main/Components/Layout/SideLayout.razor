@@ -11,17 +11,10 @@
         </RadzenColumn>
 
         <RadzenColumn Size="4" SizeMD="6" class="header-right">
-            <RadzenStack AlignItems="AlignItems.Center" Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.75rem">
-                <span class="user-greeting">@user</span>
+            <RadzenStack AlignItems="AlignItems.Center" Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.75rem" class="header-controls">
+                <span class="user-greeting user-chip">@user</span>
 
-                <RadzenButton
-                    Click="@(ChangeTheme)"
-                    ButtonStyle="ButtonStyle.Light"
-                    Shade="Shade.Lighter"
-                    Variant="Variant.Flat"
-                    class="header-action-btn"
-                    Icon="@ThemeToggleIcon"
-                    title="@ThemeToggleLabel" />
+                <ThemeToggle Class="header-theme-toggle" />
 
                 <a href="/logout" class="logout-link" aria-label="Logout">
                     <RadzenButton

@@ -1,30 +1,52 @@
 .app-shell {
+    --header-height: 104px;
+    --shell-pad: clamp(10px, 1vw, 16px);
+    display: grid;
     grid-template-areas: "rz-sidebar rz-header" "rz-sidebar rz-body";
-    min-height: 100vh;
+    grid-template-rows: var(--header-height) minmax(0, 1fr);
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
     position: relative;
     background:
         radial-gradient(1200px 620px at 6% -12%, rgba(79, 70, 229, 0.28), transparent 58%),
         radial-gradient(920px 520px at 100% -4%, rgba(34, 211, 238, 0.2), transparent 56%),
-        linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+        linear-gradient(180deg, #0f172a 0%, #111d30 100%);
 }
 
 ::deep .rz-layout {
+    min-height: 100dvh;
     background: transparent;
+}
+
+::deep .rz-body {
+    min-height: 0;
+    overflow: hidden;
 }
 
 .app-body {
     background: transparent;
-    padding: clamp(10px, 1vw, 16px);
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+}
+
+.app-scroll-area {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--shell-pad);
+    scroll-behavior: smooth;
 }
 
 .app-content-shell {
     margin: 0 auto;
     max-width: 1600px;
-    min-height: calc(100vh - 104px);
+    min-height: 100%;
     padding: clamp(14px, 1.3vw, 22px);
-    border-radius: 24px;
-    border: 1px solid rgba(148, 163, 184, 0.24);
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.88) 100%);
+    border-radius: 30px;
+    border: 1px solid #334155;
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 55, 0.9) 100%);
     box-shadow: 0 24px 56px rgba(2, 8, 23, 0.5);
     position: relative;
     z-index: 1;
@@ -42,7 +64,7 @@
     font-size: clamp(1.4rem, 1.9vw, 1.9rem);
     font-weight: 760;
     letter-spacing: 0;
-    color: #f8fafc;
+    color: #f1f5f9;
 }
 
 ::deep .page-subtitle {
@@ -50,16 +72,18 @@
     color: #94a3b8;
 }
 
-body.theme-light .app-shell {
+body.theme-light .app-shell,
+.app-shell.theme-light {
     background:
         radial-gradient(1200px 620px at 6% -12%, rgba(79, 70, 229, 0.08), transparent 58%),
-        radial-gradient(920px 520px at 100% -4%, rgba(14, 165, 233, 0.07), transparent 56%),
-        linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        radial-gradient(920px 520px at 100% -4%, rgba(6, 182, 212, 0.08), transparent 56%),
+        linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
-body.theme-light .app-content-shell {
-    border-color: rgba(148, 163, 184, 0.22);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(252, 253, 255, 0.98));
+body.theme-light .app-content-shell,
+.app-shell.theme-light .app-content-shell {
+    border-color: #e2e8f0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 250, 252, 0.99));
     box-shadow: 0 20px 44px rgba(15, 23, 42, 0.1);
 }
 
@@ -84,12 +108,11 @@ body.theme-light ::deep .page-subtitle {
 }
 
 @media (max-width: 992px) {
-    .app-body {
-        padding: 10px;
+    .app-shell {
+        --shell-pad: 10px;
     }
 
     .app-content-shell {
-        min-height: calc(100vh - 88px);
         border-radius: 18px;
         padding: 12px;
     }
@@ -103,8 +126,8 @@ body.theme-light ::deep .page-subtitle {
 }
 
 @media (max-width: 520px) {
-    .app-body {
-        padding: 8px;
+    .app-shell {
+        --shell-pad: 8px;
     }
 
     .app-content-shell {

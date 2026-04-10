@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
-using Radzen;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using ITStockM.Services.DeliveryOrders;
+using ITStockM.Services;
 
 
 namespace ITStockM.Components.Layout
 {
-    public partial class SideLayout
+    public partial class SideLayout : IDisposable
     {
 
         [Inject]
@@ -21,18 +21,13 @@ namespace ITStockM.Components.Layout
         public IDeliveryOrderService DeliveryOrderService { get; set; } = default!;
 
         [Inject]
-        public ThemeService ThemeService { get; set; } = default!;
-
-        [Inject]
-        public IJSRuntime JSRuntime { get; set; } = default!;
+        public AppThemeService AppThemeService { get; set; } = default!;
 
         bool sidebarExpanded = true;
 
         protected string user = "Guest";
 
         protected int orderNumbersNF = 0;
-
-        protected string theme = "humanistic-dark";
 
         protected bool coreExpanded = true;
 
@@ -46,14 +41,12 @@ namespace ITStockM.Components.Layout
 
         protected bool adminExpanded = false;
 
-        protected bool IsDarkTheme => theme.Contains("dark", StringComparison.OrdinalIgnoreCase);
-
-        protected string ThemeToggleIcon => IsDarkTheme ? "light_mode" : "dark_mode";
-
-        protected string ThemeToggleLabel => IsDarkTheme ? "Switch to light theme" : "Switch to dark theme";
+        protected bool IsDarkTheme => AppThemeService.IsDark;
 
         protected override async Task OnInitializedAsync()
         {
+            AppThemeService.ThemeChanged += OnThemeChanged;
+
             // NOTE: Do NOT call ProtectedLocalStorage here — it uses JS interop which is
             // unavailable during prerendering. All storage reads are deferred to OnAfterRenderAsync.
             var deliveryOrders = await DeliveryOrderService.GetDeliveryOrdersList();
@@ -88,23 +81,7 @@ namespace ITStockM.Components.Layout
                 {
                 }
 
-                try
-                {
-                    theme = (await LocalStorage.GetAsync<string>("theme")).Value;
-                    if (string.IsNullOrEmpty(theme))
-                    {
-                        theme = "humanistic-dark";
-                        await LocalStorage.SetAsync("theme", theme);
-                    }
-                    ThemeService.SetTheme(theme);
-                    await ApplyThemeClassAsync();
-                }
-                catch
-                {
-                    theme = "humanistic-dark";
-                    ThemeService.SetTheme(theme);
-                    await ApplyThemeClassAsync();
-                }
+                await AppThemeService.InitializeAsync();
 
                 StateHasChanged();
             }
@@ -124,22 +101,6 @@ namespace ITStockM.Components.Layout
             catch
             {
             }
-        }
-
-        async Task ChangeTheme()
-        {
-            theme = IsDarkTheme ? "humanistic" : "humanistic-dark";
-            ThemeService.SetTheme(theme);
-            try
-            {
-                await LocalStorage.SetAsync("theme", theme);
-            }
-            catch (JSDisconnectedException)
-            {
-                return;
-            }
-            await ApplyThemeClassAsync();
-            StateHasChanged();
         }
 
         protected string MenuGroupStateClass(bool expanded) => expanded ? "menu-group-open" : "menu-group-closed";
@@ -208,21 +169,19 @@ namespace ITStockM.Components.Layout
             }
         }
 
-        private async Task ApplyThemeClassAsync()
+        private void OnThemeChanged()
         {
-            try
-            {
-                await JSRuntime.InvokeVoidAsync("applyThemeClass", theme);
-            }
-            catch
-            {
-                // Body class sync is cosmetic only; ignore transient JS interop failures.
-            }
+            _ = InvokeAsync(StateHasChanged);
         }
 
         private void ForceRefresh(MouseEventArgs _)
         {
             NavigationManager.NavigateTo("delivery-order-history", forceLoad: true);
+        }
+
+        public void Dispose()
+        {
+            AppThemeService.ThemeChanged -= OnThemeChanged;
         }
     }
 }
