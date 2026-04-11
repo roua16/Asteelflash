@@ -14,6 +14,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Asteelflash\IT-Inventory-Management---AsteelFlash-main\**" />
+    <Content Remove="Asteelflash\IT-Inventory-Management---AsteelFlash-main\**" />
+    <EmbeddedResource Remove="Asteelflash\IT-Inventory-Management---AsteelFlash-main\**" />
+    <None Remove="Asteelflash\IT-Inventory-Management---AsteelFlash-main\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="MailKit" Version="4.15.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10">
