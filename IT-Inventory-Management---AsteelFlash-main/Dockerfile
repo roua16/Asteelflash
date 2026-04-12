@@ -4,7 +4,7 @@ WORKDIR /src
 
 # Copy csproj and restore as distinct layers
 COPY ITStockM.csproj ./
-RUN dotnet restore ./ITStockM.csproj
+RUN dotnet restore --disable-parallel ./ITStockM.csproj
 
 # Copy everything else and publish
 COPY . ./
