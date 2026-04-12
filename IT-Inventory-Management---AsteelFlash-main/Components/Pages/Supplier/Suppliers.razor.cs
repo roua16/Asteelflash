@@ -35,11 +35,11 @@ namespace ITStockM.Components.Pages.Supplier
 
             await grid0.GoToPage(0);
 
-            suppliers = await SupplierService.GetSuppliers(new Query { Filter = $@"i => i.SupplierName.Contains(@0) || i.Adress.Contains(@0) || i.Email.Contains(@0) || i.PhoneNumber.Contains(@0)", FilterParameters = new object[] { search } });
+            suppliers = await SupplierService.GetSuppliers(new Query { Filter = $@"i => (i.SupplierName ?? "").Contains(@0) || (i.Adress ?? "").Contains(@0) || (i.Email ?? "").Contains(@0) || (i.PhoneNumber ?? "").Contains(@0)", FilterParameters = new object[] { search } });
         }
         protected override async Task OnInitializedAsync()
         {
-            suppliers = await SupplierService.GetSuppliers(new Query { Filter = $@"i => i.SupplierName.Contains(@0) || i.Adress.Contains(@0) || i.Email.Contains(@0) || i.PhoneNumber.Contains(@0)", FilterParameters = new object[] { search } });
+            suppliers = await SupplierService.GetSuppliers(new Query { Filter = $@"i => (i.SupplierName ?? "").Contains(@0) || (i.Adress ?? "").Contains(@0) || (i.Email ?? "").Contains(@0) || (i.PhoneNumber ?? "").Contains(@0)", FilterParameters = new object[] { search } });
         }
 
         protected async Task AddButtonClick(MouseEventArgs args)

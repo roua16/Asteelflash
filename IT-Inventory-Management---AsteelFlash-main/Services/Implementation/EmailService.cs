@@ -39,7 +39,7 @@ namespace ITStockM.Services.Implementation
             => SendWithRetryAsync(BuildMessage([toEmail], subject, body), subject);
 
         public Task SendEmailToMultipleAsync(List<string> toEmails, string subject, string body)
-            => SendWithRetryAsync(BuildMessage(toEmails, subject, body), subject);
+            => SendWithRetryAsync(BuildMessageForMultipleRecipients(toEmails, subject, body), subject);
 
         public async Task SendAdminNotificationAsync(string action, string details, string performedBy)
         {
@@ -65,6 +65,37 @@ namespace ITStockM.Services.Implementation
             msg.Subject = subject;
             msg.Body    = new TextPart("html") { Text = htmlBody };
             return msg;
+        }
+
+        private MimeMessage BuildMessageForMultipleRecipients(IEnumerable<string> recipients, string subject, string htmlBody)
+        {
+            var validRecipients = new List<string>();
+
+            foreach (var recipient in recipients)
+            {
+                var trimmed = recipient?.Trim();
+                if (string.IsNullOrWhiteSpace(trimmed))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    _ = MailboxAddress.Parse(trimmed);
+                    validRecipients.Add(trimmed);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Skipping invalid recipient email '{Recipient}'", trimmed);
+                }
+            }
+
+            if (!validRecipients.Any())
+            {
+                throw new InvalidOperationException("No valid email recipients were provided.");
+            }
+
+            return BuildMessage(validRecipients, subject, htmlBody);
         }
 
         private async Task SendWithRetryAsync(MimeMessage message, string subjectForLog)

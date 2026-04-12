@@ -26,6 +26,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
 
         protected IEnumerable<Models.ITStockManagment.DeliveryOrder> DeliveryOrders = new List<Models.ITStockManagment.DeliveryOrder>();
+    private List<Models.ITStockManagment.DeliveryOrder> allDeliveryOrders = new();
 
         protected RadzenDataGrid<Models.ITStockManagment.DeliveryOrder> grid0 = default!;
 
@@ -36,7 +37,11 @@ namespace ITStockM.Components.Pages.DeliveryOrder
         protected override async Task OnInitializedAsync()
         {
 
-            DeliveryOrders = (await DeliveryOrderService.GetDeliveryOrders(new Query { Expand = "DeliveryOrderMateriels,Materiel,Employee,Supplier" })).OrderByDescending(dlo => dlo.Date);
+            allDeliveryOrders = (await DeliveryOrderService.GetDeliveryOrders(new Query { Expand = "DeliveryOrderMateriels,Materiel,Employee,Supplier" }))
+                .OrderByDescending(dlo => dlo.Date)
+                .ToList();
+
+            DeliveryOrders = allDeliveryOrders;
 
 
         }
@@ -63,11 +68,23 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
         protected async Task Search(ChangeEventArgs args) 
         {
-            search = $"{args.Value}".ToLower();
+            search = $"{args.Value}";
 
             await grid0.GoToPage(0);
 
-            DeliveryOrders = DeliveryOrders.Where(delo => delo.DeliveryOrderMateriels.Any(dlom => dlom.Materiel.MaterielName.Contains(search, StringComparison.CurrentCultureIgnoreCase) || (dlom.Materiel.SerialNumber != null && dlom.Materiel.SerialNumber.Contains(search, StringComparison.CurrentCultureIgnoreCase)) || dlom.DeliveryOrder.DeleveryOrderNumber.Contains(search, StringComparison.CurrentCultureIgnoreCase) || dlom.DeliveryOrder.SupplierName.Contains(search, StringComparison.CurrentCultureIgnoreCase))  );
+            if (string.IsNullOrWhiteSpace(search))
+            {
+                DeliveryOrders = allDeliveryOrders;
+                return;
+            }
+
+            DeliveryOrders = allDeliveryOrders.Where(delo =>
+                delo.DeliveryOrderMateriels != null &&
+                delo.DeliveryOrderMateriels.Any(dlom =>
+                    (dlom.Materiel?.MaterielName?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false) ||
+                    (dlom.Materiel?.SerialNumber?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false) ||
+                    (dlom.DeliveryOrder?.DeleveryOrderNumber?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false) ||
+                    (dlom.DeliveryOrder?.SupplierName?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false)));
         }
 
 

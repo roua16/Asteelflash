@@ -52,6 +52,15 @@ public class SupplierService : ISupplierService
 
     public async Task<Supplier> CreateSupplier(Supplier supplier)
     {
+        var existingSupplier = await supplierRepository.Query()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.SupplierName == supplier.SupplierName);
+
+        if (existingSupplier != null)
+        {
+            throw new InvalidOperationException($"Supplier '{supplier.SupplierName}' already exists.");
+        }
+
         await supplierRepository.AddAsync(supplier);
         await supplierRepository.SaveChangesAsync();
         return supplier;
@@ -59,15 +68,32 @@ public class SupplierService : ISupplierService
 
     public async Task<Supplier> UpdateSupplier(string supplierName, Supplier supplier)
     {
-        var itemToUpdate = supplierRepository.Query().FirstOrDefault(i => i.SupplierName == supplier.SupplierName);
+        var itemToUpdate = await supplierRepository.Query().FirstOrDefaultAsync(i => i.SupplierName == supplierName);
         if (itemToUpdate == null)
         {
             throw new Exception("Item no longer available");
         }
 
-        supplierRepository.Update(supplier);
+        if (!string.Equals(supplierName, supplier.SupplierName, StringComparison.OrdinalIgnoreCase))
+        {
+            var duplicateName = await supplierRepository.Query()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.SupplierName == supplier.SupplierName);
+
+            if (duplicateName != null)
+            {
+                throw new InvalidOperationException($"Supplier '{supplier.SupplierName}' already exists.");
+            }
+        }
+
+        itemToUpdate.SupplierName = supplier.SupplierName;
+        itemToUpdate.Adress = supplier.Adress;
+        itemToUpdate.Email = supplier.Email;
+        itemToUpdate.PhoneNumber = supplier.PhoneNumber;
+
+        supplierRepository.Update(itemToUpdate);
         await supplierRepository.SaveChangesAsync();
-        return supplier;
+        return itemToUpdate;
     }
 
     public async Task<Supplier> DeleteSupplier(string supplierName)

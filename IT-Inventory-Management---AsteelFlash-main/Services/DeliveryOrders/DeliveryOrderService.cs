@@ -40,7 +40,10 @@ public class DeliveryOrderService : IDeliveryOrderService
             items = items.Include(i => i.Employee);
         }
 
-        items = items.ApplyQuery(query);
+        if (query != null)
+        {
+            items = items.ApplyQuery(query);
+        }
 
         return await Task.FromResult(items);
     }
@@ -65,23 +68,10 @@ public class DeliveryOrderService : IDeliveryOrderService
             items = items.Include(i => i.Employee);
         }
 
-            if (query != null)
-            {
-                if (!string.IsNullOrEmpty(query.Filter))
-                {
-                    // Dynamic filtering temporarily disabled for reliability across frameworks.
-                    // TODO: re-enable dynamic filtering when System.Linq.Dynamic.Core compatibility is confirmed.
-                }
-
-                if (!string.IsNullOrEmpty(query.OrderBy))
-                    items = items.OrderBy(query.OrderBy);
-
-                if (query.Skip.HasValue)
-                    items = items.Skip(query.Skip.Value);
-
-                if (query.Top.HasValue)
-                    items = items.Take(query.Top.Value);
-            }
+        if (query != null)
+        {
+            items = items.ApplyQuery(query);
+        }
 
         return await items.ToListAsync();
     }
@@ -93,7 +83,14 @@ public class DeliveryOrderService : IDeliveryOrderService
 
     public async Task<DeliveryOrder> CreateDeliveryOrder(DeliveryOrder deliveryorder)
     {
-            var existingItem = deliveryOrderRepository.Query().FirstOrDefault(i => i.DeleveryOrderNumber == deliveryorder.DeleveryOrderNumber);
+        var existingItem = await deliveryOrderRepository.Query()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.DeleveryOrderNumber == deliveryorder.DeleveryOrderNumber);
+
+        if (existingItem != null)
+        {
+            throw new InvalidOperationException($"Delivery order '{deliveryorder.DeleveryOrderNumber}' already exists.");
+        }
 
         await deliveryOrderRepository.AddAsync(deliveryorder);
         await deliveryOrderRepository.SaveChangesAsync();
@@ -106,20 +103,41 @@ public class DeliveryOrderService : IDeliveryOrderService
 
     public async Task<DeliveryOrder> UpdateDeliveryOrder(string deleveryordernumber, DeliveryOrder deliveryorder)
     {
-            var itemToUpdate = deliveryOrderRepository.Query().FirstOrDefault(i => i.DeleveryOrderNumber == deliveryorder.DeleveryOrderNumber);
-            if (itemToUpdate == null)
-            {
-                throw new Exception("Item no longer available");
-            }
+        var itemToUpdate = await deliveryOrderRepository.Query().FirstOrDefaultAsync(i => i.DeleveryOrderNumber == deleveryordernumber);
+        if (itemToUpdate == null)
+        {
+            throw new Exception("Item no longer available");
+        }
 
-        deliveryOrderRepository.Update(deliveryorder);
+        if (!string.Equals(deleveryordernumber, deliveryorder.DeleveryOrderNumber, StringComparison.OrdinalIgnoreCase))
+        {
+            var duplicateNumber = await deliveryOrderRepository.Query()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.DeleveryOrderNumber == deliveryorder.DeleveryOrderNumber);
+
+            if (duplicateNumber != null)
+            {
+                throw new InvalidOperationException($"Delivery order '{deliveryorder.DeleveryOrderNumber}' already exists.");
+            }
+        }
+
+        itemToUpdate.DeleveryOrderNumber = deliveryorder.DeleveryOrderNumber;
+        itemToUpdate.OrderNumber = deliveryorder.OrderNumber;
+        itemToUpdate.Descriptoin = deliveryorder.Descriptoin;
+        itemToUpdate.SupplierName = deliveryorder.SupplierName;
+        itemToUpdate.Date = deliveryorder.Date;
+        itemToUpdate.DeliveryDate = deliveryorder.DeliveryDate;
+        itemToUpdate.EmployeeId = deliveryorder.EmployeeId;
+        itemToUpdate.HasDelayedM = deliveryorder.HasDelayedM;
+
+        deliveryOrderRepository.Update(itemToUpdate);
 
         await deliveryOrderRepository.SaveChangesAsync();
 
         if (operationNotificationService != null)
-            await operationNotificationService.NotifyDeliveryOrderUpdated(deliveryorder);
+            await operationNotificationService.NotifyDeliveryOrderUpdated(itemToUpdate);
 
-        return deliveryorder;
+        return itemToUpdate;
     }
 
     public async Task<DeliveryOrder> DeleteDeliveryOrder(string deleveryordernumber)

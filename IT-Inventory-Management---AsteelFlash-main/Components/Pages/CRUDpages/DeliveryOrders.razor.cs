@@ -35,11 +35,11 @@ namespace ITStockM.Components.Pages.CrudPages
 
             await grid0.GoToPage(0);
 
-            deliveryOrders = await DeliveryOrderService.GetDeliveryOrders(new Query { Filter = $@"i => i.DeleveryOrderNumber.Contains(@0) || i.OrderNumber.Contains(@0) || i.Descriptoin.Contains(@0) || i.SupplierName.Contains(@0)", FilterParameters = new object[] { search }, Expand = "Supplier,Employee" });
+            deliveryOrders = await DeliveryOrderService.GetDeliveryOrders(new Query { Filter = $@"i => (i.DeleveryOrderNumber ?? "").Contains(@0) || (i.OrderNumber ?? "").Contains(@0) || (i.Descriptoin ?? "").Contains(@0) || (i.SupplierName ?? "").Contains(@0)", FilterParameters = new object[] { search }, Expand = "Supplier,Employee" });
         }
         protected override async Task OnInitializedAsync()
         {
-            deliveryOrders = await DeliveryOrderService.GetDeliveryOrders(new Query { Filter = $@"i => i.DeleveryOrderNumber.Contains(@0) || i.OrderNumber.Contains(@0) || i.Descriptoin.Contains(@0) || i.SupplierName.Contains(@0)", FilterParameters = new object[] { search }, Expand = "Supplier,Employee" });
+            deliveryOrders = await DeliveryOrderService.GetDeliveryOrders(new Query { Filter = $@"i => (i.DeleveryOrderNumber ?? "").Contains(@0) || (i.OrderNumber ?? "").Contains(@0) || (i.Descriptoin ?? "").Contains(@0) || (i.SupplierName ?? "").Contains(@0)", FilterParameters = new object[] { search }, Expand = "Supplier,Employee" });
         }
 
         protected async Task AddButtonClick(MouseEventArgs args)
