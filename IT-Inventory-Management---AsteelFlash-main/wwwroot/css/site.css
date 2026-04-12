@@ -493,12 +493,47 @@ img {
     border: 1px solid var(--app-border);
     box-shadow: var(--app-shadow-lg);
     overflow: hidden;
+    background: var(--app-surface);
+    color: var(--app-text);
 }
 
 .rz-dialog-titlebar {
     background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, rgba(34, 211, 238, 0.16) 100%);
     border-bottom: 1px solid var(--app-border);
     color: var(--app-text);
+}
+
+.rz-dialog-content {
+    background: var(--app-surface);
+    color: var(--app-text);
+}
+
+/* Keep popup overlay in sync with active app theme. */
+body.theme-dark .rz-dialog-mask {
+    background-color: rgba(2, 6, 23, 0.6);
+    backdrop-filter: blur(2px);
+}
+
+body.theme-light .rz-dialog-mask {
+    background-color: rgba(15, 23, 42, 0.18);
+    backdrop-filter: blur(2px);
+}
+
+body.theme-light .rz-dialog {
+    background: #ffffff;
+    border-color: #dbe7f3;
+    color: #0f172a;
+}
+
+body.theme-light .rz-dialog-titlebar {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    border-bottom-color: #dbe7f3;
+    color: #0f172a;
+}
+
+body.theme-light .rz-dialog-content {
+    background: #ffffff;
+    color: #334155;
 }
 
 .rz-notification,
