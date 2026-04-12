@@ -2,21 +2,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Improve restore reliability on unstable/proxied networks.
-ENV DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT=false
-ENV NUGET_CERT_REVOCATION_MODE=offline
-
 # Copy csproj and restore as distinct layers
 COPY ITStockM.csproj ./
-RUN for i in 1 2 3; do \
-			dotnet restore --disable-parallel ./ITStockM.csproj \
-				--source https://api.nuget.org/v3/index.json \
-				--source https://www.nuget.org/api/v2/ \
-				-p:RestoreRetryCount=6 \
-				-p:RestoreRetryDelaySeconds=5 && break; \
-			if [ "$i" -eq 3 ]; then exit 1; fi; \
-			echo "dotnet restore failed, retrying ($i/3)..."; \
-		done
+RUN dotnet restore --disable-parallel --verbosity normal ./ITStockM.csproj
 
 # Copy everything else and publish
 COPY . ./
