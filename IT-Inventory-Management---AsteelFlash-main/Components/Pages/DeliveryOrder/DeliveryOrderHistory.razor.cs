@@ -26,7 +26,9 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
 
         protected IEnumerable<Models.ITStockManagment.DeliveryOrder> DeliveryOrders = new List<Models.ITStockManagment.DeliveryOrder>();
-    private List<Models.ITStockManagment.DeliveryOrder> allDeliveryOrders = new();
+        private List<Models.ITStockManagment.DeliveryOrder> allDeliveryOrders = new();
+        protected bool isLoading = true;
+        protected string? loadError;
 
         protected RadzenDataGrid<Models.ITStockManagment.DeliveryOrder> grid0 = default!;
 
@@ -36,12 +38,30 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
         protected override async Task OnInitializedAsync()
         {
+            isLoading = true;
+            loadError = null;
 
-            allDeliveryOrders = (await DeliveryOrderService.GetDeliveryOrders(new Query { Expand = "DeliveryOrderMateriels,Materiel,Employee,Supplier" }))
+            try
+            {
+                allDeliveryOrders = (await DeliveryOrderService.GetDeliveryOrdersList(new Query
+                {
+                    Expand = "DeliveryOrderMateriels,DeliveryOrderMateriels.Materiel,Employee,Supplier"
+                }))
                 .OrderByDescending(dlo => dlo.Date)
                 .ToList();
 
-            DeliveryOrders = allDeliveryOrders;
+                DeliveryOrders = allDeliveryOrders;
+            }
+            catch (Exception ex)
+            {
+                loadError = "Failed to load delivery order history.";
+                Console.Error.WriteLine($"DeliveryOrderHistory load error: {ex}");
+                DeliveryOrders = new List<Models.ITStockManagment.DeliveryOrder>();
+            }
+            finally
+            {
+                isLoading = false;
+            }
 
 
         }

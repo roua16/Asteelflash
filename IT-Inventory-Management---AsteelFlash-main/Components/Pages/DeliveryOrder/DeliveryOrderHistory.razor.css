@@ -215,6 +215,28 @@
     transform: scale(1.1);
     }
 
+    .loading-state {
+    min-height: 220px;
+    border: 1px dashed rgba(148, 163, 184, 0.45);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: rgba(148, 163, 184, 0.08);
+    }
+
+    .loading-title {
+    font-weight: 600;
+    color: var(--app-text);
+    }
+
+    .loading-subtitle {
+    font-size: 0.9rem;
+    color: var(--app-muted);
+    }
+
     .warning-alert {
     background-color: var(--danger-light);
     color: var(--danger);

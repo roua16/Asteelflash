@@ -44,6 +44,22 @@
 
             </div>
 
+            @if (isLoading)
+            {
+                <div class="loading-state">
+                    <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" />
+                    <div class="loading-title">Loading delivery order history...</div>
+                    <div class="loading-subtitle">Please wait while records are fetched.</div>
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(loadError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger" Shade="Shade.Lighter" Variant="Variant.Flat" class="mb-3">
+                    @loadError
+                </RadzenAlert>
+            }
+            else
+            {
             <div class="datagrid-container">
                 <RadzenDataGrid @ref="grid0"
                 Data="@DeliveryOrders"
@@ -158,6 +174,7 @@
                     </Columns>
                 </RadzenDataGrid>
             </div>
+            }
         </div>
     </RadzenCard>
 </div>
