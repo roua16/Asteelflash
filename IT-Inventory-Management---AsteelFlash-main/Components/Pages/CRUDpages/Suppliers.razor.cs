@@ -30,17 +30,34 @@ namespace ITStockM.Components.Pages.CrudPages
 
         protected string search = "";
 
+        private async Task LoadSuppliersAsync()
+        {
+            var allSuppliers = await SupplierService.GetSuppliersList();
+
+            if (string.IsNullOrWhiteSpace(search))
+            {
+                suppliers = allSuppliers;
+                return;
+            }
+
+            suppliers = allSuppliers.Where(i =>
+                (i.SupplierName != null && i.SupplierName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (i.Adress != null && i.Adress.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (i.Email != null && i.Email.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                (i.PhoneNumber != null && i.PhoneNumber.Contains(search, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+
         protected async Task Search(ChangeEventArgs args)
         {
             search = $"{args.Value}";
 
             await grid0.GoToPage(0);
-
-            suppliers = await SupplierService.GetSuppliers(new Query { Filter = $@"i => i.SupplierName.Contains(@0) || i.Adress.Contains(@0) || i.Email.Contains(@0) || i.PhoneNumber.Contains(@0)", FilterParameters = new object[] { search } });
+            await LoadSuppliersAsync();
         }
         protected override async Task OnInitializedAsync()
         {
-            suppliers = await SupplierService.GetSuppliers(new Query { Filter = $@"i => i.SupplierName.Contains(@0) || i.Adress.Contains(@0) || i.Email.Contains(@0) || i.PhoneNumber.Contains(@0)", FilterParameters = new object[] { search } });
+            await LoadSuppliersAsync();
         }
 
         protected async Task AddButtonClick(MouseEventArgs args)
