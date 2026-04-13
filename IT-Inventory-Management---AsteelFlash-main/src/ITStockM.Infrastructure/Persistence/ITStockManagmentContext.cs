@@ -3,11 +3,14 @@ using System.Linq;
 using System.Collections.Generic;
 using ITStockM.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using ITStockM.Domain.Entities;
+using ITStockM.Infrastructure.Identity;
 
 namespace ITStockM.Data
 {
-  public partial class ITStockManagmentContext : DbContext, IApplicationDbContext
+  public partial class ITStockManagmentContext : IdentityDbContext<AppUser, IdentityRole<int>, int>, IApplicationDbContext
   {
     public ITStockManagmentContext()
     {
@@ -22,6 +25,15 @@ namespace ITStockM.Data
     protected override void OnModelCreating(ModelBuilder builder)
     {
       base.OnModelCreating(builder);
+
+      // Configure Identity
+      builder.Entity<AppUser>().ToTable("AspNetUsers", "dbo");
+      builder.Entity<IdentityRole<int>>().ToTable("AspNetRoles", "dbo");
+      builder.Entity<IdentityUserRole<int>>().ToTable("AspNetUserRoles", "dbo");
+      builder.Entity<IdentityUserClaim<int>>().ToTable("AspNetUserClaims", "dbo");
+      builder.Entity<IdentityUserLogin<int>>().ToTable("AspNetUserLogins", "dbo");
+      builder.Entity<IdentityRoleClaim<int>>().ToTable("AspNetRoleClaims", "dbo");
+      builder.Entity<IdentityUserToken<int>>().ToTable("AspNetUserTokens", "dbo");
 
       builder.Entity<ITStockM.Domain.Entities.AssignmentMateriel>().HasKey(table => new
       {

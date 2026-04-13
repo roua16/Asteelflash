@@ -2,12 +2,33 @@
 using ITStockM.Application.DependencyInjection;
 using ITStockM.Infrastructure.DependencyInjection;
 using ITStockM.Presentation.DependencyInjection;
+using Microsoft.AspNetCore.Identity;
+using ITStockM.Infrastructure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructureLayer(builder.Configuration);
 builder.Services.AddApplicationLayer();
 builder.Services.AddPresentationLayer(builder.Environment);
+
+// Configure ASP.NET Core Identity
+builder.Services
+    .AddIdentity<AppUser, IdentityRole<int>>(options =>
+    {
+        options.Password.RequiredLength = 8;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = false;
+        
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.AllowedForNewUsers = true;
+        
+        options.User.RequireUniqueEmail = true;
+    })
+    .AddEntityFrameworkStores<ITStockM.Data.ITStockManagmentContext>()
+    .AddDefaultTokenProviders();
 
 // Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
