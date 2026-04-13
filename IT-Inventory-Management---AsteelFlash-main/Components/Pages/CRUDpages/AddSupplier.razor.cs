@@ -19,10 +19,10 @@ namespace ITStockM.Components.Pages.CrudPages
 
         protected override async Task OnInitializedAsync()
         {
-            supplier = new ITStockM.Models.ITStockManagment.Supplier();
+            supplier = new ITStockM.Domain.Entities.Supplier();
         }
         protected bool errorVisible;
-        protected ITStockM.Models.ITStockManagment.Supplier supplier = new();
+        protected ITStockM.Domain.Entities.Supplier supplier = new();
 
         protected async Task FormSubmit()
         {

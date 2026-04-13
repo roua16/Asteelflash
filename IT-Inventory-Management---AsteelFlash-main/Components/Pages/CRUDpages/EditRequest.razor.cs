@@ -26,14 +26,14 @@ namespace ITStockM.Components.Pages.CrudPages
 
         protected override async Task OnInitializedAsync()
         {
-            request = await RequestService.GetRequestById(Id) ?? new Models.ITStockManagment.Request();
+            request = await RequestService.GetRequestById(Id) ?? new Domain.Entities.Request();
 
             employeesForEmployeeId = await EmployeeService.GetEmployeesList();
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Request request = new();
+        protected Domain.Entities.Request request = new();
 
-        protected IEnumerable<Models.ITStockManagment.Employee> employeesForEmployeeId = new List<Models.ITStockManagment.Employee>();
+        protected IEnumerable<Domain.Entities.Employee> employeesForEmployeeId = new List<Domain.Entities.Employee>();
 
         protected async Task FormSubmit()
         {

@@ -26,9 +26,9 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         [Inject]
         public IExportService ExportService { get; set; } = default!;
 
-        protected List<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels = new();
+        protected List<Domain.Entities.AssignmentMateriel> assignmentMateriels = new();
 
-        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0 = default!;
+        protected RadzenDataGrid<Domain.Entities.AssignmentMateriel> grid0 = default!;
 
         protected int stockLeft;
 
@@ -150,7 +150,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
 
 
-        protected async Task AssignmentDetails(Models.ITStockManagment.AssignmentMateriel assignmentMateriel)
+        protected async Task AssignmentDetails(Domain.Entities.AssignmentMateriel assignmentMateriel)
         {
             var options = new DialogOptions
             {

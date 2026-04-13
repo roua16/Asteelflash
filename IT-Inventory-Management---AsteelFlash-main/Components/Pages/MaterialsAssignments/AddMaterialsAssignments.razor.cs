@@ -1,4 +1,4 @@
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Services.AssignmentMateriels;
 using ITStockM.Services.Assignments;
 using ITStockM.Services.Employees;

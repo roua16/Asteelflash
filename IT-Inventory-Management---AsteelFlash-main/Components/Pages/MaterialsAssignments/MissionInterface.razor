@@ -45,7 +45,7 @@
             <div class="datagrid-container">
                 <RadzenDataGrid @ref="grid0"
                                 Data="@assignmentMateriels"
-                                TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                                TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                 AllowFiltering="true"
                                 AllowSorting="true"
                                 AllowPaging="true"
@@ -55,7 +55,7 @@
                                     ShowPagingSummary="true"
                                 PageSizeOptions="@(new int[]{5, 10, 20, 30})">
                     <Columns>
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                               Property="Assignment.RestoreDateLimit"
                                               Title="Return Deadline">
                             <Template Context="data">
@@ -76,7 +76,7 @@
                                 </div>
                             </Template>
                         </RadzenDataGridColumn>
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                               Property="Materiel.MaterielName"
                                               Title="Mat Name"
                                               
@@ -90,7 +90,7 @@
 
                         <RadzenDataGridColumn 
                                               TextAlign="TextAlign.Center"
-                                              TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                                              TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                               Property="Qte"
                                               Title="QTE"
                                               Width="110px;"
@@ -102,7 +102,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                               Property="Assignment.Employee.FullName"
                                               Title="Assigned By"
                                               >
@@ -113,7 +113,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                               Title="Assigned To"
                                               >
                             <Template Context="data">
@@ -136,7 +136,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                               Property="Assignment.Date"
                                               Title="Start Date"
                                               >
@@ -149,7 +149,7 @@
 
                         
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                               Filterable="false"
                                               Sortable="false"
                                               TextAlign="TextAlign.Center"

@@ -23,27 +23,27 @@
     <RadzenRow>
       <RadzenColumn SizeMD=12>
         <RadzenDataGrid @ref="grid0" ColumnWidth="200px"   AllowFiltering="true" FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new int[]{5, 10, 20, 30})
-            Data="@(assignments)" TItem="ITStockM.Models.ITStockManagment.Assignment" RowDoubleClick="@EditRow">
+            Data="@(assignments)" TItem="ITStockM.Domain.Entities.Assignment" RowDoubleClick="@EditRow">
             <Columns>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Assignment" Property="Id" Title="Id">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Assignment" Property="Id" Title="Id">
                 </RadzenDataGridColumn>
-                            <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Assignment" Property="AssignedEmployee.FullName" Title="AssignedEmployee">
+                            <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Assignment" Property="AssignedEmployee.FullName" Title="AssignedEmployee">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Assignment" Property="Employee.FullName" Title="Employee">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Assignment" Property="Employee.FullName" Title="Employee">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Assignment" Property="Project.ProjectName" Title="Project">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Assignment" Property="Project.ProjectName" Title="Project">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Assignment" Property="Date" Title="Date">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Assignment" Property="Date" Title="Date">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Assignment" Property="Descipriton" Title="Descipriton">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Assignment" Property="Descipriton" Title="Descipriton">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Assignment" Property="OnMission" Title="On Mission">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Assignment" Property="OnMission" Title="On Mission">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Assignment" Property="RestoreDateLimit" Title="Restore Date Limit">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Assignment" Property="RestoreDateLimit" Title="Restore Date Limit">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Assignment" Property="RestoreDate" Title="Restore Date">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Assignment" Property="RestoreDate" Title="Restore Date">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Assignment" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Assignment" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
                     <Template Context="assignment">
 
                         <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"

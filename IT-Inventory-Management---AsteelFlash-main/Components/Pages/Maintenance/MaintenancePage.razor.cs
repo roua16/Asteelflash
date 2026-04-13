@@ -1,4 +1,4 @@
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Services;
 using ITStockM.Services.Interfaces;
 using ITStockM.Services.Materiels;

@@ -45,7 +45,7 @@
                                                     </div>
                                                 }
 
-                                                <RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.Request"
+                                                <RadzenTemplateForm TItem="ITStockM.Domain.Entities.Request"
                                                     Data="@request" Visible="@(request != null)" Submit="@FormSubmit">
 
                                                     <div class="form-field">
@@ -201,11 +201,11 @@
                                                     FilterMode="FilterMode.Advanced" AllowPaging="true"
                                                     AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new
                                                                                                                                                      int[] { 5, 10, 20, 30 }) Data="@requests"
-                                                    TItem="ITStockM.Models.ITStockManagment.Request"
+                                                    TItem="ITStockM.Domain.Entities.Request"
                                                     RowDoubleClick="@EditRow">
                                                     <Columns>
                                                         <RadzenDataGridColumn
-                                                            TItem="ITStockM.Models.ITStockManagment.Request"
+                                                            TItem="ITStockM.Domain.Entities.Request"
                                                             Property="Title" Title="Title" Width="60%">
                                                             <Template Context="data">
                                                                 <div class="inline-center">
@@ -214,7 +214,7 @@
                                                             </Template>
                                                         </RadzenDataGridColumn>
                                                         <RadzenDataGridColumn
-                                                            TItem="ITStockM.Models.ITStockManagment.Request"
+                                                            TItem="ITStockM.Domain.Entities.Request"
                                                             Property="Status" Title="Status" Width="25%">
                                                             <Template Context="data">
                                                                 <RadzenBadge BadgeStyle="@GetStatusStyles(data.Status)"
@@ -224,7 +224,7 @@
                                                             </Template>
                                                         </RadzenDataGridColumn>
                                                         <RadzenDataGridColumn
-                                                            TItem="ITStockM.Models.ITStockManagment.Request"
+                                                            TItem="ITStockM.Domain.Entities.Request"
                                                             Filterable="false" Sortable="false" Width="15%"
                                                             TextAlign="TextAlign.Center">
                                                             <Template Context="data">

@@ -22,13 +22,13 @@ namespace ITStockM.Components.Pages.ArchivedRequests
         [Parameter]
         public int Id { get; set; }
 
-        protected Models.ITStockManagment.Request request = new();
-        protected IEnumerable<Models.ITStockManagment.Offer> offers = new List<Models.ITStockManagment.Offer>();
-        protected Models.ITStockManagment.Offer? offer;
+        protected Domain.Entities.Request request = new();
+        protected IEnumerable<Domain.Entities.Offer> offers = new List<Domain.Entities.Offer>();
+        protected Domain.Entities.Offer? offer;
         protected override async Task OnInitializedAsync()
         {
 
-            request = await RequestService.GetRequestById(Id) ?? new Models.ITStockManagment.Request();
+            request = await RequestService.GetRequestById(Id) ?? new Domain.Entities.Request();
 
             offers = await OfferService.GetOffers(new Query
             {
@@ -63,7 +63,7 @@ namespace ITStockM.Components.Pages.ArchivedRequests
             };
         }
 
-        protected async Task DownloadFile(Models.ITStockManagment.Request request)
+        protected async Task DownloadFile(Domain.Entities.Request request)
         {
             if (request.File != null && request.File.Length > 0)
             {

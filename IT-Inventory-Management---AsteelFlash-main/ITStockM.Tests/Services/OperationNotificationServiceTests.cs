@@ -12,7 +12,7 @@ using ITStockM.Services.Interfaces;
 using ITStockM.Models.ViewModels;
 using ITStockM.Data;
 using Microsoft.EntityFrameworkCore;
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 
 namespace ITStockM.Tests.Services
 {

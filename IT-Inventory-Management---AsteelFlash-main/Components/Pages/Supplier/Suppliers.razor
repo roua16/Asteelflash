@@ -1,5 +1,5 @@
 ﻿@page "/suppliers"
-@using ITStockM.Models.ITStockManagment
+@using ITStockM.Domain.Entities
 
 
 @using ITStockM.Models.Constants
@@ -59,11 +59,11 @@
                                 PageSizeOptions="@(new int[]{5, 10, 20, 30})"
                                 Data="@suppliers"
                                 Class="ux-data-grid"
-                                TItem="ITStockM.Models.ITStockManagment.Supplier"
+                                TItem="ITStockM.Domain.Entities.Supplier"
                                 EmptyText="No suppliers found"
                                 RowDoubleClick="@EditRow">
                     <Columns>
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Supplier" Property="SupplierName" Title="Supplier Name" Width="200px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Supplier" Property="SupplierName" Title="Supplier Name" Width="200px">
                             <Template Context="supplier">
                                 <div class="d-flex align-items-center">
                                     <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">@supplier.SupplierName</RadzenText>
@@ -71,7 +71,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Supplier" Property="Adress" Title="Address" Width="200px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Supplier" Property="Adress" Title="Address" Width="200px">
                             <Template Context="supplier">
                                 <div class="d-flex align-items-center">
                                     <span>@supplier.Adress</span>
@@ -79,7 +79,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Supplier" Property="Email" Title="Email" Width="200px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Supplier" Property="Email" Title="Email" Width="200px">
                             <Template Context="supplier">
                                 <div class="d-flex align-items-center">
                                     <a href="mailto:@supplier.Email" style=" text-decoration: none;">
@@ -89,7 +89,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Supplier" Property="PhoneNumber" Title="Phone Number" Width="150px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Supplier" Property="PhoneNumber" Title="Phone Number" Width="150px">
                             <Template Context="supplier">
                                 <div class="d-flex align-items-center">
                                     <a href="tel:@supplier.PhoneNumber" style=" text-decoration: none;">
@@ -101,7 +101,7 @@
 
 
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Supplier" Filterable="false" Sortable="false" Width="120px" TextAlign="TextAlign.Center" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Supplier" Filterable="false" Sortable="false" Width="120px" TextAlign="TextAlign.Center" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
                             <Template Context="supplier">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="0.5rem">
                                     <RadzenButton ButtonStyle="ButtonStyle.Danger"

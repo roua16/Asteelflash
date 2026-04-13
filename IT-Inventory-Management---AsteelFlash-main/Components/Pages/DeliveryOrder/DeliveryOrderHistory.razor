@@ -63,7 +63,7 @@
             <div class="datagrid-container">
                 <RadzenDataGrid @ref="grid0"
                 Data="@DeliveryOrders"
-                TItem="ITStockM.Models.ITStockManagment.DeliveryOrder"
+                TItem="ITStockM.Domain.Entities.DeliveryOrder"
                 AllowFiltering="true"
                 AllowSorting="true"
                 AllowPaging="true"
@@ -72,7 +72,7 @@
                 PageSizeOptions="@(new int[]{5, 10, 20, 30})">
 
                     <Columns>
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder"
                         Property="DeleveryOrderNumber" Title="DON"
                         Width="25%">
                             <Template Context="data">
@@ -82,7 +82,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder"
                         Property="OrderNumber" Title="Order Number"
                         Width="25%">
                             <Template Context="data">
@@ -101,7 +101,7 @@
                         </RadzenDataGridColumn>
 
                         <RadzenDataGridColumn Width="150px" TextAlign="TextAlign.Center"
-                        TItem="ITStockM.Models.ITStockManagment.DeliveryOrder"
+                        TItem="ITStockM.Domain.Entities.DeliveryOrder"
                         Property="SupplierName"
                         Title="Supplier">
                             <Template Context="data">
@@ -116,7 +116,7 @@
 
 
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder"
                         Property="Employee.FullName" Title="Registred By"
                         Width="25%">
                             <Template Context="data">
@@ -126,7 +126,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder"
                         Property="Date" Title="Date"
                         Width="25%">
                             <Template Context="data">
@@ -136,7 +136,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder"
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder"
                         Filterable="false" Sortable="false" Width="15%"
                         TextAlign="TextAlign.Center">
                             <Template Context="data">

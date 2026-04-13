@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Data;
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
 using FluentAssertions;
 

@@ -15,11 +15,11 @@ namespace ITStockM.Components.Pages.Supplier
 
         protected override Task OnInitializedAsync()
         {
-            supplier = new Models.ITStockManagment.Supplier();
+            supplier = new Domain.Entities.Supplier();
             return Task.CompletedTask;
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Supplier supplier = new();
+        protected Domain.Entities.Supplier supplier = new();
 
         protected async Task FormSubmit()
         {

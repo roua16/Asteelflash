@@ -1,6 +1,6 @@
 using FluentAssertions;
 using ITStockM.Data;
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Models.Constants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

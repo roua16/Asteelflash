@@ -1,5 +1,5 @@
 
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Models.Constants;
 using ITStockM.Services;
 using Microsoft.AspNetCore.Components;
@@ -433,7 +433,7 @@ namespace ITStockM.Components.Pages
 
         }
 
-        protected string deliveryOrderToText(ITStockM.Models.ITStockManagment.DeliveryOrder deliveryOrder)
+        protected string deliveryOrderToText(ITStockM.Domain.Entities.DeliveryOrder deliveryOrder)
         {
             if (deliveryOrder?.DeliveryOrderMateriels == null || !deliveryOrder.DeliveryOrderMateriels.Any())
             {

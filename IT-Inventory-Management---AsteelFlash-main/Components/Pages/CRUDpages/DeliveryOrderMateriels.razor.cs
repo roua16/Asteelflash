@@ -23,9 +23,9 @@ namespace ITStockM.Components.Pages.CrudPages
         [Inject]
         public IExportService ExportService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.DeliveryOrderMateriel> deliveryOrderMateriels = new List<Models.ITStockManagment.DeliveryOrderMateriel>();
+        protected IEnumerable<Domain.Entities.DeliveryOrderMateriel> deliveryOrderMateriels = new List<Domain.Entities.DeliveryOrderMateriel>();
 
-        protected RadzenDataGrid<Models.ITStockManagment.DeliveryOrderMateriel> grid0 = default!;
+        protected RadzenDataGrid<Domain.Entities.DeliveryOrderMateriel> grid0 = default!;
 
         protected string search = "";
 
@@ -48,12 +48,12 @@ namespace ITStockM.Components.Pages.CrudPages
             await grid0.Reload();
         }
 
-        protected async Task EditRow(DataGridRowMouseEventArgs<ITStockM.Models.ITStockManagment.DeliveryOrderMateriel> args)
+        protected async Task EditRow(DataGridRowMouseEventArgs<ITStockM.Domain.Entities.DeliveryOrderMateriel> args)
         {
             await DialogService.OpenAsync<EditDeliveryOrderMateriel>("Edit DeliveryOrderMateriel", new Dictionary<string, object> { {"MaterielId", args.Data.MaterielId}, {"DeliveryOrderNumber", args.Data.DeliveryOrderNumber} });
         }
 
-        protected async Task GridDeleteButtonClick(MouseEventArgs args, ITStockM.Models.ITStockManagment.DeliveryOrderMateriel deliveryOrderMateriel)
+        protected async Task GridDeleteButtonClick(MouseEventArgs args, ITStockM.Domain.Entities.DeliveryOrderMateriel deliveryOrderMateriel)
         {
             try
             {

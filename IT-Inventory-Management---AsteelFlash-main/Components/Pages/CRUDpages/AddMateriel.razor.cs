@@ -18,10 +18,10 @@ namespace ITStockM.Components.Pages.CrudPages
 
         protected override async Task OnInitializedAsync()
         {
-            materiel = new Models.ITStockManagment.Materiel();
+            materiel = new Domain.Entities.Materiel();
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Materiel materiel = new();
+        protected Domain.Entities.Materiel materiel = new();
 
         protected async Task FormSubmit()
         {

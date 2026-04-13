@@ -18,10 +18,10 @@ namespace ITStockM.Components.Pages.CrudPages
 
         protected override async Task OnInitializedAsync()
         {
-            project = new Models.ITStockManagment.Project();
+            project = new Domain.Entities.Project();
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Project project = new();
+        protected Domain.Entities.Project project = new();
 
         protected async Task FormSubmit()
         {

@@ -25,7 +25,7 @@ namespace ITStockM.Components.Pages.CrudPages
             materiel = await MaterielService.GetMaterielById(Id) ?? throw new InvalidOperationException($"Materiel with id {Id} was not found.");
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Materiel materiel = new();
+        protected Domain.Entities.Materiel materiel = new();
 
         protected async Task FormSubmit()
         {

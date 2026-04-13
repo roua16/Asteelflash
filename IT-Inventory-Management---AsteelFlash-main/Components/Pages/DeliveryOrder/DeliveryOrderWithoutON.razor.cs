@@ -1,4 +1,4 @@
-﻿using ITStockM.Models.ITStockManagment;
+﻿using ITStockM.Domain.Entities;
 using ITStockM.Services.DeliveryOrderMateriels;
 using ITStockM.Services.DeliveryOrders;
 using ITStockM.Services.Materiels;
@@ -27,7 +27,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
         public IMaterielService MaterielService { get; set; } = default!;
 
         [Parameter]
-        public Models.ITStockManagment.DeliveryOrder DeliveryOrder { get; set; } = new();
+        public Domain.Entities.DeliveryOrder DeliveryOrder { get; set; } = new();
 
         protected IEnumerable<DeliveryOrderMateriel> DeliveryOrderMateriels = new List<DeliveryOrderMateriel>();
 
@@ -65,7 +65,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
         }
 
 
-        protected async Task ChangeValue(KeyboardEventArgs e, Models.ITStockManagment.DeliveryOrderMateriel deliveryOrderMateriel)
+        protected async Task ChangeValue(KeyboardEventArgs e, Domain.Entities.DeliveryOrderMateriel deliveryOrderMateriel)
         {
             if (e.Key == "Enter")
             {

@@ -31,14 +31,14 @@ namespace ITStockM.Components.Pages.Purchase
 
         protected bool errorVisible;
 
-        protected Models.ITStockManagment.Offer offer = new();
+        protected Domain.Entities.Offer offer = new();
 
-        protected IEnumerable<Models.ITStockManagment.Request> requestsForRequestId = new List<Models.ITStockManagment.Request>();
-        protected List<Models.ITStockManagment.Supplier> suppliersForSupplierName = new();
+        protected IEnumerable<Domain.Entities.Request> requestsForRequestId = new List<Domain.Entities.Request>();
+        protected List<Domain.Entities.Supplier> suppliersForSupplierName = new();
 
         protected override async Task OnInitializedAsync()
         {
-            offer = new Models.ITStockManagment.Offer();
+            offer = new Domain.Entities.Offer();
 
             var req = await RequestService.GetRequestById(Id);
 

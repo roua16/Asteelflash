@@ -20,7 +20,7 @@
                 </div>
             }
 
-            <RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.Assignment" Data="@assignment" Visible="@(assignment != null)" Submit="@FormSubmit">
+            <RadzenTemplateForm TItem="ITStockM.Domain.Entities.Assignment" Data="@assignment" Visible="@(assignment != null)" Submit="@FormSubmit">
 
                 <!--            Materials                 -->
 
@@ -66,9 +66,9 @@
 
                                     <RadzenDropDownDataGrid @ref="myDropDowns[i]" Class="field-input" @bind-Value=@material.Materiel Data=@materiels TextProperty="MaterielName" AllowColumnResize="true" AllowFilteringByAllStringColumns="true" Name="@("DropDownDataGridColumns"+i)" Placeholder="Select Material" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Change="@((args) => RemoveMatOnSelect(args, i))">
                                         <Columns>
-                                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Models.ITStockManagment.Materiel.MaterielName)" Title="Material Name" Width="200px" />
-                                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Models.ITStockManagment.Materiel.SerialNumber)" Title="Serial Number" Width="100px" Visible="false" />
-                                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Models.ITStockManagment.Materiel.Type)" Title="Type" Width="100px" Visible="false" />
+                                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Domain.Entities.Materiel.MaterielName)" Title="Material Name" Width="200px" />
+                                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Domain.Entities.Materiel.SerialNumber)" Title="Serial Number" Width="100px" Visible="false" />
+                                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Domain.Entities.Materiel.Type)" Title="Type" Width="100px" Visible="false" />
                                         </Columns>
                                     </RadzenDropDownDataGrid>
                                     <RadzenRequiredValidator Component="@("DropDownDataGridColumns"+i)" Text="Assignee is required" />

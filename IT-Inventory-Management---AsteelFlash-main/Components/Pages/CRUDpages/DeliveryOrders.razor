@@ -23,25 +23,25 @@
     <RadzenRow>
       <RadzenColumn SizeMD=12>
         <RadzenDataGrid @ref="grid0" ColumnWidth="200px"   AllowFiltering="true" FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new int[]{5, 10, 20, 30})
-            Data="@(deliveryOrders)" TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" RowDoubleClick="@EditRow">
+            Data="@(deliveryOrders)" TItem="ITStockM.Domain.Entities.DeliveryOrder" RowDoubleClick="@EditRow">
             <Columns>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" Property="DeleveryOrderNumber" Title="Delevery Order Number">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder" Property="DeleveryOrderNumber" Title="Delevery Order Number">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" Property="OrderNumber" Title="Order Number">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder" Property="OrderNumber" Title="Order Number">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" Property="Descriptoin" Title="Descriptoin">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder" Property="Descriptoin" Title="Descriptoin">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" Property="Supplier.SupplierName" Title="Supplier">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder" Property="Supplier.SupplierName" Title="Supplier">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" Property="Date" Title="Date">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder" Property="Date" Title="Date">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" Property="DeliveryDate" Title="Delivery Date">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder" Property="DeliveryDate" Title="Delivery Date">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" Property="Employee.FullName" Title="Employee">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder" Property="Employee.FullName" Title="Employee">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" Property="HasDelayedM" Title="Has DelayedM">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder" Property="HasDelayedM" Title="Has DelayedM">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrder" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
                     <Template Context="deliveryOrder">
 
                         <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"

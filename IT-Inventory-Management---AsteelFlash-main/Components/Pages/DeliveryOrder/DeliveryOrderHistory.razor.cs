@@ -25,12 +25,12 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
 
 
-        protected IEnumerable<Models.ITStockManagment.DeliveryOrder> DeliveryOrders = new List<Models.ITStockManagment.DeliveryOrder>();
-        private List<Models.ITStockManagment.DeliveryOrder> allDeliveryOrders = new();
+        protected IEnumerable<Domain.Entities.DeliveryOrder> DeliveryOrders = new List<Domain.Entities.DeliveryOrder>();
+        private List<Domain.Entities.DeliveryOrder> allDeliveryOrders = new();
         protected bool isLoading = true;
         protected string? loadError;
 
-        protected RadzenDataGrid<Models.ITStockManagment.DeliveryOrder> grid0 = default!;
+        protected RadzenDataGrid<Domain.Entities.DeliveryOrder> grid0 = default!;
 
         
 
@@ -56,7 +56,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
             {
                 loadError = "Failed to load delivery order history.";
                 Console.Error.WriteLine($"DeliveryOrderHistory load error: {ex}");
-                DeliveryOrders = new List<Models.ITStockManagment.DeliveryOrder>();
+                DeliveryOrders = new List<Domain.Entities.DeliveryOrder>();
             }
             finally
             {
@@ -110,7 +110,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
 
 
-        protected async Task DeliveryOrderDetails(Models.ITStockManagment.DeliveryOrder deliveryOrder) 
+        protected async Task DeliveryOrderDetails(Domain.Entities.DeliveryOrder deliveryOrder) 
         {
             var options = new DialogOptions
             {
@@ -126,7 +126,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
             await DialogService.OpenAsync<DeliveryOrderHistoryDetails>("", new Dictionary<string, object> { { "DeliveryOrder", deliveryOrder } }, options);
         }
         
-        protected async Task DeliveryOrderDetailsWithoutON(Models.ITStockManagment.DeliveryOrder deliveryOrder) 
+        protected async Task DeliveryOrderDetailsWithoutON(Domain.Entities.DeliveryOrder deliveryOrder) 
         {
             var options = new DialogOptions
             {

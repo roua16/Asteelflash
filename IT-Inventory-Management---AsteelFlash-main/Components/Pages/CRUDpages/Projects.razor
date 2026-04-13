@@ -23,13 +23,13 @@
     <RadzenRow>
       <RadzenColumn SizeMD=12>
         <RadzenDataGrid @ref="grid0" ColumnWidth="200px"   AllowFiltering="true" FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new int[]{5, 10, 20, 30})
-            Data="@(projects)" TItem="ITStockM.Models.ITStockManagment.Project" RowDoubleClick="@EditRow">
+            Data="@(projects)" TItem="ITStockM.Domain.Entities.Project" RowDoubleClick="@EditRow">
             <Columns>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Project" Property="Id" Title="Id">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Project" Property="Id" Title="Id">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Project" Property="ProjectName" Title="Project Name">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Project" Property="ProjectName" Title="Project Name">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Project" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Project" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
                     <Template Context="project">
 
                         <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"

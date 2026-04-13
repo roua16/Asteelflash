@@ -38,12 +38,12 @@ namespace ITStockM.Components.Pages.DeliveryOrder
         [Inject]
         public ISupplierService SupplierService { get; set; } = default!;
 
-        private RadzenTemplateForm<Models.ITStockManagment.DeliveryOrder> form = default!;
+        private RadzenTemplateForm<Domain.Entities.DeliveryOrder> form = default!;
 
         protected bool errorVisible = false;
-        protected Models.ITStockManagment.DeliveryOrder deliveryOrder = new Models.ITStockManagment.DeliveryOrder();
+        protected Domain.Entities.DeliveryOrder deliveryOrder = new Domain.Entities.DeliveryOrder();
         protected List<MaterielViewModel> MaterielsList = new List<MaterielViewModel>();
-        protected List<Models.ITStockManagment.Supplier> suppliersForSupplierName = new();
+        protected List<Domain.Entities.Supplier> suppliersForSupplierName = new();
         protected List<string> options = new List<string> { "HardWare", "SoftWare", "Mouse", "KeyBoard", "Laptop", "Mini Pc", "Backpack", "Headphone", "Monitor", "Network device", "Printer", "Consumables" };
         protected bool changeSR = true;
 
@@ -60,7 +60,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
         protected override async Task OnInitializedAsync()
         {
-            deliveryOrder = new Models.ITStockManagment.DeliveryOrder();
+            deliveryOrder = new Domain.Entities.DeliveryOrder();
             suppliersForSupplierName = await SupplierService.GetSuppliersList();
 
 
@@ -68,7 +68,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
                             {
                                 new MaterielViewModel
                                 {
-                                    Materiel = new Models.ITStockManagment.Materiel { MaterielName = "",  QuantityPDRStock = 1, QuantityITStock = 0 , IrreparableQuantity =0, Repairing_Quantity =0},
+                                    Materiel = new Domain.Entities.Materiel { MaterielName = "",  QuantityPDRStock = 1, QuantityITStock = 0 , IrreparableQuantity =0, Repairing_Quantity =0},
                                     HaveSr = false,
                                     SRList = new List<SerialNumber>(),
                                     Year = 0,
@@ -140,7 +140,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
             var newMateriel = new MaterielViewModel
             {
-                Materiel = new Models.ITStockManagment.Materiel { MaterielName = "", QuantityPDRStock = 1, QuantityITStock = 0, IrreparableQuantity = 0, Repairing_Quantity = 0 },
+                Materiel = new Domain.Entities.Materiel { MaterielName = "", QuantityPDRStock = 1, QuantityITStock = 0, IrreparableQuantity = 0, Repairing_Quantity = 0 },
                 HaveSr = false,
                 SRList = new List<SerialNumber>(),
                 Year = 0,
@@ -197,7 +197,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
 
 
-                        Models.ITStockManagment.DeliveryOrderMateriel deliveryOrderMateriel = new Models.ITStockManagment.DeliveryOrderMateriel
+                        Domain.Entities.DeliveryOrderMateriel deliveryOrderMateriel = new Domain.Entities.DeliveryOrderMateriel
                         {
                             DeliveryOrderNumber = deliveryOrder.DeleveryOrderNumber,
 
@@ -217,7 +217,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
 
 
-                                var newMateriel = new Models.ITStockManagment.Materiel
+                                var newMateriel = new Domain.Entities.Materiel
                                 {
                                     MaterielName = materiel.Materiel.MaterielName,
                                     Type = materiel.Materiel.Type,
@@ -254,7 +254,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
                             if (MaterialSuggestions.Contains(materiel.Materiel.MaterielName))
                             {
-                                Models.ITStockManagment.Materiel oldMat = await MaterielService.GetMaterielByName(materiel.Materiel.MaterielName);
+                                Domain.Entities.Materiel oldMat = await MaterielService.GetMaterielByName(materiel.Materiel.MaterielName);
                                 if (oldMat == null)
                                 {
                                     throw new Exception("Existing material no longer available");
@@ -307,12 +307,12 @@ namespace ITStockM.Components.Pages.DeliveryOrder
                     {
                         new MaterielViewModel
                         {
-                            Materiel = new Models.ITStockManagment.Materiel { MaterielName = "", Type = "", QuantityPDRStock = 1, QuantityITStock=0,   Repairing_Quantity = 0, IrreparableQuantity=0},
+                            Materiel = new Domain.Entities.Materiel { MaterielName = "", Type = "", QuantityPDRStock = 1, QuantityITStock=0,   Repairing_Quantity = 0, IrreparableQuantity=0},
                             HaveSr = false,
                             SRList = new List<SerialNumber>()
                         }
                     };
-                    deliveryOrder = new Models.ITStockManagment.DeliveryOrder();
+                    deliveryOrder = new Domain.Entities.DeliveryOrder();
 
                     await JSRuntime.InvokeVoidAsync("scrollToElement", "scrollback");
                     NotificationService.Notify(new NotificationMessage

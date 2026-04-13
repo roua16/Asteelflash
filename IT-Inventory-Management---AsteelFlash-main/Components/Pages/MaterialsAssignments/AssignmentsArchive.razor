@@ -58,7 +58,7 @@
                     <div class="datagrid-container">
                         <RadzenDataGrid @ref="grid0"
                                         Data="@assignmentMateriels"
-                                        TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                                        TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                         AllowFiltering="true"
                                         AllowSorting="true"
                                         AllowPaging="true"
@@ -67,7 +67,7 @@
                                         PageSizeOptions="@(new int[]{5, 10, 20, 30})">
                             <Columns>
                                 <RadzenDataGridColumn Width="90px" TextAlign="TextAlign.Center"
-                                                      TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                                                      TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                                       Property="AssignmentId"
                                                       Title="ID">
                                     <Template Context="data">
@@ -77,7 +77,7 @@
                                     </Template>
                                 </RadzenDataGridColumn>
 
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                                       Property="Materiel.MaterielName" Title="Material Name"
                                                       Width="40%">
                                     <Template Context="data">
@@ -89,7 +89,7 @@
 
                                
 
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                                       Property="Assignment.Employee.FullName" Title="Assigned By"
                                                       Width="25%">
                                     <Template Context="data">
@@ -99,7 +99,7 @@
                                     </Template>
                                 </RadzenDataGridColumn>
 
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                                       Title="Assigned To"
                                                       Width="25%">
                                     <Template Context="data">
@@ -125,7 +125,7 @@
 
 
 
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                                       Property="Assignment.Date" Title="Date"
                                                       Width="25%">
                                     <Template Context="data">
@@ -134,7 +134,7 @@
                                         </div>
                                     </Template>
                                 </RadzenDataGridColumn>
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel"
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel"
                                                       Filterable="false" Sortable="false" Width="15%"
                                                       TextAlign="TextAlign.Center">
                                     <Template Context="data">

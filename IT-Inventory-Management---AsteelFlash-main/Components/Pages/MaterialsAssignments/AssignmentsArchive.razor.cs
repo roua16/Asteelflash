@@ -21,9 +21,9 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
 
 
-        protected IEnumerable<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels = new List<Models.ITStockManagment.AssignmentMateriel>();
+        protected IEnumerable<Domain.Entities.AssignmentMateriel> assignmentMateriels = new List<Domain.Entities.AssignmentMateriel>();
 
-        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0 = default!;
+        protected RadzenDataGrid<Domain.Entities.AssignmentMateriel> grid0 = default!;
 
        
 
@@ -71,7 +71,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         }
 
 
-        protected async Task AssignmentDetails(Models.ITStockManagment.AssignmentMateriel assignmentMateriel)
+        protected async Task AssignmentDetails(Domain.Entities.AssignmentMateriel assignmentMateriel)
         {
             var options = new DialogOptions
             {

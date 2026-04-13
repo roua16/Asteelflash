@@ -26,15 +26,15 @@ namespace ITStockM.Components.Pages.Purchase
         [Parameter]
         public int Id { get; set; }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Request request = new();
-        protected IEnumerable<Models.ITStockManagment.Offer> offers = new List<Models.ITStockManagment.Offer>();
+        protected Domain.Entities.Request request = new();
+        protected IEnumerable<Domain.Entities.Offer> offers = new List<Domain.Entities.Offer>();
         protected bool hasChanges = false;
         protected bool canEdit = true;
 
         protected override async Task OnInitializedAsync()
         {
 
-            request = await RequestService.GetRequestById(Id) ?? new Models.ITStockManagment.Request();
+            request = await RequestService.GetRequestById(Id) ?? new Domain.Entities.Request();
 
             offers = await OfferService.GetOffers(new Query
             {
@@ -47,7 +47,7 @@ namespace ITStockM.Components.Pages.Purchase
         }
        
 
-        void OnRowRender(RowRenderEventArgs<Models.ITStockManagment.Offer> args)
+        void OnRowRender(RowRenderEventArgs<Domain.Entities.Offer> args)
         {
             if (args.Data.Selected == true)
             {
@@ -74,7 +74,7 @@ namespace ITStockM.Components.Pages.Purchase
             }
 
         }
-        protected async Task DownloadFile(Models.ITStockManagment.Request request)
+        protected async Task DownloadFile(Domain.Entities.Request request)
         {
             if (request.File != null && request.File.Length > 0)
             {

@@ -28,7 +28,7 @@ namespace ITStockM.Components.Pages.CrudPages
 
         protected override async Task OnInitializedAsync()
         {
-            assignment = await AssignmentService.GetAssignmentById(Id) ?? new Models.ITStockManagment.Assignment();
+            assignment = await AssignmentService.GetAssignmentById(Id) ?? new Domain.Entities.Assignment();
 
             employeesForAssignedTo = await EmployeeService.GetEmployeesList();
 
@@ -37,13 +37,13 @@ namespace ITStockM.Components.Pages.CrudPages
             projectsForProjectId = await ProjectService.GetProjectsList();
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Assignment assignment = new();
+        protected Domain.Entities.Assignment assignment = new();
 
-        protected IEnumerable<Models.ITStockManagment.Employee> employeesForAssignedTo = new List<Models.ITStockManagment.Employee>();
+        protected IEnumerable<Domain.Entities.Employee> employeesForAssignedTo = new List<Domain.Entities.Employee>();
 
-        protected IEnumerable<Models.ITStockManagment.Employee> employeesForAssignedBy = new List<Models.ITStockManagment.Employee>();
+        protected IEnumerable<Domain.Entities.Employee> employeesForAssignedBy = new List<Domain.Entities.Employee>();
 
-        protected IEnumerable<Models.ITStockManagment.Project> projectsForProjectId = new List<Models.ITStockManagment.Project>();
+        protected IEnumerable<Domain.Entities.Project> projectsForProjectId = new List<Domain.Entities.Project>();
 
         protected async Task FormSubmit()
         {

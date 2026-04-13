@@ -37,11 +37,11 @@ namespace ITStockM.Components.Pages.CrudPages
             suppliersForSupplierName = await SupplierService.GetSuppliersList();
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Offer offer = new();
+        protected Domain.Entities.Offer offer = new();
 
-        protected IEnumerable<Models.ITStockManagment.Request> requestsForRequestId = new List<Models.ITStockManagment.Request>();
+        protected IEnumerable<Domain.Entities.Request> requestsForRequestId = new List<Domain.Entities.Request>();
 
-        protected IEnumerable<Models.ITStockManagment.Supplier> suppliersForSupplierName = new List<Models.ITStockManagment.Supplier>();
+        protected IEnumerable<Domain.Entities.Supplier> suppliersForSupplierName = new List<Domain.Entities.Supplier>();
 
         protected async Task FormSubmit()
         {

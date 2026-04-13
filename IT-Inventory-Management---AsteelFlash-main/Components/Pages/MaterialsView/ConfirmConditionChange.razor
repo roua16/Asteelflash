@@ -72,9 +72,9 @@
                                             FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                             Change="@((args) => RemoveMatOnSelect(args, i))">
                         <Columns>
-                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Models.ITStockManagment.Materiel.MaterielName)" Title="MaterialName" Width="200px" />
-                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Models.ITStockManagment.Materiel.SerialNumber)" Title="SerialNumber" Width="100px" />
-                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Models.ITStockManagment.Materiel.Type)" Title="Type" Width="100px" Visible="false" />
+                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Domain.Entities.Materiel.MaterielName)" Title="MaterialName" Width="200px" />
+                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Domain.Entities.Materiel.SerialNumber)" Title="SerialNumber" Width="100px" />
+                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Domain.Entities.Materiel.Type)" Title="Type" Width="100px" Visible="false" />
                         </Columns>
                     </RadzenDropDownDataGrid>
                     <RadzenRequiredValidator Component="@("DropDownDataGridColumns"+i)" Text="Material is required" />

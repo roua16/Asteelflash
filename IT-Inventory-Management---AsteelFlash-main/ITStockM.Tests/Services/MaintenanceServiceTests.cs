@@ -1,7 +1,7 @@
 using FluentAssertions;
 using ITStockM.Data;
-using ITStockM.Models.Enums;
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Enums;
+using ITStockM.Domain.Entities;
 using ITStockM.Services.Interfaces;
 using ITStockM.Services.Maintenance;
 using Microsoft.EntityFrameworkCore;

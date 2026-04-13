@@ -27,18 +27,18 @@ namespace ITStockM.Components.Pages.CrudPages
 
         protected override async Task OnInitializedAsync()
         {
-            assignmentMateriel = new Models.ITStockManagment.AssignmentMateriel();
+            assignmentMateriel = new Domain.Entities.AssignmentMateriel();
 
             materielsForMaterielId = (await MaterielService.GetMateriels()).ToList();
 
             assignmentsForAssignmentId = await AssignmentService.GetAssignments(new Query());
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.AssignmentMateriel assignmentMateriel = new();
+        protected Domain.Entities.AssignmentMateriel assignmentMateriel = new();
 
-        protected IEnumerable<Models.ITStockManagment.Materiel> materielsForMaterielId = new List<Models.ITStockManagment.Materiel>();
+        protected IEnumerable<Domain.Entities.Materiel> materielsForMaterielId = new List<Domain.Entities.Materiel>();
 
-        protected IEnumerable<Models.ITStockManagment.Assignment> assignmentsForAssignmentId = new List<Models.ITStockManagment.Assignment>();
+        protected IEnumerable<Domain.Entities.Assignment> assignmentsForAssignmentId = new List<Domain.Entities.Assignment>();
 
         protected async Task FormSubmit()
         {

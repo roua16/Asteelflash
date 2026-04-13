@@ -56,9 +56,9 @@
                         ShowPagingSummary="true"
                         PageSizeOptions=@(new int[]{5, 10, 20, 30})
                         Data="@deliveryOrderMateriels"
-                        TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel">
+                        TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel">
             <Columns>
-                <RadzenDataGridColumn Width="90px" TextAlign="TextAlign.Center" TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Qte" Title="QTE">
+                <RadzenDataGridColumn Width="90px" TextAlign="TextAlign.Center" TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Property="Qte" Title="QTE">
                     <Template Context="data">
                        
                         <div class="QuantityPDRStockPDRStock-badge QuantityPDRStockPDRStock-high">
@@ -81,7 +81,7 @@
                     </Template>
                 </RadzenDataGridColumn> 
                 
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Materiel.Warranty" Title="Warranty">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Property="Materiel.Warranty" Title="Warranty">
                     <Template Context="data">
                         <div style="display: flex; align-items: center;">
                             <span> @data.Materiel.Warranty.ToString("MMM dd, yyyy")</span>
@@ -91,7 +91,7 @@
                 
                 @if (!string.IsNullOrEmpty(deliveryOrderMateriels.FirstOrDefault().Materiel.SerialNumber))
                 {
-                    <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Materiel.SerialNumber" Title="🏷SN">
+                    <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Property="Materiel.SerialNumber" Title="🏷SN">
                         <Template Context="data">
                             <div style="display: flex; align-items: center;">
                                 <span>@data.Materiel.SerialNumber</span>

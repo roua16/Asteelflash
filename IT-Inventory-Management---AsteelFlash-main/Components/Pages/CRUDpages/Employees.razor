@@ -22,23 +22,23 @@
     <RadzenRow>
       <RadzenColumn SizeMD=12>
         <RadzenDataGrid @ref="grid0" ColumnWidth="200px"   AllowFiltering="true" FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new int[]{5, 10, 20, 30})
-            Data="@(employees)" TItem="ITStockM.Models.ITStockManagment.Employee" >
+            Data="@(employees)" TItem="ITStockM.Domain.Entities.Employee" >
             <Columns>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="Id" Title="Id">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Employee" Property="Id" Title="Id">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="FullName" Title="Full Name">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Employee" Property="FullName" Title="Full Name">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="Email" Title="Email">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Employee" Property="Email" Title="Email">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="Password" Title="Password">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Employee" Property="Password" Title="Password">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="Post" Title="Post">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Employee" Property="Post" Title="Post">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="PhoneNumber" Title="Phone Number">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Employee" Property="PhoneNumber" Title="Phone Number">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Property="Service" Title="Service">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Employee" Property="Service" Title="Service">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Employee" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Employee" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
                     
                 </RadzenDataGridColumn>
             </Columns>

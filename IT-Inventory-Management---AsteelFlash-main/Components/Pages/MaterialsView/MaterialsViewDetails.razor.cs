@@ -14,12 +14,12 @@ namespace ITStockM.Components.Pages.MaterialsView
         protected ProtectedLocalStorage LocalStorage { get; set; } = default!;
 
         [Parameter]
-        public List<Models.ITStockManagment.DeliveryOrderMateriel> deliveryOrderMateriels { get; set; } = new();
+        public List<Domain.Entities.DeliveryOrderMateriel> deliveryOrderMateriels { get; set; } = new();
 
         [Parameter]
         public string CurrentCondition { get; set; } = string.Empty;
 
-        protected RadzenDataGrid<Models.ITStockManagment.DeliveryOrderMateriel> grid0 = default!;
+        protected RadzenDataGrid<Domain.Entities.DeliveryOrderMateriel> grid0 = default!;
 
 
         protected string Role = string.Empty;

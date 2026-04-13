@@ -1,4 +1,4 @@
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Services.AssignmentMateriels;
 using ITStockM.Services.Assignments;
 using ITStockM.Services.Materiels;
@@ -129,7 +129,7 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
 
                 foreach (var mat in listMaterials)
                 {
-                    var newAssignmentMaterial = new ITStockM.Models.ITStockManagment.AssignmentMateriel
+                    var newAssignmentMaterial = new ITStockM.Domain.Entities.AssignmentMateriel
                     {
                         MaterielId = mat.Materiel.Id,
                         AssignmentId = createdAssignment.Id,
@@ -185,7 +185,7 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
 
     public class MatList
     {
-        public ITStockM.Models.ITStockManagment.Materiel Materiel { get; set; }
+        public ITStockM.Domain.Entities.Materiel Materiel { get; set; }
         public int Qtee { get; set; }
 
 

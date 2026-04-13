@@ -21,7 +21,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         public IAssignmentMaterielService AssignmentMaterielService { get; set; } = default!;
 
         [Parameter]
-        public Models.ITStockManagment.AssignmentMateriel AssignmentMateriel { get; set; } = new();
+        public Domain.Entities.AssignmentMateriel AssignmentMateriel { get; set; } = new();
 
         protected async Task ReturnMateriel()
         {

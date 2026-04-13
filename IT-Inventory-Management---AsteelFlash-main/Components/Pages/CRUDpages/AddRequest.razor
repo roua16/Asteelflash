@@ -2,7 +2,7 @@
 <PageTitle>Add Request</PageTitle>
     <RadzenColumn SizeMD=12>
         <RadzenAlert Shade="Shade.Lighter" Variant="Variant.Flat" Size="AlertSize.Small" AlertStyle="AlertStyle.Danger" Visible="@errorVisible">Cannot save Request</RadzenAlert>
-        <RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.Request" Data="@(request)" Visible="@(request != null)" Submit="@FormSubmit">
+        <RadzenTemplateForm TItem="ITStockM.Domain.Entities.Request" Data="@(request)" Visible="@(request != null)" Submit="@FormSubmit">
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
                     <RadzenLabel Text="Employee" Component="Employee" style="width: 100%" />

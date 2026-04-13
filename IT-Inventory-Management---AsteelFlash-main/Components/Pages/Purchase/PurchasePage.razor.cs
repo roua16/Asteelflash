@@ -26,11 +26,11 @@ namespace ITStockM.Components.Pages.Purchase
         [Inject]
         public IExportService ExportService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Request> requests = new List<Models.ITStockManagment.Request>();
+        protected IEnumerable<Domain.Entities.Request> requests = new List<Domain.Entities.Request>();
 
-        protected IEnumerable<Models.ITStockManagment.Offer> offers = new List<Models.ITStockManagment.Offer>();
+        protected IEnumerable<Domain.Entities.Offer> offers = new List<Domain.Entities.Offer>();
 
-        protected RadzenDataGrid<Models.ITStockManagment.Request> grid0 = default!;
+        protected RadzenDataGrid<Domain.Entities.Request> grid0 = default!;
 
         protected string search = "";
 
@@ -106,7 +106,7 @@ namespace ITStockM.Components.Pages.Purchase
 
 
 
-        protected async Task GridDeleteButtonClick(MouseEventArgs args, ITStockM.Models.ITStockManagment.Request request)
+        protected async Task GridDeleteButtonClick(MouseEventArgs args, ITStockM.Domain.Entities.Request request)
         {
             try
             {

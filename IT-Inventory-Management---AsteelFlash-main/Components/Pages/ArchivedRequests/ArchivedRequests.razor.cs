@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Radzen;
 using Radzen.Blazor;
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Services.Export;
 using ITStockM.Services.Requests;
 

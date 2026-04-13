@@ -23,33 +23,33 @@
     <RadzenRow>
       <RadzenColumn SizeMD=12>
         <RadzenDataGrid @ref="grid0" ColumnWidth="200px"   AllowFiltering="true" FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new int[]{5, 10, 20, 30})
-            Data="@(requests)" TItem="ITStockM.Models.ITStockManagment.Request" RowDoubleClick="@EditRow">
+            Data="@(requests)" TItem="ITStockM.Domain.Entities.Request" RowDoubleClick="@EditRow">
             <Columns>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Id" Title="Id">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Id" Title="Id">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Employee.FullName" Title="Employee">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Employee.FullName" Title="Employee">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Title" Title="Title">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Title" Title="Title">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Type" Title="Type">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Type" Title="Type">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="ProjectName" Title="Project Name">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="ProjectName" Title="Project Name">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Description" Title="Description">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Description" Title="Description">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="MaterialType" Title="Material Type">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="MaterialType" Title="Material Type">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Date" Title="Date">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Date" Title="Date">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Status" Title="Status">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Status" Title="Status">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="FileExtension" Title="File Extension">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="FileExtension" Title="File Extension">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="FileName" Title="File Name">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="FileName" Title="File Name">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="ApprovedAt" Title="Approved At">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="ApprovedAt" Title="Approved At">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
                     <Template Context="request">
 
                         <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"

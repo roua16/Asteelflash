@@ -20,9 +20,9 @@ namespace ITStockM.Components.Pages.Infra
         [Inject]
         protected ProtectedLocalStorage LocalStorage { get; set; } = default!;
 
-        protected RadzenDataGrid<Models.ITStockManagment.Offer> grid = default!;
+        protected RadzenDataGrid<Domain.Entities.Offer> grid = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Offer> offers = new List<Models.ITStockManagment.Offer>();
+        protected IEnumerable<Domain.Entities.Offer> offers = new List<Domain.Entities.Offer>();
 
         [Parameter]
         public List<int> Id { get; set; } = new();
@@ -40,7 +40,7 @@ namespace ITStockM.Components.Pages.Infra
         [Inject]
         public IEmailService EmailService { get; set; } = default!;
 
-        public async Task ChooseOffer(Models.ITStockManagment.Offer offer)
+        public async Task ChooseOffer(Domain.Entities.Offer offer)
         {
 
 
@@ -55,7 +55,7 @@ namespace ITStockM.Components.Pages.Infra
                 offer.Selected = true;
                 await OfferService.UpdateOffer(offer.Id, offer);
 
-                foreach (ITStockM.Models.ITStockManagment.Offer item in offers)
+                foreach (ITStockM.Domain.Entities.Offer item in offers)
                 {
                     if (item.Id != offer.Id)
                     {

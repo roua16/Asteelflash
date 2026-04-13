@@ -25,7 +25,7 @@ namespace ITStockM.Components.Pages.CrudPages
             project = await ProjectService.GetProjectById(Id) ?? throw new InvalidOperationException($"Project with id {Id} was not found.");
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Project project = new();
+        protected Domain.Entities.Project project = new();
 
         protected async Task FormSubmit()
         {

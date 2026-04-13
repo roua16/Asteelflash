@@ -3,7 +3,7 @@
 
     <RadzenColumn SizeMD=12>
         <RadzenAlert Shade="Shade.Lighter" Variant="Variant.Flat" Size="AlertSize.Small" AlertStyle="AlertStyle.Danger" Visible="@errorVisible">Cannot save Materiel</RadzenAlert>
-        <RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.Materiel" Data="@(materiel)" Visible="@(materiel != null)" Submit="@FormSubmit">
+        <RadzenTemplateForm TItem="ITStockM.Domain.Entities.Materiel" Data="@(materiel)" Visible="@(materiel != null)" Submit="@FormSubmit">
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
                     <RadzenLabel Text="Materiel Name" Component="MaterielName" style="width: 100%" />

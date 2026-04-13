@@ -32,18 +32,18 @@ namespace ITStockM.Components.Pages.CrudPages
 
         protected override async Task OnInitializedAsync()
         {
-            deliveryOrderMateriel = await DeliveryOrderMaterielService.GetDeliveryOrderMaterielByMaterielIdAndDeliveryOrderNumber(MaterielId, DeliveryOrderNumber) ?? new Models.ITStockManagment.DeliveryOrderMateriel();
+            deliveryOrderMateriel = await DeliveryOrderMaterielService.GetDeliveryOrderMaterielByMaterielIdAndDeliveryOrderNumber(MaterielId, DeliveryOrderNumber) ?? new Domain.Entities.DeliveryOrderMateriel();
 
             materielsForMaterielId = (await MaterielService.GetMateriels()).ToList();
 
             deliveryOrdersForDeliveryOrderNumber = await DeliveryOrderService.GetDeliveryOrdersList();
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.DeliveryOrderMateriel deliveryOrderMateriel = new();
+        protected Domain.Entities.DeliveryOrderMateriel deliveryOrderMateriel = new();
 
-        protected IEnumerable<Models.ITStockManagment.Materiel> materielsForMaterielId = new List<Models.ITStockManagment.Materiel>();
+        protected IEnumerable<Domain.Entities.Materiel> materielsForMaterielId = new List<Domain.Entities.Materiel>();
 
-        protected IEnumerable<Models.ITStockManagment.DeliveryOrder> deliveryOrdersForDeliveryOrderNumber = new List<Models.ITStockManagment.DeliveryOrder>();
+        protected IEnumerable<Domain.Entities.DeliveryOrder> deliveryOrdersForDeliveryOrderNumber = new List<Domain.Entities.DeliveryOrder>();
 
         protected async Task FormSubmit()
         {

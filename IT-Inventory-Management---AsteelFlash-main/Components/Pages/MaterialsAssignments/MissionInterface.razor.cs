@@ -32,9 +32,9 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
         protected IOperationNotificationService OperationNotificationService { get; set; }
 
 
-        protected IEnumerable<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels;
+        protected IEnumerable<Domain.Entities.AssignmentMateriel> assignmentMateriels;
 
-        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0;
+        protected RadzenDataGrid<Domain.Entities.AssignmentMateriel> grid0;
 
         protected override async Task OnInitializedAsync()
         {
@@ -46,7 +46,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
         }
 
-        protected async Task MissionEnd(Models.ITStockManagment.AssignmentMateriel assignmentMateriel)
+        protected async Task MissionEnd(Domain.Entities.AssignmentMateriel assignmentMateriel)
         {
 
             var originalQte = assignmentMateriel.Qte;
@@ -119,7 +119,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             await OnInitializedAsync();
         }
 
-        private async Task HandleReturnIssues(Models.ITStockManagment.Assignment assignment, Models.ITStockManagment.AssignmentMateriel assignmentMateriel, int originalQte, string selectedOption, int returnedQte, string description)
+        private async Task HandleReturnIssues(Domain.Entities.Assignment assignment, Domain.Entities.AssignmentMateriel assignmentMateriel, int originalQte, string selectedOption, int returnedQte, string description)
         {
             var issues = new List<string>();
 
@@ -186,7 +186,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
                 return;
             }
 
-            var newMateriel = new Models.ITStockManagment.Materiel
+            var newMateriel = new Domain.Entities.Materiel
             {
                 MaterielName = materialName,
                 Type = "Other",

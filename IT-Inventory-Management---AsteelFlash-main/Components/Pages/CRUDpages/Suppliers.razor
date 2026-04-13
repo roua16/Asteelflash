@@ -23,17 +23,17 @@
     <RadzenRow>
       <RadzenColumn SizeMD=12>
         <RadzenDataGrid @ref="grid0" ColumnWidth="200px"   AllowFiltering="true" FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new int[]{5, 10, 20, 30})
-            Data="@(suppliers)" TItem="ITStockM.Models.ITStockManagment.Supplier" RowDoubleClick="@EditRow">
+            Data="@(suppliers)" TItem="ITStockM.Domain.Entities.Supplier" RowDoubleClick="@EditRow">
             <Columns>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Supplier" Property="SupplierName" Title="Supplier Name">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Supplier" Property="SupplierName" Title="Supplier Name">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Supplier" Property="Adress" Title="Adress">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Supplier" Property="Adress" Title="Adress">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Supplier" Property="Email" Title="Email">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Supplier" Property="Email" Title="Email">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Supplier" Property="PhoneNumber" Title="Phone Number">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Supplier" Property="PhoneNumber" Title="Phone Number">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Supplier" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Supplier" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
                     <Template Context="supplier">
 
                         <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"

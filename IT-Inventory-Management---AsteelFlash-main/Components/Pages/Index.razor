@@ -42,10 +42,10 @@
                         CardClass="reveal-fade stagger-1">
                         <div class="activity-scroll">
                             @foreach (var activity in recentActivity.Where(a =>
-                                (a.AnyData is ITStockM.Models.ITStockManagment.Assignment ea && ea.AssignedTo == userId)
-                                || (a.AnyData is ITStockM.Models.ITStockManagment.Request er && er.Employee?.Id == userId)))
+                                (a.AnyData is ITStockM.Domain.Entities.Assignment ea && ea.AssignedTo == userId)
+                                || (a.AnyData is ITStockM.Domain.Entities.Request er && er.Employee?.Id == userId)))
                             {
-                                if (activity.AnyData is ITStockM.Models.ITStockManagment.Assignment ea2)
+                                if (activity.AnyData is ITStockM.Domain.Entities.Assignment ea2)
                                 {
                                     <div class="activity-item">
                                         <div class="activity-icon bg-success-light">
@@ -71,7 +71,7 @@
                                         </div>
                                     </div>
                                 }
-                                else if (activity.AnyData is ITStockM.Models.ITStockManagment.Request er2)
+                                else if (activity.AnyData is ITStockM.Domain.Entities.Request er2)
                                 {
                                     <div class="activity-item">
                                         <div class="activity-icon bg-info-light">
@@ -107,12 +107,12 @@
                         IconClass="bg-primary-light"
                         SizeClass="kpi-card-lg"
                         CardClass="reveal-fade stagger-2">
-                        <RadzenDataGrid Data="@(topRequests?.Where(r => r.Employee?.Id == userId) ?? Enumerable.Empty<ITStockM.Models.ITStockManagment.Request>())" TItem="ITStockM.Models.ITStockManagment.Request">
+                        <RadzenDataGrid Data="@(topRequests?.Where(r => r.Employee?.Id == userId) ?? Enumerable.Empty<ITStockM.Domain.Entities.Request>())" TItem="ITStockM.Domain.Entities.Request">
                             <Columns>
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Title" Title="Title" />
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="MaterialType" Title="Type" />
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Date" Title="Date" FormatString="{0:d}" />
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Status" Title="Status">
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Title" Title="Title" />
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="MaterialType" Title="Type" />
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Date" Title="Date" FormatString="{0:d}" />
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Status" Title="Status">
                                     <Template Context="data">
                                         <span class="badge @GetStatusBadgeClass(data.Status ?? string.Empty)">@data.Status</span>
                                     </Template>
@@ -348,7 +348,7 @@
                         <div class="activity-scroll activity-timeline">
                             @foreach (var activity in recentActivity)
                             {
-                                if (activity.AnyData is ITStockM.Models.ITStockManagment.Assignment assm)
+                                if (activity.AnyData is ITStockM.Domain.Entities.Assignment assm)
                                 {
                                     <div class="activity-item timeline-entry">
                                         <div class="activity-icon bg-success-light">
@@ -374,7 +374,7 @@
                                         </div>
                                     </div>
                                 }
-                                else if (activity.AnyData is ITStockM.Models.ITStockManagment.DeliveryOrder delOrd)
+                                else if (activity.AnyData is ITStockM.Domain.Entities.DeliveryOrder delOrd)
                                 {
                                     <div class="activity-item timeline-entry">
                                         <div class="activity-icon bg-primary-light">
@@ -400,7 +400,7 @@
                                         </div>
                                     </div>
                                 }
-                                else if (activity.AnyData is ITStockM.Models.ITStockManagment.Request req)
+                                else if (activity.AnyData is ITStockM.Domain.Entities.Request req)
                                 {
                                     <div class="activity-item timeline-entry">
                                         <div class="activity-icon bg-info-light">
@@ -532,13 +532,13 @@
                         IconClass="bg-primary-light"
                         SizeClass="kpi-card-lg"
                         CardClass="reveal-fade stagger-4 requests-table-card">
-                        <RadzenDataGrid Data="@topRequests" TItem="ITStockM.Models.ITStockManagment.Request">
+                        <RadzenDataGrid Data="@topRequests" TItem="ITStockM.Domain.Entities.Request">
                             <Columns>
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Title" Title="Title" />
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="MaterialType" Title="Type" />
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Employee.FullName" Title="Requested By" />
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Date" Title="Date" FormatString="{0:d}" />
-                                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Status" Title="Status">
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Title" Title="Title" />
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="MaterialType" Title="Type" />
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Employee.FullName" Title="Requested By" />
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Date" Title="Date" FormatString="{0:d}" />
+                                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Status" Title="Status">
                                     <Template Context="data">
                                         <span class="badge @GetStatusBadgeClass(data.Status)">@data.Status</span>
                                     </Template>

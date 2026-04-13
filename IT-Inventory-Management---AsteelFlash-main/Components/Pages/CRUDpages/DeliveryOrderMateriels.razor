@@ -22,15 +22,15 @@
     <RadzenRow>
       <RadzenColumn SizeMD=12>
         <RadzenDataGrid @ref="grid0" ColumnWidth="200px"   AllowFiltering="true" FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new int[]{5, 10, 20, 30})
-            Data="@(deliveryOrderMateriels)" TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" RowDoubleClick="@EditRow">
+            Data="@(deliveryOrderMateriels)" TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" RowDoubleClick="@EditRow">
             <Columns>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Materiel.MaterielName" Title="Materiel">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Property="Materiel.MaterielName" Title="Materiel">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="DeliveryOrder.DeleveryOrderNumber" Title="Delivery Order">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Property="DeliveryOrder.DeleveryOrderNumber" Title="Delivery Order">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Qte" Title="Qte">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Property="Qte" Title="Qte">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
                     <Template Context="deliveryOrderMateriel">
 
                         <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"

@@ -58,10 +58,10 @@
         ShowPagingSummary="true"
         PageSizeOptions=@(new int[]{5, 10, 20, 30})
         Data="@DeliveryOrderMateriels"
-        TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel">
+        TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel">
             <Columns>
 
-                <RadzenDataGridColumn  TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Materiel.MaterielName" Title="Material Name">
+                <RadzenDataGridColumn  TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Property="Materiel.MaterielName" Title="Material Name">
                     <Template Context="data">
 
 
@@ -70,7 +70,7 @@
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn Width="90px" TextAlign="TextAlign.Center" TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Qte" Title="QTE">
+                <RadzenDataGridColumn Width="90px" TextAlign="TextAlign.Center" TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Property="Qte" Title="QTE">
                     <Template Context="data" >
 
                         <div class="QuantityPDRStock-badge QuantityPDRStock-high" @onclick="() => Edit(data)" >
@@ -83,7 +83,7 @@
                     </EditTemplate>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Materiel.Warranty" Title="Warranty">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Property="Materiel.Warranty" Title="Warranty">
                     <Template Context="data">
 
                         <span> @data.Materiel.Warranty.ToString("MMM dd, yyyy")</span>
@@ -91,13 +91,13 @@
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn Width="90px" TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel" Property="Materiel.SerialNumber" Title="SN">
+                <RadzenDataGridColumn Width="90px" TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel" Property="Materiel.SerialNumber" Title="SN">
                     <Template Context="data">
                         @data.Materiel.SerialNumber
                     </Template>
                 </RadzenDataGridColumn>
 
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.DeliveryOrderMateriel"
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.DeliveryOrderMateriel"
                                       Filterable="false" Sortable="false" Width="15%"
                                       TextAlign="TextAlign.Center">
                     <Template Context="data">                      

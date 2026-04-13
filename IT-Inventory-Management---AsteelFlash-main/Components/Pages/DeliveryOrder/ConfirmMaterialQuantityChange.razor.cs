@@ -1,5 +1,5 @@
 ﻿using ITStockM.Components.Pages.CrudPages;
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Radzen;

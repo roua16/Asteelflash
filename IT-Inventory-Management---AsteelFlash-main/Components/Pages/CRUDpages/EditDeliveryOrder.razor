@@ -3,7 +3,7 @@
 
     <RadzenColumn SizeMD=12>
         <RadzenAlert Shade="Shade.Lighter" Variant="Variant.Flat" Size="AlertSize.Small" AlertStyle="AlertStyle.Danger" Visible="@errorVisible">Cannot save DeliveryOrder</RadzenAlert>
-        <RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.DeliveryOrder" Data="@(deliveryOrder)" Visible="@(deliveryOrder != null)" Submit="@FormSubmit">
+        <RadzenTemplateForm TItem="ITStockM.Domain.Entities.DeliveryOrder" Data="@(deliveryOrder)" Visible="@(deliveryOrder != null)" Submit="@FormSubmit">
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
                     <RadzenLabel Text="Delevery Order Number" Component="DeleveryOrderNumber" style="width: 100%" />

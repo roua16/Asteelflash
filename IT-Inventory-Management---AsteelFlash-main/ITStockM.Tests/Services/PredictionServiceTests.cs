@@ -1,6 +1,6 @@
 using FluentAssertions;
 using ITStockM.Data;
-using ITStockM.Models.Enums;
+using ITStockM.Domain.Enums;
 using ITStockM.Services.Prediction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;

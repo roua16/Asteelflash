@@ -1,4 +1,4 @@
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Services.Export;
 using ITStockM.Services.Requests;
 using Microsoft.AspNetCore.Components;

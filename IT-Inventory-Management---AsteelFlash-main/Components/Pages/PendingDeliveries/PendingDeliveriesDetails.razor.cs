@@ -24,8 +24,8 @@ namespace ITStockM.Components.Pages.PendingDeliveries
         public int Id { get; set; }
 
         protected bool errorVisible;
-        protected Models.ITStockManagment.Request request = new();
-        protected Models.ITStockManagment.Offer? offer;
+        protected Domain.Entities.Request request = new();
+        protected Domain.Entities.Offer? offer;
 
         protected bool hasChanges = false;
         protected bool canEdit = true;
@@ -34,7 +34,7 @@ namespace ITStockM.Components.Pages.PendingDeliveries
         protected override async Task OnInitializedAsync()
         {
 
-            request = await RequestService.GetRequestById(Id) ?? new Models.ITStockManagment.Request();
+            request = await RequestService.GetRequestById(Id) ?? new Domain.Entities.Request();
 
             offer = (await OfferService.GetOffers(new Query
             {
@@ -51,7 +51,7 @@ namespace ITStockM.Components.Pages.PendingDeliveries
         }
 
 
-        protected async Task DownloadFile(ITStockM.Models.ITStockManagment.Request request)
+        protected async Task DownloadFile(ITStockM.Domain.Entities.Request request)
         {
             if (request.File != null && request.File.Length > 0)
             {

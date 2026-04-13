@@ -359,14 +359,14 @@ namespace ITStockM.Components.Pages.MaterialsView
 
         }
 
-        private static List<Models.ITStockManagment.DeliveryOrder> GetDeliveryOrdersForGroup(
-            IEnumerable<Models.ITStockManagment.DeliveryOrderMateriel> deliveryOrderMateriels,
-            IGrouping<string, Models.ITStockManagment.Materiel> group)
+        private static List<Domain.Entities.DeliveryOrder> GetDeliveryOrdersForGroup(
+            IEnumerable<Domain.Entities.DeliveryOrderMateriel> deliveryOrderMateriels,
+            IGrouping<string, Domain.Entities.Materiel> group)
         {
             var materielName = group.FirstOrDefault()?.MaterielName;
             if (string.IsNullOrWhiteSpace(materielName))
             {
-                return new List<Models.ITStockManagment.DeliveryOrder>();
+                return new List<Domain.Entities.DeliveryOrder>();
             }
 
             return deliveryOrderMateriels

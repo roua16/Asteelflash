@@ -18,11 +18,11 @@ namespace ITStockM.Components.Pages.Supplier
         public string SupplierName { get; set; } = string.Empty;
 
         protected bool errorVisible;
-        protected Models.ITStockManagment.Supplier supplier = new();
+        protected Domain.Entities.Supplier supplier = new();
 
         protected override async Task OnInitializedAsync()
         {
-            supplier = await SupplierService.GetSupplierBySupplierName(SupplierName) ?? new Models.ITStockManagment.Supplier();
+            supplier = await SupplierService.GetSupplierBySupplierName(SupplierName) ?? new Domain.Entities.Supplier();
         }
         
         protected async Task FormSubmit()

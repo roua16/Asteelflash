@@ -30,28 +30,28 @@ namespace ITStockM.Components.Pages.DeliveryOrder
         [Inject]
         public IMaterielService MaterielService { get; set; } = default!;
 
-        protected List<Models.ITStockManagment.DeliveryOrder> DeliveryOrders { get; set; } = new();
+        protected List<Domain.Entities.DeliveryOrder> DeliveryOrders { get; set; } = new();
 
-        protected Models.ITStockManagment.DeliveryOrder SelectedDeliveryOrders { get; set; } = new();
+        protected Domain.Entities.DeliveryOrder SelectedDeliveryOrders { get; set; } = new();
 
         protected List<MaterielViewModel> MaterielsList = new List<MaterielViewModel>();
         private IEnumerable<string> MaterialSuggestions { get; set; } = Enumerable.Empty<string>();
         protected List<string> options = new List<string> { "HardWare", "SoftWare", "Mouse", "KeyBoard", "Laptop", "Mini Pc", "Backpack", "Headphone", "Monitor", "Network device", "Printer", "Consumables" };
 
-        private RadzenTemplateForm<Models.ITStockManagment.DeliveryOrder> form = default!;
+        private RadzenTemplateForm<Domain.Entities.DeliveryOrder> form = default!;
         protected bool changeSR = true;
 
         protected override async Task OnInitializedAsync()
         {
             DeliveryOrders = (await DeliveryOrderService.GetDeliveryOrdersList()).Where(dlo => dlo.HasDelayedM).ToList();
-            SelectedDeliveryOrders = DeliveryOrders.FirstOrDefault() ?? new Models.ITStockManagment.DeliveryOrder();
+            SelectedDeliveryOrders = DeliveryOrders.FirstOrDefault() ?? new Domain.Entities.DeliveryOrder();
 
             //---
             MaterielsList = new List<MaterielViewModel>
                             {
                                 new MaterielViewModel
                                 {
-                                    Materiel = new Models.ITStockManagment.Materiel { MaterielName = "",  QuantityPDRStock = 1, QuantityITStock = 0 , IrreparableQuantity =0, Repairing_Quantity =0},
+                                    Materiel = new Domain.Entities.Materiel { MaterielName = "",  QuantityPDRStock = 1, QuantityITStock = 0 , IrreparableQuantity =0, Repairing_Quantity =0},
                                     HaveSr = false,
                                     SRList = new List<SerialNumber>(),
                                     Year = 0,
@@ -78,7 +78,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
             var newMateriel = new MaterielViewModel
             {
-                Materiel = new Models.ITStockManagment.Materiel { MaterielName = "", QuantityPDRStock = 1, QuantityITStock = 0, IrreparableQuantity = 0, Repairing_Quantity = 0 },
+                Materiel = new Domain.Entities.Materiel { MaterielName = "", QuantityPDRStock = 1, QuantityITStock = 0, IrreparableQuantity = 0, Repairing_Quantity = 0 },
                 HaveSr = false,
                 SRList = new List<SerialNumber>(),
                 Year = 0,
@@ -254,7 +254,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
         protected async Task CreateDLOM (MaterielViewModel mat , int id)
         {
-            var dlomToUpdate = new ITStockM.Models.ITStockManagment.DeliveryOrderMateriel
+            var dlomToUpdate = new ITStockM.Domain.Entities.DeliveryOrderMateriel
             {
                 MaterielId = id,
                 DeliveryOrderNumber = SelectedDeliveryOrders.DeleveryOrderNumber,
@@ -272,7 +272,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
         {
             foreach(var sr in mat.SRList)
             {
-                var newMateriel = new ITStockM.Models.ITStockManagment.Materiel
+                var newMateriel = new ITStockM.Domain.Entities.Materiel
                 {
                     MaterielName = mat.Materiel.MaterielName,
                     Type = mat.Materiel.Type,

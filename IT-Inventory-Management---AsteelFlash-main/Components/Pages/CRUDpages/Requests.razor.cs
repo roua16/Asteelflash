@@ -24,9 +24,9 @@ namespace ITStockM.Components.Pages.CrudPages
         [Inject]
         public IExportService ExportService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Request> requests = new List<Models.ITStockManagment.Request>();
+        protected IEnumerable<Domain.Entities.Request> requests = new List<Domain.Entities.Request>();
 
-        protected RadzenDataGrid<Models.ITStockManagment.Request> grid0 = default!;
+        protected RadzenDataGrid<Domain.Entities.Request> grid0 = default!;
 
         protected string search = "";
 
@@ -49,12 +49,12 @@ namespace ITStockM.Components.Pages.CrudPages
             await grid0.Reload();
         }
 
-        protected async Task EditRow(DataGridRowMouseEventArgs<Models.ITStockManagment.Request> args)
+        protected async Task EditRow(DataGridRowMouseEventArgs<Domain.Entities.Request> args)
         {
             await DialogService.OpenAsync<EditRequest>("Edit Request", new Dictionary<string, object> { {"Id", args.Data.Id} });
         }
 
-        protected async Task GridDeleteButtonClick(MouseEventArgs args, Models.ITStockManagment.Request request)
+        protected async Task GridDeleteButtonClick(MouseEventArgs args, Domain.Entities.Request request)
         {
             try
             {

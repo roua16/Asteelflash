@@ -22,15 +22,15 @@
     <RadzenRow>
       <RadzenColumn SizeMD=12>
         <RadzenDataGrid @ref="grid0" ColumnWidth="200px"   AllowFiltering="true" FilterMode="FilterMode.Advanced" AllowPaging="true" AllowSorting="true" ShowPagingSummary="true" PageSizeOptions=@(new int[]{5, 10, 20, 30})
-            Data="@(assignmentMateriels)" TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel" RowDoubleClick="@EditRow">
+            Data="@(assignmentMateriels)" TItem="ITStockM.Domain.Entities.AssignmentMateriel" RowDoubleClick="@EditRow">
             <Columns>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel" Property="Materiel.MaterielName" Title="Materiel">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel" Property="Materiel.MaterielName" Title="Materiel">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel" Property="Assignment.Descipriton" Title="Assignment">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel" Property="Assignment.Descipriton" Title="Assignment">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel" Property="Qte" Title="Qte">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel" Property="Qte" Title="Qte">
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.AssignmentMateriel" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
+                <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.AssignmentMateriel" Filterable="false" Sortable="false" Width="70px" TextAlign="TextAlign.Center">
                     <Template Context="assignmentMateriel">
 
                         <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"

@@ -8,7 +8,7 @@ using Moq;
 using Xunit;
 
 using ITStockM.Data;
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
 using ITStockM.Services;
 using ITStockM.Services.Interfaces;

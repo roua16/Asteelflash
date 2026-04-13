@@ -6,7 +6,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
     {
 
         [Parameter]
-        public Models.ITStockManagment.AssignmentMateriel AssignmentMateriel { get; set; } = new();
+        public Domain.Entities.AssignmentMateriel AssignmentMateriel { get; set; } = new();
 
         
 

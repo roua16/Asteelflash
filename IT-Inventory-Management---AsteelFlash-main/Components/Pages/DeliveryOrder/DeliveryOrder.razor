@@ -16,7 +16,7 @@
                                     
                     </div>
 
-                    <RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.DeliveryOrder"
+                    <RadzenTemplateForm TItem="ITStockM.Domain.Entities.DeliveryOrder"
                                         Data="@deliveryOrder"
                                         Visible="@(deliveryOrder != null)"
                                         Submit="@AddDeliveryOrderAsync"
@@ -102,7 +102,7 @@
                                                     </label>
                                                     <RadzenDropDownDataGrid Class="field-input" @bind-Value=@deliveryOrder.SupplierName Data=@suppliersForSupplierName TextProperty="SupplierName" ValueProperty="SupplierName" AllowColumnResize="true" AllowFilteringByAllStringColumns="true" Name="SupplierName" Placeholder="Select supplier" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
                                                         <Columns>
-                                                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Models.ITStockManagment.Supplier.SupplierName)" Title="SupplierName" Width="200px" />
+                                                            <RadzenDropDownDataGridColumn Property="@nameof(ITStockM.Domain.Entities.Supplier.SupplierName)" Title="SupplierName" Width="200px" />
 
                                                         </Columns>
                                                     </RadzenDropDownDataGrid>

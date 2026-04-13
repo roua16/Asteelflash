@@ -29,13 +29,13 @@ namespace ITStockM.Components.Pages.Infra
         protected List<string> status = new List<string>() { "Normal", "Urgent", "Critical" };
 
         protected bool errorVisible;
-        protected Models.ITStockManagment.Request request = new();
+        protected Domain.Entities.Request request = new();
 
         protected List<string> projectNames = new();
         protected override async Task OnInitializedAsync()
         {
             projectNames = new List<string>();
-            request = await RequestService.GetRequestById(Id) ?? new Models.ITStockManagment.Request();
+            request = await RequestService.GetRequestById(Id) ?? new Domain.Entities.Request();
 
             projectNames = (await ProjectService.GetProjectsList()).Select(p => p.ProjectName).ToList();
 

@@ -1,5 +1,5 @@
 ﻿@page "/pending-deliveries"
-@using ITStockM.Models.ITStockManagment
+@using ITStockM.Domain.Entities
 
 
 @using ITStockM.Models.Constants
@@ -50,31 +50,31 @@
                                 PageSizeOptions="@(new int[]{5, 10, 20, 30})"
                                 Data="@requests"
                                 Class="ux-data-grid"
-                                TItem="ITStockM.Models.ITStockManagment.Request"
+                                TItem="ITStockM.Domain.Entities.Request"
                                 EmptyText="No purchase requests found">
                     <Columns>
 
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Title" Title="Title" Width="180px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Title" Title="Title" Width="180px">
                             <Template Context="request">
                                 <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">@request.Title</RadzenText>
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="MaterialType" Title="Material" Width="120px" Visible="false" />
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="MaterialType" Title="Material" Width="120px" Visible="false" />
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="MaterialType" Title="Material" Width="180px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="MaterialType" Title="Material" Width="180px">
                             <Template Context="request">
                                 <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 500;">@request.MaterialType</RadzenText>
                             </Template>
                         </RadzenDataGridColumn>
 
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Type" Title="Type" Width="120px" Visible="false" />
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Type" Title="Type" Width="120px" Visible="false" />
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="ProjectName" Title="Project" Width="150px" Visible="false" />
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="ProjectName" Title="Project" Width="150px" Visible="false" />
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Date" Title="Delivery Date" Width="120px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Date" Title="Delivery Date" Width="120px">
                             <Template Context="request">
                                 @request.Offers.Where(o => o.Selected != null && o.Selected == true).FirstOrDefault().DeliveryDate.ToString("MMM dd, yyyy")
                             </Template>
@@ -82,7 +82,7 @@
 
 
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Filterable="false" Sortable="false" Width="120px" TextAlign="TextAlign.Center" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Filterable="false" Sortable="false" Width="120px" TextAlign="TextAlign.Center" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
                             <Template Context="request">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="0.5rem">
 

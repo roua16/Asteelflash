@@ -49,11 +49,11 @@
                                 ShowPagingSummary="true"
                                 PageSizeOptions="@(new int[]{5, 10, 20, 30})"
                                 Data="@requests"
-                                TItem="ITStockM.Models.ITStockManagment.Request"
+                                TItem="ITStockM.Domain.Entities.Request"
                                 Class="archived-requests-grid"
                                 EmptyText="No purchase requests found">
                     <Columns>
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Employee.FullName" Title="Employee" Width="150px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Employee.FullName" Title="Employee" Width="150px">
                             <Template Context="request">
                                 <div class="d-flex align-items-center">
                                     <RadzenText TextStyle="TextStyle.Body1" Class="text-medium">@request.Employee.FullName</RadzenText>
@@ -61,12 +61,12 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Title" Title="Title" Width="180px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Title" Title="Title" Width="180px">
                             <Template Context="request">
                                 <RadzenText TextStyle="TextStyle.Body1" Class="text-medium">@request.Title</RadzenText>
                             </Template>
                         </RadzenDataGridColumn>
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Description" Title="Description" Width="200px" Visible="false">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Description" Title="Description" Width="200px" Visible="false">
                             <Template Context="request">
                                 <div class="description-ellipsis">
                                     @request.Description
@@ -74,18 +74,18 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Type" Title="Type" Width="120px" Visible="false" />
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Type" Title="Type" Width="120px" Visible="false" />
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="ProjectName" Title="Project" Width="150px" Visible="false" />
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="ProjectName" Title="Project" Width="150px" Visible="false" />
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="MaterialType" Title="Material" Width="120px" Visible="false" />
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Date" Title="Date" Width="120px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="MaterialType" Title="Material" Width="120px" Visible="false" />
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Date" Title="Date" Width="120px">
                             <Template Context="request">
                                 @request.Date.ToString("MMM dd, yyyy")
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Property="Status" Title="Status" Width="120px">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Property="Status" Title="Status" Width="120px">
                             <Template Context="request">
                                 <div class="status-center">
                                     <RadzenBadge BadgeStyle="BadgeStyle.Success"
@@ -96,7 +96,7 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="ITStockM.Models.ITStockManagment.Request" Filterable="false" Sortable="false" Width="120px" TextAlign="TextAlign.Center" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+                        <RadzenDataGridColumn TItem="ITStockM.Domain.Entities.Request" Filterable="false" Sortable="false" Width="120px" TextAlign="TextAlign.Center" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
                             <Template Context="request">
                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="0.5rem">
 

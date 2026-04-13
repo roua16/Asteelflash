@@ -10,7 +10,7 @@ using Moq;
 using Xunit;
 
 using ITStockM.Data;
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Models.Constants;
 using ITStockM.Models.ViewModels;
 using ITStockM.Repositories;

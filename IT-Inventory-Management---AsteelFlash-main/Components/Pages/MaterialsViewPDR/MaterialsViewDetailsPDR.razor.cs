@@ -7,9 +7,9 @@ namespace ITStockM.Components.Pages.MaterialsViewPDR
     {
 
         [Parameter]
-        public List<Models.ITStockManagment.DeliveryOrderMateriel>  deliveryOrderMateriels { get; set; }
+        public List<Domain.Entities.DeliveryOrderMateriel>  deliveryOrderMateriels { get; set; }
 
-        protected RadzenDataGrid<Models.ITStockManagment.DeliveryOrderMateriel> grid0;
+        protected RadzenDataGrid<Domain.Entities.DeliveryOrderMateriel> grid0;
 
         
 

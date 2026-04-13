@@ -46,16 +46,16 @@ namespace ITStockM.Components.Pages.Infra
 
 
         //Requets list
-        protected IEnumerable<Models.ITStockManagment.Request> requests = Enumerable.Empty<Models.ITStockManagment.Request>();
+        protected IEnumerable<Domain.Entities.Request> requests = Enumerable.Empty<Domain.Entities.Request>();
 
-        protected RadzenDataGrid<Models.ITStockManagment.Request> grid0 = default!;
+        protected RadzenDataGrid<Domain.Entities.Request> grid0 = default!;
 
 
         //Offers
         protected RadzenDataGrid<Models.ViewModels.InfraViewModel> grid1 = default!;
 
-        protected Models.ITStockManagment.Request request = new();
-        protected IEnumerable<Models.ITStockManagment.Offer> offers = Enumerable.Empty<Models.ITStockManagment.Offer>();
+        protected Domain.Entities.Request request = new();
+        protected IEnumerable<Domain.Entities.Offer> offers = Enumerable.Empty<Domain.Entities.Offer>();
 
         protected IEnumerable<Models.ViewModels.InfraViewModel> groupedOffers = Enumerable.Empty<Models.ViewModels.InfraViewModel>();
 
@@ -74,7 +74,7 @@ namespace ITStockM.Components.Pages.Infra
 
         int selectedIndex;
         int selectedIndex1;
-        protected async Task EditRow(DataGridRowMouseEventArgs<Models.ITStockManagment.Request> args)
+        protected async Task EditRow(DataGridRowMouseEventArgs<Domain.Entities.Request> args)
         {
             var options = new DialogOptions
             {
@@ -107,7 +107,7 @@ namespace ITStockM.Components.Pages.Infra
             await DialogService.OpenAsync<EditRequest>("", new Dictionary<string, object> { { "Id", Id } }, options);
         }
 
-        protected async Task GridDeleteButtonClick(MouseEventArgs args, Models.ITStockManagment.Request request)
+        protected async Task GridDeleteButtonClick(MouseEventArgs args, Domain.Entities.Request request)
         {
             try
             {
@@ -135,13 +135,13 @@ namespace ITStockM.Components.Pages.Infra
         protected override async Task OnInitializedAsync()
         {
             // Initialize all collections to prevent null reference exceptions during rendering
-            requests = new List<Models.ITStockManagment.Request>();
-            offers = new List<Models.ITStockManagment.Offer>();
+            requests = new List<Domain.Entities.Request>();
+            offers = new List<Domain.Entities.Offer>();
             groupedOffers = new List<Models.ViewModels.InfraViewModel>();
             projectNames = new List<string>();
 
             // Load requests immediately (materialized) to avoid lifetime/deferred-execution issues
-            List<Models.ITStockManagment.Request> allRequestsList;
+            List<Domain.Entities.Request> allRequestsList;
             try
             {
                 allRequestsList = await ITStockManagmentService.GetRequestsList(new Query { Expand = "Employee" });
@@ -149,11 +149,11 @@ namespace ITStockM.Components.Pages.Infra
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Warning: failed to load requests, continuing with empty list. Error: {ex.Message}");
-                allRequestsList = new List<Models.ITStockManagment.Request>();
+                allRequestsList = new List<Domain.Entities.Request>();
             }
 
             // Get all offers and materialize safely
-            List<Models.ITStockManagment.Offer> allOffersList;
+            List<Domain.Entities.Offer> allOffersList;
 
             try
             {
@@ -196,7 +196,7 @@ namespace ITStockM.Components.Pages.Infra
 
 
 
-            request = new Models.ITStockManagment.Request();
+            request = new Domain.Entities.Request();
 
 
 
@@ -468,7 +468,7 @@ namespace ITStockM.Components.Pages.Infra
 
                     // EmailService.SendEmail("mortadhajouinizlatan@gmail.com", $"New Request (#{request.Id}) - {request.Employee.FullName}", htmlEmail);
 
-                    request = new Models.ITStockManagment.Request();
+                    request = new Domain.Entities.Request();
                     await grid0.Reload();
 
                     DialogService.Close();

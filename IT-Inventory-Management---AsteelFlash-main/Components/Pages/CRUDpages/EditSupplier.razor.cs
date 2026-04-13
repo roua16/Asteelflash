@@ -25,7 +25,7 @@ namespace ITStockM.Components.Pages.CrudPages
             supplier = await SupplierService.GetSupplierBySupplierName(SupplierName) ?? throw new InvalidOperationException($"Supplier '{SupplierName}' was not found.");
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.Supplier supplier = new();
+        protected Domain.Entities.Supplier supplier = new();
 
         protected async Task FormSubmit()
         {

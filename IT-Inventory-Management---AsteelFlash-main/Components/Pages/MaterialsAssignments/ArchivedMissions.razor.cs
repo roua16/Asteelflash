@@ -20,9 +20,9 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
 
 
 
-        protected IEnumerable<Models.ITStockManagment.AssignmentMateriel> assignmentMateriels = new List<Models.ITStockManagment.AssignmentMateriel>();
+        protected IEnumerable<Domain.Entities.AssignmentMateriel> assignmentMateriels = new List<Domain.Entities.AssignmentMateriel>();
 
-        protected RadzenDataGrid<Models.ITStockManagment.AssignmentMateriel> grid0 = default!;
+        protected RadzenDataGrid<Domain.Entities.AssignmentMateriel> grid0 = default!;
 
         protected string search = "";
 
@@ -63,7 +63,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             }
         }
 
-        protected async Task AssignmentDetails(Models.ITStockManagment.AssignmentMateriel assignmentMateriel)
+        protected async Task AssignmentDetails(Domain.Entities.AssignmentMateriel assignmentMateriel)
         {
             var options = new DialogOptions
             {
@@ -79,7 +79,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
             await DialogService.OpenAsync<MaterialsAssignmentsDetails>("", new Dictionary<string, object> { { "AssignmentMateriel", assignmentMateriel } },options);
         }
 
-        private BadgeStyle GetReturnStatusStyle(Models.ITStockManagment.AssignmentMateriel item)
+        private BadgeStyle GetReturnStatusStyle(Domain.Entities.AssignmentMateriel item)
         {
 
 
@@ -88,7 +88,7 @@ namespace ITStockM.Components.Pages.MaterialsAssignments
                 : BadgeStyle.Danger;
         }
 
-        private string GetReturnStatusText(Models.ITStockManagment.AssignmentMateriel item)
+        private string GetReturnStatusText(Domain.Entities.AssignmentMateriel item)
         {
 
 

@@ -28,18 +28,18 @@ namespace ITStockM.Components.Pages.CrudPages
 
         protected override async Task OnInitializedAsync()
         {
-            deliveryOrder = await DeliveryOrderService.GetDeliveryOrderByNumber(DeleveryOrderNumber) ?? new Models.ITStockManagment.DeliveryOrder();
+            deliveryOrder = await DeliveryOrderService.GetDeliveryOrderByNumber(DeleveryOrderNumber) ?? new Domain.Entities.DeliveryOrder();
 
             suppliersForSupplierName = await SupplierService.GetSuppliersList();
 
             employeesForEmployeeId = await EmployeeService.GetEmployeesList();
         }
         protected bool errorVisible;
-        protected Models.ITStockManagment.DeliveryOrder deliveryOrder = new();
+        protected Domain.Entities.DeliveryOrder deliveryOrder = new();
 
-        protected IEnumerable<Models.ITStockManagment.Supplier> suppliersForSupplierName = new List<Models.ITStockManagment.Supplier>();
+        protected IEnumerable<Domain.Entities.Supplier> suppliersForSupplierName = new List<Domain.Entities.Supplier>();
 
-        protected IEnumerable<Models.ITStockManagment.Employee> employeesForEmployeeId = new List<Models.ITStockManagment.Employee>();
+        protected IEnumerable<Domain.Entities.Employee> employeesForEmployeeId = new List<Domain.Entities.Employee>();
 
         protected async Task FormSubmit()
         {

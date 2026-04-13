@@ -1,4 +1,4 @@
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Services.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Radzen.Blazor;

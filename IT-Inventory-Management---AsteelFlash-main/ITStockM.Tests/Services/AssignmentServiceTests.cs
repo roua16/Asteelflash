@@ -4,7 +4,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Components;
 using ITStockM.Data;
-using ITStockM.Models.ITStockManagment;
+using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
 using ITStockM.Services;
 using ITStockM.Services.Interfaces;
@@ -39,7 +39,7 @@ namespace ITStockM.Tests.Services
             var ctx = CreateInMemoryContext("assignment_test_db");
 
             var mockAssignmentRepo = new Mock<IAssignmentRepository>();
-            mockAssignmentRepo.Setup(r => r.Query()).Returns(Enumerable.Empty<ITStockM.Models.ITStockManagment.Assignment>().AsQueryable());
+            mockAssignmentRepo.Setup(r => r.Query()).Returns(Enumerable.Empty<ITStockM.Domain.Entities.Assignment>().AsQueryable());
             mockAssignmentRepo.Setup(r => r.AddAsync(It.IsAny<Assignment>(), It.IsAny<System.Threading.CancellationToken>())).Returns(Task.CompletedTask).Verifiable();
             mockAssignmentRepo.Setup(r => r.SaveChangesAsync(It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync(1).Verifiable();
 

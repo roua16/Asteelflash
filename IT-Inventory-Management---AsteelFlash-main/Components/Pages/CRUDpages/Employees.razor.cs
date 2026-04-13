@@ -18,9 +18,9 @@ namespace ITStockM.Components.Pages.CrudPages
         [Inject]
         public IExportService ExportService { get; set; } = default!;
 
-        protected IEnumerable<Models.ITStockManagment.Employee> employees = new List<Models.ITStockManagment.Employee>();
+        protected IEnumerable<Domain.Entities.Employee> employees = new List<Domain.Entities.Employee>();
 
-        protected RadzenDataGrid<Models.ITStockManagment.Employee> grid0 = default!;
+        protected RadzenDataGrid<Domain.Entities.Employee> grid0 = default!;
 
         protected string search = "";
 

@@ -2,7 +2,7 @@
 <PageTitle>Add Assignment</PageTitle>
     <RadzenColumn SizeMD=12>
         <RadzenAlert Shade="Shade.Lighter" Variant="Variant.Flat" Size="AlertSize.Small" AlertStyle="AlertStyle.Danger" Visible="@errorVisible">Cannot save Assignment</RadzenAlert>
-        <RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.Assignment" Data="@(assignment)" Visible="@(assignment != null)" Submit="@FormSubmit">
+        <RadzenTemplateForm TItem="ITStockM.Domain.Entities.Assignment" Data="@(assignment)" Visible="@(assignment != null)" Submit="@FormSubmit">
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
                 <RadzenLabel Text="AssignedEmployee" Component="AssignedEmployee" style="width: 100%" />

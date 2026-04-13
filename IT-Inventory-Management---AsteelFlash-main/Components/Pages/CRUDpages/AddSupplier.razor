@@ -2,7 +2,7 @@
 <PageTitle>Add Supplier</PageTitle>
     <RadzenColumn SizeMD=12>
         <RadzenAlert Shade="Shade.Lighter" Variant="Variant.Flat" Size="AlertSize.Small" AlertStyle="AlertStyle.Danger" Visible="@errorVisible">Cannot save Supplier</RadzenAlert>
-        <RadzenTemplateForm TItem="ITStockM.Models.ITStockManagment.Supplier" Data="@(supplier)" Visible="@(supplier != null)" Submit="@FormSubmit">
+        <RadzenTemplateForm TItem="ITStockM.Domain.Entities.Supplier" Data="@(supplier)" Visible="@(supplier != null)" Submit="@FormSubmit">
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
                     <RadzenLabel Text="Supplier Name" Component="SupplierName" style="width: 100%" />
