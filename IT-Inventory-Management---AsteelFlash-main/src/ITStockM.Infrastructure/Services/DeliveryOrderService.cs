@@ -91,7 +91,7 @@ public class DeliveryOrderService : IDeliveryOrderService
 
         if (existingItem != null)
         {
-            throw new InvalidOperationException($"Delivery order '{deliveryorder.DeleveryOrderNumber}' already exists.");
+            throw new System.InvalidOperationException($"Delivery order '{deliveryorder.DeleveryOrderNumber}' already exists.");
         }
 
         await deliveryOrderRepository.AddAsync(deliveryorder);
@@ -119,7 +119,7 @@ public class DeliveryOrderService : IDeliveryOrderService
 
             if (duplicateNumber != null)
             {
-                throw new InvalidOperationException($"Delivery order '{deliveryorder.DeleveryOrderNumber}' already exists.");
+                throw new System.InvalidOperationException($"Delivery order '{deliveryorder.DeleveryOrderNumber}' already exists.");
             }
         }
 

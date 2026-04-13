@@ -81,7 +81,6 @@ namespace ITStockM.Data
                 {
                     FullName = adminFullName,
                     Email = adminEmail,
-                    Password = adminPassword,
                     Post = "Admin", // Keep for backward compatibility
                     Role = UserRoles.Admin,
                     PhoneNumber = adminPhoneNumber,
@@ -118,7 +117,6 @@ namespace ITStockM.Data
                     {
                         FullName = "John Smith",
                         Email = "john.smith@asteelflash.com",
-                        Password = "password123",
                         Post = "PDR Manager",
                         Role = UserRoles.PDR,
                         PhoneNumber = "+1234567891",
@@ -128,7 +126,6 @@ namespace ITStockM.Data
                     {
                         FullName = "Sarah Johnson",
                         Email = "sarah.johnson@asteelflash.com",
-                        Password = "password123",
                         Post = "Purchasing Manager",
                         Role = UserRoles.Purchasing,
                         PhoneNumber = "+1234567892",
@@ -138,7 +135,6 @@ namespace ITStockM.Data
                     {
                         FullName = "Mike Davis",
                         Email = "mike.davis@asteelflash.com",
-                        Password = "password123",
                         Post = "IT Support Specialist",
                         Role = UserRoles.IT,
                         PhoneNumber = "+1234567893",
@@ -148,7 +144,6 @@ namespace ITStockM.Data
                     {
                         FullName = "Alice Brown",
                         Email = "alice.brown@asteelflash.com",
-                        Password = "password123",
                         Post = "Infrastructure Manager",
                         Role = UserRoles.Infrastructure,
                         PhoneNumber = "+1234567894",
@@ -158,7 +153,6 @@ namespace ITStockM.Data
                     {
                         FullName = "Paul Green",
                         Email = "paul.green@asteelflash.com",
-                        Password = "password123",
                         Post = "Purchasing Officer",
                         Role = UserRoles.Purchasing,
                         PhoneNumber = "+1234567895",
@@ -168,7 +162,6 @@ namespace ITStockM.Data
                     {
                         FullName = "Emma White",
                         Email = "emma.white@asteelflash.com",
-                        Password = "password123",
                         Post = "PDR Technician",
                         Role = UserRoles.PDR,
                         PhoneNumber = "+1234567896",
@@ -178,7 +171,6 @@ namespace ITStockM.Data
                     {
                         FullName = "Thomas Miller",
                         Email = "thomas.miller@asteelflash.com",
-                        Password = "password123",
                         Post = "Employee",
                         Role = UserRoles.Employee,
                         PhoneNumber = "+1234567897",

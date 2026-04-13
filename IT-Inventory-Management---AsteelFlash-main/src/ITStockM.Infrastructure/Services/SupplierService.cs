@@ -59,7 +59,7 @@ public class SupplierService : ISupplierService
 
         if (existingSupplier != null)
         {
-            throw new InvalidOperationException($"Supplier '{supplier.SupplierName}' already exists.");
+            throw new System.InvalidOperationException($"Supplier '{supplier.SupplierName}' already exists.");
         }
 
         await supplierRepository.AddAsync(supplier);
@@ -83,7 +83,7 @@ public class SupplierService : ISupplierService
 
             if (duplicateName != null)
             {
-                throw new InvalidOperationException($"Supplier '{supplier.SupplierName}' already exists.");
+                throw new System.InvalidOperationException($"Supplier '{supplier.SupplierName}' already exists.");
             }
         }
 
