@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ITStockM.Domain.Base;
 
 namespace ITStockM.Domain.Entities
 {
@@ -8,11 +9,8 @@ namespace ITStockM.Domain.Entities
     /// One row per transition; open (EndDate == null) means the asset is currently in that stage.
     /// </summary>
     [Table("AssetLifecycleRecord", Schema = "dbo")]
-    public class AssetLifecycleRecord
+    public class AssetLifecycleRecord : BaseEntity
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
 
         [Required]
         public int MaterielId { get; set; }

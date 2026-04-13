@@ -1,15 +1,13 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ITStockM.Domain.Base;
 
 namespace ITStockM.Domain.Entities
 {
     [Table("Offer", Schema = "dbo")]
-    public partial class Offer
+    public partial class Offer : BaseEntity
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
 
         [Required]
         public int RequestId { get; set; }

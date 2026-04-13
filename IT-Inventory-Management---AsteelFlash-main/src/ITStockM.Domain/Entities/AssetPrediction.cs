@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ITStockM.Domain.Base;
 
 namespace ITStockM.Domain.Entities
 {
@@ -8,11 +9,8 @@ namespace ITStockM.Domain.Entities
     /// updated daily by <c>AssetHealthBackgroundService</c>.
     /// </summary>
     [Table("AssetPrediction", Schema = "dbo")]
-    public class AssetPrediction
+    public class AssetPrediction : BaseEntity
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
 
         [Required]
         public int MaterielId { get; set; }

@@ -1,13 +1,13 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ITStockM.Domain.Base;
 
 namespace ITStockM.Domain.Entities
 {
     [Table("DeliveryOrder", Schema = "dbo")]
-    public partial class DeliveryOrder
+    public partial class DeliveryOrder : BaseEntity
     {
-        [Key]
         [Required]
         public string DeleveryOrderNumber { get; set; }
 

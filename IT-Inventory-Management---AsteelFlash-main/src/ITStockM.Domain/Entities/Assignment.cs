@@ -1,16 +1,13 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ITStockM.Domain.Base;
 
 namespace ITStockM.Domain.Entities
 {
     [Table("Assignment", Schema = "dbo")]
-    public partial class Assignment
+    public partial class Assignment : BaseEntity
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
-
         public int? AssignedTo { get; set; }
         
         public Employee AssignedEmployee { get; set; }

@@ -1,24 +1,18 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ITStockM.Domain.Base;
 
 namespace ITStockM.Domain.Entities
 {
     [Table("Employee", Schema = "dbo")]
-    public partial class Employee
+    public partial class Employee : BaseEntity
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
-
         [Required]
         public string? FullName { get; set; }
 
         [Required]
         public string? Email { get; set; }
-
-        [Required]
-        public string? Password { get; set; }
 
         [Required]
         public string? Post { get; set; }

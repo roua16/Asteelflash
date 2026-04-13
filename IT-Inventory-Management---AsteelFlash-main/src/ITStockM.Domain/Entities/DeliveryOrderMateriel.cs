@@ -4,16 +4,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ITStockM.Domain.Entities
 {
+    /// <summary>
+    /// Junction table representing the many-to-many relationship between DeliveryOrders and Materiels.
+    /// Does not inherit from BaseEntity as it is a bridge entity without identity semantics.
+    /// </summary>
     [Table("DeliveryOrderMateriel", Schema = "dbo")]
     public partial class DeliveryOrderMateriel
     {
-        [Key]
         [Required]
         public int MaterielId { get; set; }
 
         public Materiel? Materiel { get; set; }
 
-        [Key]
         [Required]
         public string? DeliveryOrderNumber { get; set; }
 

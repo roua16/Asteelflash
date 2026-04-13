@@ -1,13 +1,13 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ITStockM.Domain.Base;
 
 namespace ITStockM.Domain.Entities
 {
     [Table("Supplier", Schema = "dbo")]
-    public partial class Supplier
+    public partial class Supplier : BaseEntity
     {
-        [Key]
         [Required]
         public string? SupplierName { get; set; }
 
