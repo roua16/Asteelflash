@@ -2,6 +2,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using ITStockM.Domain.Entities;
+using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
 using ITStockM.Services.Utilities;
@@ -107,7 +108,7 @@ public class DeliveryOrderService : IDeliveryOrderService
         var itemToUpdate = await deliveryOrderRepository.Query().FirstOrDefaultAsync(i => i.DeleveryOrderNumber == deleveryordernumber);
         if (itemToUpdate == null)
         {
-            throw new Exception("Item no longer available");
+            throw new BusinessRuleViolationException("Item no longer available");
         }
 
         if (!string.Equals(deleveryordernumber, deliveryorder.DeleveryOrderNumber, StringComparison.OrdinalIgnoreCase))
@@ -146,7 +147,7 @@ public class DeliveryOrderService : IDeliveryOrderService
             var itemToDelete = deliveryOrderRepository.QueryWithIncludes().FirstOrDefault(i => i.DeleveryOrderNumber == deleveryordernumber);
         if (itemToDelete == null)
         {
-            throw new Exception("Item no longer available");
+            throw new BusinessRuleViolationException("Item no longer available");
         }
 
         deliveryOrderRepository.Remove(itemToDelete);

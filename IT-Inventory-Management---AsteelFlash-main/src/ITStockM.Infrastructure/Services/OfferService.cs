@@ -2,6 +2,7 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using ITStockM.Data;
 using ITStockM.Domain.Entities;
+using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
 using ITStockM.Services.Utilities;
 using Microsoft.EntityFrameworkCore;
@@ -67,7 +68,7 @@ public class OfferService : IOfferService
         var itemToUpdate = offerRepository.Query().FirstOrDefault(i => i.Id == offer.Id);
         if (itemToUpdate == null)
         {
-            throw new Exception("Item no longer available");
+            throw new BusinessRuleViolationException("Item no longer available");
         }
 
         offerRepository.Update(offer);
@@ -80,7 +81,7 @@ public class OfferService : IOfferService
         var itemToDelete = offerRepository.Query().FirstOrDefault(i => i.Id == id);
         if (itemToDelete == null)
         {
-            throw new Exception("Item no longer available");
+            throw new BusinessRuleViolationException("Item no longer available");
         }
 
         offerRepository.Remove(itemToDelete);

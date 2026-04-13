@@ -2,6 +2,7 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using ITStockM.Data;
 using ITStockM.Domain.Entities;
+using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
 using ITStockM.Services.Utilities;
 using Microsoft.EntityFrameworkCore;
@@ -62,7 +63,7 @@ public class ProjectService : IProjectService
         var itemToUpdate = projectRepository.Query().FirstOrDefault(i => i.Id == project.Id);
         if (itemToUpdate == null)
         {
-            throw new Exception("Item no longer available");
+            throw new BusinessRuleViolationException("Item no longer available");
         }
 
         projectRepository.Update(project);
@@ -75,7 +76,7 @@ public class ProjectService : IProjectService
         var itemToDelete = projectRepository.Query().FirstOrDefault(i => i.Id == id);
         if (itemToDelete == null)
         {
-            throw new Exception("Item no longer available");
+            throw new BusinessRuleViolationException("Item no longer available");
         }
 
         projectRepository.Remove(itemToDelete);

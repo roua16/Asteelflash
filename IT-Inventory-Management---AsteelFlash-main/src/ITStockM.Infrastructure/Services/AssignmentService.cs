@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using ITStockM.Domain.Entities;
+using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
 using ITStockM.Services.Utilities;
@@ -65,7 +66,7 @@ public class AssignmentService : IAssignmentService
             var existingItem = assignmentRepository.Query().FirstOrDefault(i => i.Id == assignment.Id);
             if (existingItem != null)
             {
-                throw new Exception("Item already available");
+                throw new BusinessRuleViolationException("Item already available");
             }
 
             await assignmentRepository.AddAsync(assignment);
@@ -90,7 +91,7 @@ public class AssignmentService : IAssignmentService
             var itemToUpdate = assignmentRepository.Query().FirstOrDefault(i => i.Id == assignment.Id);
             if (itemToUpdate == null)
             {
-                throw new Exception("Item no longer available");
+                throw new BusinessRuleViolationException("Item no longer available");
             }
 
             assignmentRepository.Update(assignment);
@@ -117,7 +118,7 @@ public class AssignmentService : IAssignmentService
 
             if (itemToDelete == null)
             {
-                throw new Exception("Item no longer available");
+                throw new BusinessRuleViolationException("Item no longer available");
             }
 
             assignmentRepository.Remove(itemToDelete);

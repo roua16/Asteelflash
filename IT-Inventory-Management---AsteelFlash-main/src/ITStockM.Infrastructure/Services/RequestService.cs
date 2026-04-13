@@ -2,6 +2,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using ITStockM.Domain.Entities;
+using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
 using ITStockM.Services.Utilities;
@@ -88,7 +89,7 @@ public class RequestService : IRequestService
             var itemToUpdate = requestRepository.Query().FirstOrDefault(i => i.Id == request.Id);
             if (itemToUpdate == null)
             {
-                throw new Exception("Item no longer available");
+                throw new BusinessRuleViolationException("Item no longer available");
             }
 
         if (request.File == null)
@@ -110,7 +111,7 @@ public class RequestService : IRequestService
     {
         var itemToDelete = requestRepository.QueryWithIncludes().FirstOrDefault(i => i.Id == id);
         if (itemToDelete == null)
-            throw new Exception("Item no longer available");
+            throw new BusinessRuleViolationException("Item no longer available");
 
         requestRepository.Remove(itemToDelete);
         await requestRepository.SaveChangesAsync();

@@ -2,6 +2,7 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using ITStockM.Data;
 using ITStockM.Domain.Entities;
+using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
 using ITStockM.Services.Utilities;
 using Microsoft.EntityFrameworkCore;
@@ -71,7 +72,7 @@ public class SupplierService : ISupplierService
         var itemToUpdate = await supplierRepository.Query().FirstOrDefaultAsync(i => i.SupplierName == supplierName);
         if (itemToUpdate == null)
         {
-            throw new Exception("Item no longer available");
+            throw new BusinessRuleViolationException("Item no longer available");
         }
 
         if (!string.Equals(supplierName, supplier.SupplierName, StringComparison.OrdinalIgnoreCase))
@@ -105,7 +106,7 @@ public class SupplierService : ISupplierService
 
         if (itemToDelete == null)
         {
-            throw new Exception("Item no longer available");
+            throw new BusinessRuleViolationException("Item no longer available");
         }
 
         supplierRepository.Remove(itemToDelete);

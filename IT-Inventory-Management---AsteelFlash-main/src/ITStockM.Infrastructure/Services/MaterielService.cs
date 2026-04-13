@@ -2,6 +2,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using ITStockM.Domain.Entities;
+using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
 using ITStockM.Services.Utilities;
@@ -70,7 +71,7 @@ public class MaterielService : IMaterielService
             var itemToUpdate = materielRepository.Query().FirstOrDefault(i => i.Id == materiel.Id);
             if (itemToUpdate == null)
             {
-                throw new Exception("Item no longer available");
+                throw new BusinessRuleViolationException("Item no longer available");
             }
 
         materielRepository.Update(materiel);
@@ -89,7 +90,7 @@ public class MaterielService : IMaterielService
             var itemToDelete = query.FirstOrDefault(i => i.Id == id);
         if (itemToDelete == null)
         {
-            throw new Exception("Item no longer available");
+            throw new BusinessRuleViolationException("Item no longer available");
         }
 
         materielRepository.Remove(itemToDelete);
