@@ -1,5 +1,7 @@
 namespace ITStockM.Domain.ValueObjects
 {
+    using System.Globalization;
+
     /// <summary>
     /// Represents monetary value with amount and currency code.
     /// Enforces non-negative amounts and valid ISO 4217 currency codes.
@@ -71,7 +73,7 @@ namespace ITStockM.Domain.ValueObjects
 
         public override string ToString()
         {
-            return $"{Amount:F2} {CurrencyCode}";
+            return $"{Amount.ToString("F2", CultureInfo.InvariantCulture)} {CurrencyCode}";
         }
     }
 }

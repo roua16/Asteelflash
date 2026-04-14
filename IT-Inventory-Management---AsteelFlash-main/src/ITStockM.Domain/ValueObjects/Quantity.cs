@@ -1,5 +1,7 @@
 namespace ITStockM.Domain.ValueObjects
 {
+    using System.Globalization;
+
     /// <summary>
     /// Represents a quantity with a numeric value and unit of measurement.
     /// Enforces non-negative values.
@@ -66,7 +68,7 @@ namespace ITStockM.Domain.ValueObjects
 
         public override string ToString()
         {
-            return $"{Value} {Unit}";
+            return $"{Value.ToString(CultureInfo.InvariantCulture)} {Unit}";
         }
     }
 }
