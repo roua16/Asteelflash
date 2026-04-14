@@ -59,6 +59,7 @@ public class EventPublisher : IEventPublisher
                 {
                     _logger.LogInformation("🔔 Publishing {EventType}", domainEvent.GetType().Name);
                     await _mediator.Publish(notification, cancellationToken);
+                    domainEvent.IsPublished = true;
                     _logger.LogInformation("✓ {EventType} published successfully", domainEvent.GetType().Name);
                 }
                 catch (Exception ex)
