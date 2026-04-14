@@ -53,7 +53,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
             if (await DialogService.Confirm("Confirm OrderNumber ?") == true)
             {
-                await DeliveryOrderService.UpdateDeliveryOrder(DeliveryOrder.DeleveryOrderNumber, DeliveryOrder);
+                await DeliveryOrderService.UpdateDeliveryOrder(DeliveryOrder.DeliveryOrderNumber, DeliveryOrder);
                 DialogService.Close(null);
             }
 
@@ -154,7 +154,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
 
                 }
-                await DeliveryOrderService.UpdateDeliveryOrder(deliveryOrderMateriel.DeliveryOrder.DeleveryOrderNumber, deliveryOrderMateriel.DeliveryOrder);
+                await DeliveryOrderService.UpdateDeliveryOrder(deliveryOrderMateriel.DeliveryOrder.DeliveryOrderNumber, deliveryOrderMateriel.DeliveryOrder);
 
                 await DeliveryOrderMaterielService.DeleteDeliveryOrderMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.DeliveryOrderNumber);
                 await grid0.Reload();

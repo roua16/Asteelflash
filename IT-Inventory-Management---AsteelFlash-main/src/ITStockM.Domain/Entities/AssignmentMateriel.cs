@@ -1,15 +1,16 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ITStockM.Domain.Base;
 
 namespace ITStockM.Domain.Entities
 {
     /// <summary>
     /// Junction table representing the many-to-many relationship between Assignments and Materiels.
-    /// Does not inherit from BaseEntity as it is a bridge entity without identity semantics.
+    /// Inherits from BaseEntity to support standard CRUD operations via BaseCrudService.
     /// </summary>
     [Table("AssignmentMateriel", Schema = "dbo")]
-    public partial class AssignmentMateriel
+    public partial class AssignmentMateriel : BaseEntity
     {
         [Required]
         public int MaterielId { get; set; }

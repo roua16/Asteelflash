@@ -72,7 +72,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
             var query = new Query
             {
                
-                Select = "DeliveryOrder.Employee.FullName, Materiel.MaterielName, Materiel.Type , DeliveryOrder.DeleveryOrderNumber , Qte, DeliveryOrder.Date, DeliveryOrder.DeliveryDate, DeliveryOrder.SupplierName, DeliveryOrder.Descriptoin"
+                Select = "DeliveryOrder.Employee.FullName, Materiel.MaterielName, Materiel.Type , DeliveryOrder.DeliveryOrderNumber , Qte, DeliveryOrder.Date, DeliveryOrder.DeliveryDate, DeliveryOrder.SupplierName, DeliveryOrder.Descriptoin"
             };
 
             if (args?.Value == "csv")
@@ -103,7 +103,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
                 delo.DeliveryOrderMateriels.Any(dlom =>
                     (dlom.Materiel?.MaterielName?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false) ||
                     (dlom.Materiel?.SerialNumber?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false) ||
-                    (dlom.DeliveryOrder?.DeleveryOrderNumber?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false) ||
+                    (dlom.DeliveryOrder?.DeliveryOrderNumber?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false) ||
                     (dlom.DeliveryOrder?.SupplierName?.Contains(search, StringComparison.CurrentCultureIgnoreCase) ?? false)));
         }
 

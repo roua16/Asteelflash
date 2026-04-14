@@ -294,7 +294,7 @@ namespace ITStockM.Services
         private string BuildUnfilledOrdersEmail(List<DeliveryOrder> deliveryorders)
         {
             var orderItems = string.Join("", deliveryorders.Select(dlo =>
-                $"<div class=\"order-item\">• Delivery Order: {dlo.DeleveryOrderNumber}</div>"));
+                $"<div class=\"order-item\">• Delivery Order: {dlo.DeliveryOrderNumber}</div>"));
 
             return $@"<!DOCTYPE html>
 <html>

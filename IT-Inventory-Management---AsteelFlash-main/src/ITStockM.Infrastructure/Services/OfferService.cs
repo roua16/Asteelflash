@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
+using Radzen;
 
 namespace ITStockM.Services.Offers;
 
@@ -23,6 +24,14 @@ public class OfferService : BaseCrudService<Offer, IRepository<Offer>>, IOfferSe
         return query
             .Include(o => o.Request)
             .Include(o => o.Supplier);
+    }
+
+    /// <summary>
+    /// Get offers with optional filtering.
+    /// </summary>
+    public async Task<IQueryable<Offer>> GetOffers(Query? query = null)
+    {
+        return await GetAll(query);
     }
 
     /// <summary>
@@ -58,4 +67,34 @@ public class OfferService : BaseCrudService<Offer, IRepository<Offer>>, IOfferSe
             .Include(o => o.Supplier)
             .ToListAsync();
     }
+
+    /// <summary>
+    /// Create a new offer.
+    /// </summary>
+    public async Task<Offer> CreateOffer(Offer offer)
+    {
+        return await Create(offer);
+    }
+
+    /// <summary>
+    /// Update an existing offer.
+    /// </summary>
+    public async Task<Offer> UpdateOffer(int id, Offer offer)
+    {
+        return await Update(id, offer);
+    }
+
+    /// <summary>
+    /// Delete an offer.
+    /// </summary>
+    public async Task<Offer> DeleteOffer(int id)
+    {
+        var offer = await GetById(id);
+        if (offer == null)
+            throw new KeyNotFoundException($"Offer with ID {id} not found");
+        
+        await Delete(id);
+        return offer;
+    }
 }
+

@@ -9,7 +9,7 @@ namespace ITStockM.Domain.Entities
     public partial class DeliveryOrder : BaseEntity
     {
         [Required]
-        public string DeleveryOrderNumber { get; set; }
+        public string DeliveryOrderNumber { get; set; }
 
 
         public string? OrderNumber { get; set; }

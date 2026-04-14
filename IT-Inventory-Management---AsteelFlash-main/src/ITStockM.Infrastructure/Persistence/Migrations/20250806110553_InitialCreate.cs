@@ -159,7 +159,7 @@ namespace ITStockM.Migrations
                 schema: "dbo",
                 columns: table => new
                 {
-                    DeleveryOrderNumber = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    DeliveryOrderNumber = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     OrderNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Descriptoin = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SupplierName = table.Column<string>(type: "nvarchar(450)", nullable: false),
@@ -170,7 +170,7 @@ namespace ITStockM.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DeliveryOrder", x => x.DeleveryOrderNumber);
+                    table.PrimaryKey("PK_DeliveryOrder", x => x.DeliveryOrderNumber);
                     table.ForeignKey(
                         name: "FK_DeliveryOrder_Employee_EmployeeId",
                         column: x => x.EmployeeId,
@@ -264,7 +264,7 @@ namespace ITStockM.Migrations
                         column: x => x.DeliveryOrderNumber,
                         principalSchema: "dbo",
                         principalTable: "DeliveryOrder",
-                        principalColumn: "DeleveryOrderNumber",
+                        principalColumn: "DeliveryOrderNumber",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_DeliveryOrderMateriel_Materiel_MaterielId",

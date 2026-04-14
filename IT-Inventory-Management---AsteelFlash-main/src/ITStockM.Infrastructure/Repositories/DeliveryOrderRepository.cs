@@ -24,6 +24,6 @@ public class DeliveryOrderRepository : EfRepository<DeliveryOrder>, IDeliveryOrd
             .Include(d => d.Supplier)
             .Include(d => d.Employee)
             .Include(d => d.DeliveryOrderMateriels).ThenInclude(dom => dom.Materiel)
-            .FirstOrDefaultAsync(d => d.DeleveryOrderNumber == deleveryOrderNumber, cancellationToken);
+            .FirstOrDefaultAsync(d => d.DeliveryOrderNumber == deleveryOrderNumber, cancellationToken);
     }
 }

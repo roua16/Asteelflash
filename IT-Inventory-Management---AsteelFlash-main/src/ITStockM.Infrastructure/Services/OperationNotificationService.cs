@@ -393,11 +393,11 @@ namespace ITStockM.Services.Implementation
             {
                 var subject = "🆕 New Delivery Order Created";
                 var body = BuildDeliveryOrderEmail("created", deliveryOrder, performedBy);
-                await SendNotificationAsync(subject, body, "DeliveryOrder Created", deliveryOrder.DeleveryOrderNumber);
+                await SendNotificationAsync(subject, body, "DeliveryOrder Created", deliveryOrder.DeliveryOrderNumber);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to send delivery order created notification for OrderNumber={Number}", deliveryOrder.DeleveryOrderNumber);
+                _logger.LogWarning(ex, "Failed to send delivery order created notification for OrderNumber={Number}", deliveryOrder.DeliveryOrderNumber);
             }
         }
 
@@ -407,11 +407,11 @@ namespace ITStockM.Services.Implementation
             {
                 var subject = "✏️ Delivery Order Updated";
                 var body = BuildDeliveryOrderEmail("updated", deliveryOrder, performedBy);
-                await SendNotificationAsync(subject, body, "DeliveryOrder Updated", deliveryOrder.DeleveryOrderNumber);
+                await SendNotificationAsync(subject, body, "DeliveryOrder Updated", deliveryOrder.DeliveryOrderNumber);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to send delivery order updated notification for OrderNumber={Number}", deliveryOrder.DeleveryOrderNumber);
+                _logger.LogWarning(ex, "Failed to send delivery order updated notification for OrderNumber={Number}", deliveryOrder.DeliveryOrderNumber);
             }
         }
 
@@ -439,7 +439,7 @@ namespace ITStockM.Services.Implementation
                         Delivery Order {action.ToUpper()}
                     </h2>
                     <table style='width: 100%; border-collapse: collapse;'>
-                        <tr><td style='padding: 8px; font-weight: bold;'>Delivery Order #:</td><td style='padding: 8px;'>{deliveryOrder.DeleveryOrderNumber}</td></tr>
+                        <tr><td style='padding: 8px; font-weight: bold;'>Delivery Order #:</td><td style='padding: 8px;'>{deliveryOrder.DeliveryOrderNumber}</td></tr>
                         <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Order Number:</td><td style='padding: 8px;'>{deliveryOrder.OrderNumber ?? "Not Set"}</td></tr>
                         <tr><td style='padding: 8px; font-weight: bold;'>Date:</td><td style='padding: 8px;'>{deliveryOrder.Date:yyyy-MM-dd}</td></tr>
                         <tr style='background: #fff;'><td style='padding: 8px; font-weight: bold;'>Supplier:</td><td style='padding: 8px;'>{deliveryOrder.SupplierName}</td></tr>

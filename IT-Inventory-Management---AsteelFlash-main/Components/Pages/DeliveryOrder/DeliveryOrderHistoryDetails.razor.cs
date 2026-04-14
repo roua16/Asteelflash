@@ -132,7 +132,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
                     
 
                 }
-                await DeliveryOrderService.UpdateDeliveryOrder(deliveryOrderMateriel.DeliveryOrder.DeleveryOrderNumber, deliveryOrderMateriel.DeliveryOrder);
+                await DeliveryOrderService.UpdateDeliveryOrder(deliveryOrderMateriel.DeliveryOrder.DeliveryOrderNumber, deliveryOrderMateriel.DeliveryOrder);
 
                 await DeliveryOrderMaterielService.DeleteDeliveryOrderMateriel(deliveryOrderMateriel.MaterielId, deliveryOrderMateriel.DeliveryOrderNumber);
                 await grid0.Reload();

@@ -656,7 +656,7 @@ namespace ITStockM.Data
                 {
                     var deliveryOrder1 = new DeliveryOrder
                     {
-                        DeleveryOrderNumber = "DO-2024-001",
+                        DeliveryOrderNumber = "DO-2024-001",
                         OrderNumber = "ORD-2024-001",
                         Descriptoin = "Office supplies and peripherals",
                         SupplierName = supplier.SupplierName,
@@ -669,7 +669,7 @@ namespace ITStockM.Data
 
                     var deliveryOrder2 = new DeliveryOrder
                     {
-                        DeleveryOrderNumber = "DO-2025-002",
+                        DeliveryOrderNumber = "DO-2025-002",
                         OrderNumber = "ORD-2025-002",
                         Descriptoin = "Monitors and docking stations",
                         SupplierName = supplier.SupplierName,
@@ -682,7 +682,7 @@ namespace ITStockM.Data
 
                     var deliveryOrder3 = new DeliveryOrder
                     {
-                        DeleveryOrderNumber = "DO-2023-010",
+                        DeliveryOrderNumber = "DO-2023-010",
                         OrderNumber = "ORD-2023-010",
                         Descriptoin = "Old delivery (archived)",
                         SupplierName = supplier.SupplierName,
@@ -704,7 +704,7 @@ namespace ITStockM.Data
                     {
                         context.DeliveryOrderMateriels.Add(new DeliveryOrderMateriel
                         {
-                            DeliveryOrderNumber = deliveryOrder1.DeleveryOrderNumber,
+                            DeliveryOrderNumber = deliveryOrder1.DeliveryOrderNumber,
                             MaterielId = mouse.Id,
                             Qte = 5
                         });
@@ -714,7 +714,7 @@ namespace ITStockM.Data
                     {
                         context.DeliveryOrderMateriels.Add(new DeliveryOrderMateriel
                         {
-                            DeliveryOrderNumber = deliveryOrder2.DeleveryOrderNumber,
+                            DeliveryOrderNumber = deliveryOrder2.DeliveryOrderNumber,
                             MaterielId = monitor.Id,
                             Qte = 6
                         });
@@ -724,7 +724,7 @@ namespace ITStockM.Data
                     {
                         context.DeliveryOrderMateriels.Add(new DeliveryOrderMateriel
                         {
-                            DeliveryOrderNumber = deliveryOrder2.DeleveryOrderNumber,
+                            DeliveryOrderNumber = deliveryOrder2.DeliveryOrderNumber,
                             MaterielId = dock.Id,
                             Qte = 4
                         });
@@ -734,7 +734,7 @@ namespace ITStockM.Data
                     {
                         context.DeliveryOrderMateriels.Add(new DeliveryOrderMateriel
                         {
-                            DeliveryOrderNumber = deliveryOrder3.DeleveryOrderNumber,
+                            DeliveryOrderNumber = deliveryOrder3.DeliveryOrderNumber,
                             MaterielId = ssd.Id,
                             Qte = 10
                         });

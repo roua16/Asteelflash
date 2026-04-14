@@ -24,11 +24,11 @@ namespace ITStockM.Components.Pages.CrudPages
         public IEmployeeService EmployeeService { get; set; } = default!;
 
         [Parameter]
-        public string DeleveryOrderNumber { get; set; } = string.Empty;
+        public string DeliveryOrderNumber { get; set; } = string.Empty;
 
         protected override async Task OnInitializedAsync()
         {
-            deliveryOrder = await DeliveryOrderService.GetDeliveryOrderByNumber(DeleveryOrderNumber) ?? new Domain.Entities.DeliveryOrder();
+            deliveryOrder = await DeliveryOrderService.GetDeliveryOrderByNumber(DeliveryOrderNumber) ?? new Domain.Entities.DeliveryOrder();
 
             suppliersForSupplierName = await SupplierService.GetSuppliersList();
 
@@ -45,7 +45,7 @@ namespace ITStockM.Components.Pages.CrudPages
         {
             try
             {
-                await DeliveryOrderService.UpdateDeliveryOrder(DeleveryOrderNumber, deliveryOrder);
+                await DeliveryOrderService.UpdateDeliveryOrder(DeliveryOrderNumber, deliveryOrder);
                 DialogService.Close(deliveryOrder);
             }
             catch (Exception ex)

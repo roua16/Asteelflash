@@ -65,11 +65,11 @@ public class DeliveryOrderService : BaseCrudService<DeliveryOrder, IDeliveryOrde
     {
         var existingItem = await Repository.Query()
             .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.DeliveryOrderNumber == deliveryorder.DeleveryOrderNumber);
+            .FirstOrDefaultAsync(i => i.DeliveryOrderNumber == deliveryorder.DeliveryOrderNumber);
 
         if (existingItem != null)
         {
-            throw new System.InvalidOperationException($"Delivery order '{deliveryorder.DeleveryOrderNumber}' already exists.");
+            throw new System.InvalidOperationException($"Delivery order '{deliveryorder.DeliveryOrderNumber}' already exists.");
         }
 
         return await Create(deliveryorder);
@@ -91,7 +91,7 @@ public class DeliveryOrderService : BaseCrudService<DeliveryOrder, IDeliveryOrde
 
             if (duplicateNumber != null)
             {
-                throw new System.InvalidOperationException($"Delivery order '{deliveryorder.DeleveryOrderNumber}' already exists.");
+                throw new System.InvalidOperationException($"Delivery order '{deliveryorder.DeliveryOrderNumber}' already exists.");
             }
         }
 

@@ -60,10 +60,10 @@
                                                         <span class="required-indicator">*</span>
                                                     </label>
                                                     <RadzenTextBox Class="field-input"
-                                                                   @bind-Value="@deliveryOrder.DeleveryOrderNumber"
-                                                                   Name="DeleveryOrderNumber"
+                                                                   @bind-Value="@deliveryOrder.DeliveryOrderNumber"
+                                                                   Name="DeliveryOrderNumber"
                                                                    Placeholder="Enter delivery order number" />
-                                                    <RadzenRequiredValidator Component="DeleveryOrderNumber" Text="Delivery Order Number is required" />
+                                                    <RadzenRequiredValidator Component="DeliveryOrderNumber" Text="Delivery Order Number is required" />
                                                 </div>
                                             </div>
 
@@ -149,7 +149,7 @@
                                                 </thead>
                                                 <tbody>
                                                     <tr>
-                                                        <td>@deliveryOrder.DeleveryOrderNumber</td>
+                                                        <td>@deliveryOrder.DeliveryOrderNumber</td>
                                                         <td>@deliveryOrder.OrderNumber</td>
                                                         <td>@deliveryOrder.SupplierName</td>
                                                     </tr>

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
+using Radzen;
 
 namespace ITStockM.Services.Employees;
 
@@ -13,6 +14,14 @@ public class EmployeeService : BaseCrudService<Employee, IRepository<Employee>>,
     public EmployeeService(IRepository<Employee> repository)
         : base(repository)
     {
+    }
+
+    /// <summary>
+    /// Get employees with optional filtering.
+    /// </summary>
+    public async Task<IQueryable<Employee>> GetEmployees(Query? query = null)
+    {
+        return await GetAll(query);
     }
 
     /// <summary>
@@ -33,4 +42,34 @@ public class EmployeeService : BaseCrudService<Employee, IRepository<Employee>>,
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == id);
     }
+
+    /// <summary>
+    /// Create a new employee.
+    /// </summary>
+    public async Task<Employee> CreateEmployee(Employee employee)
+    {
+        return await Create(employee);
+    }
+
+    /// <summary>
+    /// Update an existing employee.
+    /// </summary>
+    public async Task<Employee> UpdateEmployee(int id, Employee employee)
+    {
+        return await Update(id, employee);
+    }
+
+    /// <summary>
+    /// Delete an employee.
+    /// </summary>
+    public async Task<Employee> DeleteEmployee(int id)
+    {
+        var employee = await GetById(id);
+        if (employee == null)
+            throw new KeyNotFoundException($"Employee with ID {id} not found");
+        
+        await Delete(id);
+        return employee;
+    }
 }
+

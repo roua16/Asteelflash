@@ -14,13 +14,13 @@
         </div>
         <RadzenDropDownDataGrid Data="@DeliveryOrders"
                                 @bind-Value="@SelectedDeliveryOrders"
-                                TextProperty="DeleveryOrderNumber"
+                                TextProperty="DeliveryOrderNumber"
                                 Style="width: 100%; border-radius: 8px;"
                                 AllowFilteringByAllStringColumns="true"
                                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                 Class="field-input">
             <Columns>
-                <RadzenDropDownDataGridColumn Property="DeleveryOrderNumber" Title="Delivery Order Number" />
+                <RadzenDropDownDataGridColumn Property="DeliveryOrderNumber" Title="Delivery Order Number" />
                 <RadzenDropDownDataGridColumn Property="OrderNumber" Title="Delivery Order Number" Visible="false" />
             </Columns>
         </RadzenDropDownDataGrid>

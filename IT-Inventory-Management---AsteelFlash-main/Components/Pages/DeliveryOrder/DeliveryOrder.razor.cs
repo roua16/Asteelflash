@@ -199,7 +199,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
 
                         Domain.Entities.DeliveryOrderMateriel deliveryOrderMateriel = new Domain.Entities.DeliveryOrderMateriel
                         {
-                            DeliveryOrderNumber = deliveryOrder.DeleveryOrderNumber,
+                            DeliveryOrderNumber = deliveryOrder.DeliveryOrderNumber,
 
                             Qte = materiel.Materiel.QuantityPDRStock
                         };

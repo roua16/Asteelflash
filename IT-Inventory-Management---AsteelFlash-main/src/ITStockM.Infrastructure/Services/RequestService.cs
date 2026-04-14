@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
+using Radzen;
 
 namespace ITStockM.Services.Requests;
 
@@ -24,6 +25,14 @@ public class RequestService : BaseCrudService<Request, IRequestRepository>, IReq
     protected override IQueryable<Request> ApplyIncludes(IQueryable<Request> query)
     {
         return query.Include(r => r.Employee);
+    }
+
+    /// <summary>
+    /// Get requests with optional filtering.
+    /// </summary>
+    public async Task<IQueryable<Request>> GetRequests(Query? query = null)
+    {
+        return await GetAll(query);
     }
 
     /// <summary>

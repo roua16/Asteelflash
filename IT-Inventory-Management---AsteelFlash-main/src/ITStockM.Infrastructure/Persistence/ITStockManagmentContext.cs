@@ -93,7 +93,7 @@ namespace ITStockM.Data
         .HasOne(i => i.DeliveryOrder)
         .WithMany(i => i.DeliveryOrderMateriels)
         .HasForeignKey(i => i.DeliveryOrderNumber)
-        .HasPrincipalKey(i => i.DeleveryOrderNumber);
+        .HasPrincipalKey(i => i.DeliveryOrderNumber);
 
       builder.Entity<ITStockM.Domain.Entities.DeliveryOrderMateriel>()
         .HasOne(i => i.Materiel)

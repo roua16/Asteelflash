@@ -492,18 +492,18 @@ namespace ITStockM.Services
         }
 
         partial void OnDeliveryOrderGet(DeliveryOrder item);
-        partial void OnGetDeliveryOrderByDeleveryOrderNumber(ref IQueryable<DeliveryOrder> items);
+        partial void OnGetDeliveryOrderByDeliveryOrderNumber(ref IQueryable<DeliveryOrder> items);
 
 
-        public async Task<DeliveryOrder> GetDeliveryOrderByDeleveryOrderNumber(string deleveryordernumber)
+        public async Task<DeliveryOrder> GetDeliveryOrderByDeliveryOrderNumber(string deleveryordernumber)
         {
             var items = Context.DeliveryOrders
                               .AsNoTracking()
-                              .Where(i => i.DeleveryOrderNumber == deleveryordernumber);
+                              .Where(i => i.DeliveryOrderNumber == deleveryordernumber);
 
             items = items.Include(i => i.Supplier);
 
-            OnGetDeliveryOrderByDeleveryOrderNumber(ref items);
+            OnGetDeliveryOrderByDeliveryOrderNumber(ref items);
 
             var itemToReturn = items.FirstOrDefault();
 
@@ -520,7 +520,7 @@ namespace ITStockM.Services
             OnDeliveryOrderCreated(deliveryorder);
 
             var existingItem = Context.DeliveryOrders
-                              .Where(i => i.DeleveryOrderNumber == deliveryorder.DeleveryOrderNumber)
+                              .Where(i => i.DeliveryOrderNumber == deliveryorder.DeliveryOrderNumber)
                               .FirstOrDefault();
 
             if (existingItem != null)
@@ -556,7 +556,7 @@ namespace ITStockM.Services
             OnDeliveryOrderUpdated(deliveryorder);
 
             var itemToUpdate = Context.DeliveryOrders
-                              .Where(i => i.DeleveryOrderNumber == deliveryorder.DeleveryOrderNumber)
+                              .Where(i => i.DeliveryOrderNumber == deliveryorder.DeliveryOrderNumber)
                               .FirstOrDefault();
 
             if (itemToUpdate == null)
@@ -1638,7 +1638,7 @@ namespace ITStockM.Services
         public async Task<DeliveryOrder> DeleteDeliveryOrder(string deleveryordernumber)
         {
             var itemToDelete = Context.DeliveryOrders
-                              .Where(i => i.DeleveryOrderNumber == deleveryordernumber)
+                              .Where(i => i.DeliveryOrderNumber == deleveryordernumber)
                               .Include(i => i.DeliveryOrderMateriels)
 
                               .FirstOrDefault();

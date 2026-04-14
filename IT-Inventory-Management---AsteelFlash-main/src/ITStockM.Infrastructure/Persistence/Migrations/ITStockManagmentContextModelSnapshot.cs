@@ -181,7 +181,7 @@ namespace ITStockM.Migrations
 
             modelBuilder.Entity("ITStockM.Domain.Entities.DeliveryOrder", b =>
                 {
-                    b.Property<string>("DeleveryOrderNumber")
+                    b.Property<string>("DeliveryOrderNumber")
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("Date")
@@ -207,7 +207,7 @@ namespace ITStockM.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.HasKey("DeleveryOrderNumber");
+                    b.HasKey("DeliveryOrderNumber");
 
                     b.HasIndex("EmployeeId");
 

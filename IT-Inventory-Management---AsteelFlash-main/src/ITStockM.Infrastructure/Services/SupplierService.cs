@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
+using Radzen;
 
 namespace ITStockM.Services.Suppliers;
 
@@ -24,6 +25,14 @@ public class SupplierService : BaseCrudService<Supplier, IRepository<Supplier>>,
         return query
             .Include(s => s.DeliveryOrders)
             .Include(s => s.Offers);
+    }
+
+    /// <summary>
+    /// Get suppliers with optional filtering.
+    /// </summary>
+    public async Task<IQueryable<Supplier>> GetSuppliers(Query? query = null)
+    {
+        return await GetAll(query);
     }
 
     /// <summary>

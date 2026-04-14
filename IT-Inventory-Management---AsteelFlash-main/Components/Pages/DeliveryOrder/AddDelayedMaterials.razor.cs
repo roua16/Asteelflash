@@ -257,7 +257,7 @@ namespace ITStockM.Components.Pages.DeliveryOrder
             var dlomToUpdate = new ITStockM.Domain.Entities.DeliveryOrderMateriel
             {
                 MaterielId = id,
-                DeliveryOrderNumber = SelectedDeliveryOrders.DeleveryOrderNumber,
+                DeliveryOrderNumber = SelectedDeliveryOrders.DeliveryOrderNumber,
                 Qte = mat.HaveSr ? 1 : mat.Materiel.QuantityPDRStock,
                 DeliveryOrder = SelectedDeliveryOrders
             };

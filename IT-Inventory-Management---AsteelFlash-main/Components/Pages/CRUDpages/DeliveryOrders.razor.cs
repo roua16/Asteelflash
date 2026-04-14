@@ -35,11 +35,11 @@ namespace ITStockM.Components.Pages.CrudPages
 
             await grid0.GoToPage(0);
 
-            deliveryOrders = await DeliveryOrderService.GetDeliveryOrders(new Query { Filter = $@"i => (i.DeleveryOrderNumber ?? "").Contains(@0) || (i.OrderNumber ?? "").Contains(@0) || (i.Descriptoin ?? "").Contains(@0) || (i.SupplierName ?? "").Contains(@0)", FilterParameters = new object[] { search }, Expand = "Supplier,Employee" });
+            deliveryOrders = await DeliveryOrderService.GetDeliveryOrders(new Query { Filter = $@"i => (i.DeliveryOrderNumber ?? "").Contains(@0) || (i.OrderNumber ?? "").Contains(@0) || (i.Descriptoin ?? "").Contains(@0) || (i.SupplierName ?? "").Contains(@0)", FilterParameters = new object[] { search }, Expand = "Supplier,Employee" });
         }
         protected override async Task OnInitializedAsync()
         {
-            deliveryOrders = await DeliveryOrderService.GetDeliveryOrders(new Query { Filter = $@"i => (i.DeleveryOrderNumber ?? "").Contains(@0) || (i.OrderNumber ?? "").Contains(@0) || (i.Descriptoin ?? "").Contains(@0) || (i.SupplierName ?? "").Contains(@0)", FilterParameters = new object[] { search }, Expand = "Supplier,Employee" });
+            deliveryOrders = await DeliveryOrderService.GetDeliveryOrders(new Query { Filter = $@"i => (i.DeliveryOrderNumber ?? "").Contains(@0) || (i.OrderNumber ?? "").Contains(@0) || (i.Descriptoin ?? "").Contains(@0) || (i.SupplierName ?? "").Contains(@0)", FilterParameters = new object[] { search }, Expand = "Supplier,Employee" });
         }
 
         protected async Task AddButtonClick(MouseEventArgs args)
@@ -50,7 +50,7 @@ namespace ITStockM.Components.Pages.CrudPages
 
         protected async Task EditRow(DataGridRowMouseEventArgs<ITStockM.Domain.Entities.DeliveryOrder> args)
         {
-            await DialogService.OpenAsync<EditDeliveryOrder>("Edit DeliveryOrder", new Dictionary<string, object> { {"DeleveryOrderNumber", args.Data.DeleveryOrderNumber} });
+            await DialogService.OpenAsync<EditDeliveryOrder>("Edit DeliveryOrder", new Dictionary<string, object> { {"DeliveryOrderNumber", args.Data.DeliveryOrderNumber} });
         }
 
         protected async Task GridDeleteButtonClick(MouseEventArgs args, ITStockM.Domain.Entities.DeliveryOrder deliveryOrder)
@@ -59,7 +59,7 @@ namespace ITStockM.Components.Pages.CrudPages
             {
                 if (await DialogService.Confirm("Are you sure you want to delete this record?") == true)
                 {
-                    var deleteResult = await DeliveryOrderService.DeleteDeliveryOrder(deliveryOrder.DeleveryOrderNumber);
+                    var deleteResult = await DeliveryOrderService.DeleteDeliveryOrder(deliveryOrder.DeliveryOrderNumber);
 
                     if (deleteResult != null)
                     {

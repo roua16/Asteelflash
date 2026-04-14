@@ -2,6 +2,7 @@ using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Radzen;
 
 namespace ITStockM.Services.AssignmentMateriels;
 
@@ -30,6 +31,14 @@ public class AssignmentMaterielService : BaseCrudService<AssignmentMateriel, IRe
             .Include(i => i.Materiel);
     }
 
+    /// <summary>
+    /// Get assignment materiels with optional filtering.
+    /// </summary>
+    public async Task<IQueryable<AssignmentMateriel>> GetAssignmentMateriels(Query? query = null)
+    {
+        return await GetAll(query);
+    }
+
     public async Task<AssignmentMateriel?> GetAssignmentMaterielByMaterielIdAndAssignmentId(int materielId, int assignmentId)
     {
         return await Repository.Query()
@@ -37,4 +46,42 @@ public class AssignmentMaterielService : BaseCrudService<AssignmentMateriel, IRe
             .Include(i => i.Materiel)
             .FirstOrDefaultAsync(i => i.MaterielId == materielId && i.AssignmentId == assignmentId);
     }
+
+    /// <summary>
+    /// Create a new assignment materiel.
+    /// </summary>
+    public async Task<AssignmentMateriel> CreateAssignmentMateriel(AssignmentMateriel assignmentMateriel)
+    {
+        return await Create(assignmentMateriel);
+    }
+
+    /// <summary>
+    /// Update an existing assignment materiel.
+    /// </summary>
+    public async Task<AssignmentMateriel> UpdateAssignmentMateriel(int materielId, int assignmentId, AssignmentMateriel assignmentMateriel)
+    {
+        var existing = await GetAssignmentMaterielByMaterielIdAndAssignmentId(materielId, assignmentId);
+        if (existing == null)
+            throw new KeyNotFoundException($"AssignmentMateriel with MaterielId {materielId} and AssignmentId {assignmentId} not found");
+        
+        // Copy composite key to preserve it
+        assignmentMateriel.MaterielId = materielId;
+        assignmentMateriel.AssignmentId = assignmentId;
+        
+        return await Update(existing.Id, assignmentMateriel);
+    }
+
+    /// <summary>
+    /// Delete an assignment materiel by composite key.
+    /// </summary>
+    public async Task<AssignmentMateriel> DeleteAssignmentMateriel(int materielId, int assignmentId)
+    {
+        var entity = await GetAssignmentMaterielByMaterielIdAndAssignmentId(materielId, assignmentId);
+        if (entity == null)
+            throw new KeyNotFoundException($"AssignmentMateriel with MaterielId {materielId} and AssignmentId {assignmentId} not found");
+        
+        await Delete(entity.Id);
+        return entity;
+    }
 }
+

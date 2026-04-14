@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
+using Radzen;
 
 namespace ITStockM.Services.Materiels;
 
@@ -29,11 +30,56 @@ public class MaterielService : BaseCrudService<Materiel, IMaterielRepository>, I
     }
 
     /// <summary>
+    /// Get materiels with optional filtering.
+    /// </summary>
+    public async Task<IQueryable<Materiel>> GetMateriels(Query? query = null)
+    {
+        return await GetAll(query);
+    }
+
+    /// <summary>
+    /// Get materiel by ID.
+    /// </summary>
+    public async Task<Materiel?> GetMaterielById(int id)
+    {
+        return await GetById(id);
+    }
+
+    /// <summary>
     /// Get by name helper method.
     /// </summary>
     public async Task<Materiel?> GetMaterielByName(string name)
     {
         return await Repository.GetByNameAsync(name);
+    }
+
+    /// <summary>
+    /// Create a new materiel.
+    /// </summary>
+    public async Task<Materiel> CreateMateriel(Materiel materiel)
+    {
+        return await Create(materiel);
+    }
+
+    /// <summary>
+    /// Update an existing materiel.
+    /// </summary>
+    public async Task<Materiel> UpdateMateriel(int id, Materiel materiel)
+    {
+        return await Update(id, materiel);
+    }
+
+    /// <summary>
+    /// Delete a materiel.
+    /// </summary>
+    public async Task<Materiel> DeleteMateriel(int id)
+    {
+        var materiel = await GetById(id);
+        if (materiel == null)
+            throw new KeyNotFoundException($"Materiel with ID {id} not found");
+        
+        await Delete(id);
+        return materiel;
     }
 
     /// <summary>
@@ -63,3 +109,4 @@ public class MaterielService : BaseCrudService<Materiel, IMaterielRepository>, I
             await NotificationService.NotifyMaterielDeleted(entity);
     }
 }
+

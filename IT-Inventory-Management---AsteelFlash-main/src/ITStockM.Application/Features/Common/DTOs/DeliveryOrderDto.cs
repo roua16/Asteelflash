@@ -4,7 +4,7 @@ namespace ITStockM.Application.Features.Common.DTOs
 {
     public class DeliveryOrderDto
     {
-        public string DeleveryOrderNumber { get; set; }
+        public string DeliveryOrderNumber { get; set; }
         public string? OrderNumber { get; set; }
         public string? Descriptoin { get; set; }
         public string? SupplierName { get; set; }
