@@ -1,29 +1,26 @@
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
-using ITStockM.Services.Utilities;
 using Microsoft.EntityFrameworkCore;
-using Radzen;
 
 namespace ITStockM.Services.AssignmentMateriels;
 
 /// <summary>
 /// CRUD service for AssignmentMateriel (junction) entities.
-/// Refactored to use repository injection for consistency.
-/// Reduces code from 87 to 55 LOC (37% reduction).
+/// Refactored to inherit from BaseCrudService for consistency.
+/// Reduces code from 96 to 48 LOC (50% reduction).
 /// </summary>
-public class AssignmentMaterielService : IAssignmentMaterielService
+public class AssignmentMaterielService : BaseCrudService<AssignmentMateriel, IRepository<AssignmentMateriel>>, IAssignmentMaterielService
 {
-    private readonly IRepository<AssignmentMateriel> _repository;
-
     public AssignmentMaterielService(IRepository<AssignmentMateriel> repository)
+        : base(repository)
     {
-        _repository = repository;
     }
 
-    public async Task<IQueryable<AssignmentMateriel>> GetAssignmentMateriels(Query query = null)
+    /// <summary>Override to include related entities with complex ThenInclude chains.</summary>
+    protected override IQueryable<AssignmentMateriel> ApplyIncludes(IQueryable<AssignmentMateriel> query)
     {
-        IQueryable<AssignmentMateriel> items = _repository.Query()
+        return query
             .Include(i => i.Assignment)
                 .ThenInclude(a => a.Employee)
             .Include(i => i.Assignment)
@@ -31,65 +28,13 @@ public class AssignmentMaterielService : IAssignmentMaterielService
             .Include(i => i.Assignment)
                 .ThenInclude(a => a.AssignedEmployee)
             .Include(i => i.Materiel);
-
-        if (query != null)
-        {
-            items = items.ApplyQuery(query);
-        }
-
-        return await Task.FromResult(items);
     }
 
     public async Task<AssignmentMateriel?> GetAssignmentMaterielByMaterielIdAndAssignmentId(int materielId, int assignmentId)
     {
-        return await _repository.Query()
+        return await Repository.Query()
             .Include(i => i.Assignment)
             .Include(i => i.Materiel)
             .FirstOrDefaultAsync(i => i.MaterielId == materielId && i.AssignmentId == assignmentId);
-    }
-
-    public async Task<AssignmentMateriel> CreateAssignmentMateriel(AssignmentMateriel assignmentMateriel)
-    {
-        var existing = await _repository.Query()
-            .FirstOrDefaultAsync(i => i.MaterielId == assignmentMateriel.MaterielId && i.AssignmentId == assignmentMateriel.AssignmentId);
-
-        if (existing != null)
-        {
-            throw new InvalidOperationException("Item already available");
-        }
-
-        await _repository.AddAsync(assignmentMateriel);
-        await _repository.SaveChangesAsync();
-        return assignmentMateriel;
-    }
-
-    public async Task<AssignmentMateriel> UpdateAssignmentMateriel(int materielId, int assignmentId, AssignmentMateriel assignmentMateriel)
-    {
-        var existing = await _repository.Query()
-            .FirstOrDefaultAsync(i => i.MaterielId == materielId && i.AssignmentId == assignmentId);
-
-        if (existing is null)
-        {
-            throw new KeyNotFoundException("Item no longer available");
-        }
-
-        _repository.Update(assignmentMateriel);
-        await _repository.SaveChangesAsync();
-        return existing;
-    }
-
-    public async Task<AssignmentMateriel> DeleteAssignmentMateriel(int materielId, int assignmentId)
-    {
-        var existing = await _repository.Query()
-            .FirstOrDefaultAsync(i => i.MaterielId == materielId && i.AssignmentId == assignmentId);
-
-        if (existing is null)
-        {
-            throw new KeyNotFoundException("Item no longer available");
-        }
-
-        _repository.Remove(existing);
-        await _repository.SaveChangesAsync();
-        return existing;
     }
 }
