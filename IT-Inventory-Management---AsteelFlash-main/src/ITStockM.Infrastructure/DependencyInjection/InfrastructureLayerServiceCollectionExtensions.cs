@@ -19,6 +19,8 @@ using ITStockM.Services.Requests;
 using ITStockM.Services.Suppliers;
 using ITStockM.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -41,7 +43,7 @@ public static class InfrastructureLayerServiceCollectionExtensions
 
         services.AddDbContext<ITStockManagmentContext>(options =>
         {
-            options.UseSqlServer(configuration.GetConnectionString("ITStockManagmentConnection"));
+            options.UseSqlite(configuration.GetConnectionString("ITStockManagmentConnection"));
         });
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ITStockManagmentContext>());

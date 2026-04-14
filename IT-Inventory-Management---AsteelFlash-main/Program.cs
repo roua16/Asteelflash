@@ -1,15 +1,14 @@
-﻿using ITStockM.Components;
-using ITStockM.Application.DependencyInjection;
+﻿using ITStockM.Application.DependencyInjection;
 using ITStockM.Infrastructure.DependencyInjection;
-using ITStockM.Presentation.DependencyInjection;
 using Microsoft.AspNetCore.Identity;
 using ITStockM.Infrastructure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services
+builder.Services.AddControllers();
 builder.Services.AddInfrastructureLayer(builder.Configuration);
 builder.Services.AddApplicationLayer();
-builder.Services.AddPresentationLayer(builder.Environment);
 
 // Configure ASP.NET Core Identity
 builder.Services
@@ -29,6 +28,9 @@ builder.Services
     })
     .AddEntityFrameworkStores<ITStockM.Data.ITStockManagmentContext>()
     .AddDefaultTokenProviders();
+
+// Add Authorization
+builder.Services.AddAuthorization();
 
 // Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
@@ -60,7 +62,5 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseAntiforgery();
 app.MapControllers();
-app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 app.Run();
