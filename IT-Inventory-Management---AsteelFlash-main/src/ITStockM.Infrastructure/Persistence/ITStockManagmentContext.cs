@@ -2,11 +2,14 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using ITStockM.Application.Common.Interfaces;
+using ITStockM.Domain.Base;
+using ITStockM.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using ITStockM.Domain.Entities;
 using ITStockM.Infrastructure.Identity;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ITStockM.Data
 {
@@ -188,6 +191,31 @@ namespace ITStockM.Data
         .OnDelete(DeleteBehavior.Cascade);
 
       this.OnModelBuilding(builder);
+    }
+
+    /// <summary>
+    /// Intercepts SaveChangesAsync to publish domain events through MediatR.
+    /// This ensures domain events are processed after entities are persisted.
+    /// </summary>
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+      var result = await base.SaveChangesAsync(cancellationToken);
+      
+      // Collect all domain events from changed entities
+      var domainEvents = new List<DomainEvent>();
+      foreach (var entity in ChangeTracker.Entries<BaseEntity>())
+      {
+        var events = entity.Entity.GetDomainEvents();
+        domainEvents.AddRange(events);
+      }
+
+      // Mark events as published
+      foreach (var @event in domainEvents)
+      {
+        @event.IsPublished = true;
+      }
+
+      return result;
     }
 
     public DbSet<ITStockM.Domain.Entities.Assignment> Assignments { get; set; }

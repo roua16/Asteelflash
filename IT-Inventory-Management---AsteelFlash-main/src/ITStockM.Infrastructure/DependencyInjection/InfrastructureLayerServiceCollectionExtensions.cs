@@ -21,6 +21,7 @@ using ITStockM.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ITStockM.Infrastructure.DependencyInjection;
 
@@ -47,6 +48,7 @@ public static class InfrastructureLayerServiceCollectionExtensions
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IDateTimeService, DateTimeService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IEventPublisher, EventPublisher>();
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IMaterielRepository, MaterielRepository>();
