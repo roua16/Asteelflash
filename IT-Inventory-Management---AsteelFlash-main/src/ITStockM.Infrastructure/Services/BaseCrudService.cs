@@ -94,25 +94,33 @@ namespace ITStockM.Services
         /// <summary>
         /// Updates an existing entity.
         /// </summary>
-        public virtual async Task<TEntity> Update(int id, TEntity entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
+public virtual async Task<TEntity> Update(int id, TEntity updateDto)
+{
+    if (updateDto == null)
+        throw new ArgumentNullException(nameof(updateDto));
 
-            var exists = await Repository.Query().AsNoTracking().AnyAsync(e => e.Id == id);
-            if (!exists)
-                throw new EntityNotFoundException(typeof(TEntity).Name, id);
+    var existing = await Repository.GetByIdAsync(id);
+    if (existing == null)
+        throw new EntityNotFoundException(typeof(TEntity).Name, id);
 
-            entity.Id = id;
-            entity.UpdatedAt = DateTime.UtcNow;
+    // Copy properties from DTO to existing entity (avoids tracking conflicts)
+    if (updateDto != existing)
+    {
+        typeof(TEntity).GetProperties()
+            .Where(p => p.CanRead && p.CanWrite && p.Name != nameof(BaseEntity.Id))
+            .ToList()
+            .ForEach(p => p.SetValue(existing, p.GetValue(updateDto)));
+    }
 
-            Repository.Update(entity);
-            await Repository.SaveChangesAsync();
+    existing.UpdatedAt = DateTime.UtcNow;
 
-            await OnEntityUpdated(entity);
+    Repository.Update(existing);
+    await Repository.SaveChangesAsync();
 
-            return entity;
-        }
+    await OnEntityUpdated(existing);
+
+    return existing;
+}
 
         /// <summary>
         /// Deletes an entity (soft delete).

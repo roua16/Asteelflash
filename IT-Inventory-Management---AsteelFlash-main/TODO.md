@@ -1,19 +1,26 @@
-# Gemini Chat Fix - TODO Steps
+# TODO.md - Fix PDR Stock Operation EF Tracking Error
 
-## Plan Breakdown (Approved)
-1. [ ] **Read .env file** - Confirm key format (user mentioned GOOGLE_API_KEY).
-2. [ ] **Update GeminiChatService.cs**:
-   - Add fallback for Environment.GetEnvironmentVariable("GOOGLE_API_KEY")
-   - Change model to stable "gemini-1.5-flash"
-   - Add safetySettings to request (production-ready)
-3. [ ] **Update appsettings*.json**:
-   - Set ApiKey to empty string ""
-   - Standardize model name
-4. [ ] **Add health check** to Controller
-5. [ ] **Test**:
-   - dotnet run
-   - curl test or Swagger /api/GeminiChat/send
-6. [ ] **Verify** logs & complete
+## Completed: 0/5
 
-✅ **All steps complete.** Gemini chat errors fixed:\n- Added GOOGLE_API_KEY env fallback (reads your .env).\n- Fixed configs (null → \"\", model stable).\n- Clean layered architecture preserved/enhanced.\n\n**Test:**\n1. Terminal: `export GOOGLE_API_KEY=AIzaSyDPaNcNg88z7FdmOCbdrOBL5AQgjfDpjwg`\n2. `dotnet run --project src/ITStockM.WebApi`\n3. Swagger localhost:5xxx/swagger → POST /api/GeminiChat/send {message:\"Hello\"}\n4. Check logs \"Successfully received response from Gemini API\"\n\n**Prod:** Use env vars/KeyVault, never commit keys.
+### 1. Create TODO.md [✅ COMPLETED]
+
+### 2. Implement AsNoTracking in MaterielService.GetMateriels() [✅ COMPLETED]
+- Edit \`src/ITStockM.Infrastructure/Services/MaterielService.cs\`
+- Override \`GetAll()\` to force \`.AsNoTracking()\` on queries for UI grids
+
+### 3. Refactor BaseCrudService.Update() to merge pattern [✅ COMPLETED]
+- Edit \`src/ITStockM.Infrastructure/Services/BaseCrudService.cs\`
+- Change Update: load existing → copy properties from DTO → Update(existing)
+
+### 4. Enable EF sensitive logging in appsettings
+- Edit \`src/ITStockM.WebApi/appsettings.Development.json\`
+- Add \`EnableSensitiveDataLogging: true\` to DbContext options
+
+### 5. Test & Verify
+- Navigate to \`/materials-view-interface-pdr\`
+- Perform all PDR operations (ReceiveToPdr, DistributeToIt, SendToRepair, MarkIrreparable, RepairToPdr)
+- Confirm no tracking errors
+- Verify data updates correctly
+- Test grid reloads properly
+- Mark complete & attempt_completion
 
