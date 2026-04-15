@@ -71,6 +71,15 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     services.AddScoped<AppThemeService>();
     services.AddHttpContextAccessor();
 
+    // Gemini Chat Services
+    services.AddScoped<GeminiChatStateService>();
+    services.AddScoped<GeminiChatService>();
+    services.AddHttpClient<GeminiChatService>()
+        .ConfigureHttpClient(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
     services.AddControllers(options =>
     {
         var policy = new AuthorizationPolicyBuilder()
