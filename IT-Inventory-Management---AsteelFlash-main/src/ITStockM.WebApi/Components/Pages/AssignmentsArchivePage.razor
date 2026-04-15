@@ -1,28 +1,198 @@
 @page "/assignments-archive"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.AssignmentMateriels
+@using ITStockM.Services.Assignments
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin")]
+@inject IAssignmentService AssignmentService
+@inject IAssignmentMaterielService AssignmentMaterielService
 
 <PageTitle>Archived Assignments - IT Stock Management</PageTitle>
 
 <div class="page-container">
     <div class="page-header">
-        <h1>Archived Assignments</h1>
-        <p class="page-subtitle">View archived material assignments</p>
-    </div>
-    
-    <div class="page-content">
-        <div class="content-placeholder">
-            <RadzenIcon Icon="inventory_2" Style="font-size: 48px; opacity: 0.5;" />
-            <h2>Assignment Archive</h2>
-            <p>Access archived material-to-employee assignments.</p>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Archive retrieval and historical analysis.</p>
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Archived Assignments</h1>
+                <p class="page-subtitle">Browse historical assignment records with restoration timeline details.</p>
+            </div>
+            <RadzenButton Icon="refresh"
+                          Text="Refresh"
+                          ButtonStyle="ButtonStyle.Light"
+                          Shade="Shade.Lighter"
+                          Click="@ReloadAsync" />
         </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Archived Records</span>
+            <span class="metric-value">@filteredRows.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Restored</span>
+            <span class="metric-value text-success">@filteredRows.Count(r => r.Assignment.RestoreDate.HasValue)</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Linked Units</span>
+            <span class="metric-value">@filteredRows.Sum(r => r.LinkedMaterialQuantity)</span>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="page-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Search</span>
+                <div class="search-box">
+                    <input type="text"
+                           placeholder="Description, employee, project..."
+                           value="@searchText"
+                           @oninput="OnSearchChanged" />
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         Text="@loadError" />
+        }
+
+        @if (isLoading)
+        {
+            <div class="content-placeholder loading">
+                <RadzenIcon Icon="archive" Style="font-size: 42px;" />
+                <h2>Loading archived assignments...</h2>
+            </div>
+        }
+        else if (filteredRows.Count == 0)
+        {
+            <div class="content-placeholder">
+                <RadzenIcon Icon="archive" Style="font-size: 42px;" />
+                <h2>No archived assignments found</h2>
+            </div>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@filteredRows"
+                            TItem="ArchivedAssignmentRow"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            PageSize="10"
+                            Responsive="true"
+                            Class="inventory-grid">
+                <Columns>
+                    <RadzenDataGridColumn TItem="ArchivedAssignmentRow" Title="ID">
+                        <Template Context="row">#@row.Assignment.Id</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ArchivedAssignmentRow" Title="Description">
+                        <Template Context="row">@row.Assignment.Descipriton</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ArchivedAssignmentRow" Title="Employee">
+                        <Template Context="row">@row.Assignment.AssignedEmployee?.FullName</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ArchivedAssignmentRow" Title="Project">
+                        <Template Context="row">@row.Assignment.Project?.ProjectName</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ArchivedAssignmentRow" Title="Assigned">
+                        <Template Context="row">@row.Assignment.Date.ToString("yyyy-MM-dd")</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ArchivedAssignmentRow" Title="Restore Limit">
+                        <Template Context="row">@DisplayDate(row.Assignment.RestoreDateLimit)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ArchivedAssignmentRow" Title="Restored">
+                        <Template Context="row">@DisplayDate(row.Assignment.RestoreDate)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ArchivedAssignmentRow" Title="Units">
+                        <Template Context="row">@row.LinkedMaterialQuantity</Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
     </div>
 </div>
 
 @code {
-    protected override void OnInitialized()
+    private readonly List<ArchivedAssignmentRow> allRows = [];
+    private List<ArchivedAssignmentRow> filteredRows = [];
+    private string searchText = string.Empty;
+    private bool isLoading = true;
+    private string? loadError;
+
+    protected override async Task OnInitializedAsync()
     {
-        // Placeholder for future archived assignments component logic
+        await ReloadAsync();
     }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var assignmentsQuery = await AssignmentService.GetAssignments();
+            var assignments = assignmentsQuery.ToList();
+
+            var linksQuery = await AssignmentMaterielService.GetAssignmentMateriels();
+            var linksByAssignment = linksQuery
+                .GroupBy(l => l.AssignmentId)
+                .ToDictionary(g => g.Key, g => g.Sum(x => x.Qte));
+
+            allRows.Clear();
+            allRows.AddRange(assignments
+                .Where(IsArchived)
+                .Select(a => new ArchivedAssignmentRow(a, linksByAssignment.GetValueOrDefault(a.Id)))
+                .OrderByDescending(a => a.Assignment.RestoreDate ?? a.Assignment.RestoreDateLimit ?? a.Assignment.Date));
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load archived assignments: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var term = searchText.Trim();
+        IEnumerable<ArchivedAssignmentRow> query = allRows;
+
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(r =>
+                Contains(r.Assignment.Descipriton, term) ||
+                Contains(r.Assignment.AssignedEmployee?.FullName, term) ||
+                Contains(r.Assignment.Project?.ProjectName, term));
+        }
+
+        filteredRows = query
+            .OrderByDescending(a => a.Assignment.RestoreDate ?? a.Assignment.RestoreDateLimit ?? a.Assignment.Date)
+            .ToList();
+    }
+
+    private static bool IsArchived(Assignment assignment) =>
+        assignment.RestoreDate.HasValue ||
+        (assignment.RestoreDateLimit.HasValue && assignment.RestoreDateLimit.Value.Date < DateTime.UtcNow.Date) ||
+        !assignment.OnMission;
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static string DisplayDate(DateTime? value) => value?.ToString("yyyy-MM-dd") ?? "-";
+
+    private sealed record ArchivedAssignmentRow(Assignment Assignment, int LinkedMaterialQuantity);
 }

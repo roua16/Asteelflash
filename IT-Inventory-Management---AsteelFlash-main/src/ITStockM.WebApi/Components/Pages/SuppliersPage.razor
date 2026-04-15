@@ -1,28 +1,389 @@
 @page "/suppliers"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.Suppliers
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,Purchasing,PDR")]
+@inject ISupplierService SupplierService
+@inject NotificationService NotificationService
 
 <PageTitle>Suppliers - IT Stock Management</PageTitle>
 
 <div class="page-container">
     <div class="page-header">
-        <h1>Suppliers Management</h1>
-        <p class="page-subtitle">Manage vendor and supplier information</p>
-    </div>
-    
-    <div class="page-content">
-        <div class="content-placeholder">
-            <RadzenIcon Icon="storefront" Style="font-size: 48px; opacity: 0.5;" />
-            <h2>Supplier Database</h2>
-            <p>Maintain supplier contacts and purchase agreements.</p>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Supplier management, ratings, and contact information.</p>
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Suppliers Management</h1>
+                <p class="page-subtitle">Maintain supplier contacts, delivery relations, and procurement references.</p>
+            </div>
+            <RadzenButton Icon="add_circle"
+                          Text="Add Supplier"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@OpenCreateModal" />
         </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Visible Suppliers</span>
+            <span class="metric-value">@filteredSuppliers.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">With Delivery Orders</span>
+            <span class="metric-value">@filteredSuppliers.Count(s => s.DeliveryOrders?.Any() == true)</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">With Offers</span>
+            <span class="metric-value">@filteredSuppliers.Count(s => s.Offers?.Any() == true)</span>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="page-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Search</span>
+                <div class="search-box">
+                    <input type="text"
+                           placeholder="Search by name, email, address..."
+                           value="@searchText"
+                           @oninput="OnSearchChanged" />
+                </div>
+            </div>
+            <div class="toolbar-group toolbar-group-end">
+                <RadzenButton Icon="refresh"
+                              Text="Refresh"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@ReloadAsync" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         Text="@loadError" />
+        }
+
+        @if (isLoading)
+        {
+            <div class="content-placeholder loading">
+                <RadzenIcon Icon="storefront" Style="font-size: 42px;" />
+                <h2>Loading suppliers...</h2>
+            </div>
+        }
+        else if (filteredSuppliers.Count == 0)
+        {
+            <div class="content-placeholder">
+                <RadzenIcon Icon="storefront" Style="font-size: 42px;" />
+                <h2>No suppliers found</h2>
+                <p>Add a supplier to start linking requests and deliveries.</p>
+            </div>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@filteredSuppliers"
+                            TItem="Supplier"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            PageSize="10"
+                            Responsive="true"
+                            Class="inventory-grid">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Supplier" Property="SupplierName" Title="Supplier Name" />
+                    <RadzenDataGridColumn TItem="Supplier" Property="Email" Title="Email" />
+                    <RadzenDataGridColumn TItem="Supplier" Property="PhoneNumber" Title="Phone" />
+                    <RadzenDataGridColumn TItem="Supplier" Property="Adress" Title="Address" />
+                    <RadzenDataGridColumn TItem="Supplier" Title="Relations">
+                        <Template Context="s">
+                            @((s.DeliveryOrders?.Count ?? 0)) delivery order(s) / @((s.Offers?.Count ?? 0)) offer(s)
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Supplier" Title="Actions" Filterable="false" Sortable="false" Width="180px">
+                        <Template Context="s">
+                            <div class="table-actions">
+                                <RadzenButton Icon="edit"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Primary"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => OpenEditModal(s))" />
+                                <RadzenButton Icon="delete"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => DeleteSupplierAsync(s))" />
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
     </div>
 </div>
 
+@if (showEditorModal)
+{
+    <div class="modal-overlay" @onclick="CloseEditorModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isEditMode ? "Edit Supplier" : "Add Supplier")</h2>
+                <button type="button" class="modal-close" @onclick="CloseEditorModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(editorError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@editorError" />
+            }
+
+            <EditForm Model="@editorModel" OnValidSubmit="@SaveSupplierAsync" class="modal-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-group">
+                    <label for="supplier-name">Supplier Name</label>
+                    <InputText id="supplier-name" @bind-Value="editorModel.SupplierName" />
+                </div>
+
+                <div class="form-group">
+                    <label for="supplier-email">Email</label>
+                    <InputText id="supplier-email" @bind-Value="editorModel.Email" />
+                </div>
+
+                <div class="form-group">
+                    <label for="supplier-phone">Phone Number</label>
+                    <InputText id="supplier-phone" @bind-Value="editorModel.PhoneNumber" />
+                </div>
+
+                <div class="form-group">
+                    <label for="supplier-address">Address</label>
+                    <InputTextArea id="supplier-address" @bind-Value="editorModel.Adress" />
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton Icon="save"
+                                  Text="Save"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter"
+                                  ButtonType="ButtonType.Submit" />
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@(_ => CloseEditorModal())" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
 @code {
-    protected override void OnInitialized()
+    [Parameter] public bool AdminMode { get; set; }
+
+    private readonly List<Supplier> suppliers = [];
+    private List<Supplier> filteredSuppliers = [];
+
+    private bool isLoading = true;
+    private bool showEditorModal;
+    private bool isEditMode;
+
+    private string searchText = string.Empty;
+    private string? loadError;
+    private string? editorError;
+
+    private SupplierEditorModel editorModel = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        // Placeholder for future suppliers component logic
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            suppliers.Clear();
+            suppliers.AddRange(await SupplierService.GetSuppliersList());
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load suppliers: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var term = searchText.Trim();
+        IEnumerable<Supplier> query = suppliers;
+
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(s =>
+                Contains(s.SupplierName, term) ||
+                Contains(s.Email, term) ||
+                Contains(s.PhoneNumber, term) ||
+                Contains(s.Adress, term));
+        }
+
+        filteredSuppliers = query
+            .OrderBy(s => s.SupplierName)
+            .ToList();
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditMode = false;
+        editorError = null;
+        editorModel = new SupplierEditorModel();
+        showEditorModal = true;
+    }
+
+    private void OpenEditModal(Supplier supplier)
+    {
+        isEditMode = true;
+        editorError = null;
+        editorModel = new SupplierEditorModel
+        {
+            OriginalName = supplier.SupplierName ?? string.Empty,
+            SupplierName = supplier.SupplierName ?? string.Empty,
+            Email = supplier.Email ?? string.Empty,
+            PhoneNumber = supplier.PhoneNumber ?? string.Empty,
+            Adress = supplier.Adress ?? string.Empty
+        };
+        showEditorModal = true;
+    }
+
+    private async Task SaveSupplierAsync()
+    {
+        editorError = ValidateEditor();
+        if (!string.IsNullOrWhiteSpace(editorError))
+        {
+            return;
+        }
+
+        var payload = new Supplier
+        {
+            SupplierName = editorModel.SupplierName.Trim(),
+            Email = editorModel.Email.Trim(),
+            PhoneNumber = editorModel.PhoneNumber.Trim(),
+            Adress = editorModel.Adress.Trim()
+        };
+
+        try
+        {
+            if (isEditMode)
+            {
+                await SupplierService.UpdateSupplier(editorModel.OriginalName, payload);
+                NotifySuccess("Supplier updated", $"Supplier {payload.SupplierName} was updated.");
+            }
+            else
+            {
+                await SupplierService.CreateSupplier(payload);
+                NotifySuccess("Supplier created", $"Supplier {payload.SupplierName} was created.");
+            }
+
+            CloseEditorModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            editorError = ex.Message;
+        }
+    }
+
+    private async Task DeleteSupplierAsync(Supplier supplier)
+    {
+        if (string.IsNullOrWhiteSpace(supplier.SupplierName))
+        {
+            return;
+        }
+
+        try
+        {
+            await SupplierService.DeleteSupplier(supplier.SupplierName);
+            NotifySuccess("Supplier deleted", $"{supplier.SupplierName} was removed.");
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Delete failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private void CloseEditorModal()
+    {
+        showEditorModal = false;
+        editorError = null;
+    }
+
+    private string? ValidateEditor()
+    {
+        if (string.IsNullOrWhiteSpace(editorModel.SupplierName))
+        {
+            return "Supplier name is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.Email) || !editorModel.Email.Contains('@'))
+        {
+            return "A valid supplier email is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.PhoneNumber))
+        {
+            return "Phone number is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.Adress))
+        {
+            return "Address is required.";
+        }
+
+        return null;
+    }
+
+    private void NotifySuccess(string summary, string detail)
+    {
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = summary,
+            Detail = detail,
+            Duration = 2500
+        });
+    }
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private sealed class SupplierEditorModel
+    {
+        public string OriginalName { get; set; } = string.Empty;
+        public string SupplierName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Adress { get; set; } = string.Empty;
     }
 }

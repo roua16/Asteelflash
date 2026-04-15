@@ -42,7 +42,7 @@ namespace ITStockM.Services
         /// </summary>
         public virtual async Task<IQueryable<TEntity>> GetAll(QueryOptions? query = null)
         {
-            IQueryable<TEntity> items = Repository.Query();
+            IQueryable<TEntity> items = Repository.Query().AsNoTracking();
             items = ApplyIncludes(items);
 
             if (query != null)
@@ -99,10 +99,11 @@ namespace ITStockM.Services
             if (entity == null)
                 throw new ArgumentNullException(nameof(entity));
 
-            var existingEntity = await Repository.GetByIdAsync(id);
-            if (existingEntity == null)
+            var exists = await Repository.Query().AsNoTracking().AnyAsync(e => e.Id == id);
+            if (!exists)
                 throw new EntityNotFoundException(typeof(TEntity).Name, id);
 
+            entity.Id = id;
             entity.UpdatedAt = DateTime.UtcNow;
 
             Repository.Update(entity);

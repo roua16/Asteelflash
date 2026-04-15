@@ -2,27 +2,4 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,Purchasing,PDR")]
 
-<PageTitle>Delivery Order History - IT Stock Management</PageTitle>
-
-<div class="page-container">
-    <div class="page-header">
-        <h1>Delivery Order History</h1>
-        <p class="page-subtitle">View historical delivery orders</p>
-    </div>
-    
-    <div class="page-content">
-        <div class="content-placeholder">
-            <RadzenIcon Icon="history" Style="font-size: 48px; opacity: 0.5;" />
-            <h2>Historical Records</h2>
-            <p>Access all past delivery orders and shipments.</p>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: History search, filtering, and detailed reports.</p>
-        </div>
-    </div>
-</div>
-
-@code {
-    protected override void OnInitialized()
-    {
-        // Placeholder for future delivery order history component logic
-    }
-}
+<PendingDeliveriesPage Scope="history" />

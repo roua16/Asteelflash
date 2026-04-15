@@ -2,27 +2,4 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin")]
 
-<PageTitle>Suppliers Administration - IT Stock Management</PageTitle>
-
-<div class="page-container">
-    <div class="page-header">
-        <h1>Suppliers Administration</h1>
-        <p class="page-subtitle">Admin panel for supplier management</p>
-    </div>
-    
-    <div class="page-content">
-        <div class="content-placeholder">
-            <RadzenIcon Icon="store" Style="font-size: 48px; opacity: 0.5;" />
-            <h2>Suppliers Super Admin</h2>
-            <p>Full administrative control over suppliers database.</p>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Supplier CRUD, contacts, and agreements.</p>
-        </div>
-    </div>
-</div>
-
-@code {
-    protected override void OnInitialized()
-    {
-        // Placeholder for future suppliers admin component logic
-    }
-}
+<SuppliersPage AdminMode="true" />

@@ -1,28 +1,651 @@
 @page "/maintenance"
+@using ITStockM.Domain.Entities
+@using ITStockM.Domain.Enums
+@using ITStockM.Services.Employees
+@using ITStockM.Services.Interfaces
+@using ITStockM.Services.Materiels
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,IT,Infrastructure")]
+@inject IMaintenanceService MaintenanceService
+@inject IMaterielService MaterielService
+@inject IEmployeeService EmployeeService
+@inject NotificationService NotificationService
 
 <PageTitle>Maintenance Tickets - IT Stock Management</PageTitle>
 
 <div class="page-container">
     <div class="page-header">
-        <h1>Maintenance Tickets</h1>
-        <p class="page-subtitle">Track and manage equipment maintenance</p>
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Maintenance Tickets</h1>
+                <p class="page-subtitle">Track incidents, assign repair actions, and close tickets with resolution records.</p>
+            </div>
+            <RadzenButton Icon="add_circle"
+                          Text="Create Ticket"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@OpenCreateModal" />
+        </div>
     </div>
-    
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Visible Tickets</span>
+            <span class="metric-value">@filteredRows.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Open Tickets</span>
+            <span class="metric-value text-warning">@rows.Count(r => string.Equals(r.Ticket.Status, MaintenanceTicketStatus.Open, StringComparison.OrdinalIgnoreCase))</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">In Progress</span>
+            <span class="metric-value text-primary">@rows.Count(r => string.Equals(r.Ticket.Status, MaintenanceTicketStatus.InProgress, StringComparison.OrdinalIgnoreCase))</span>
+        </div>
+    </div>
+
     <div class="page-content">
-        <div class="content-placeholder">
-            <RadzenIcon Icon="build" Style="font-size: 48px; opacity: 0.5;" />
-            <h2>Maintenance Management</h2>
-            <p>Create and track maintenance tickets for assets.</p>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Ticket creation, status tracking, and repair history.</p>
+        <div class="content-section">
+            <div class="page-toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Search</span>
+                    <div class="search-box">
+                        <input type="text"
+                               placeholder="Search issue, asset, reporter..."
+                               value="@searchText"
+                               @oninput="OnSearchChanged" />
+                    </div>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Status</span>
+                    <select class="filter-select" value="@statusFilter" @onchange="OnStatusChanged">
+                        <option value="">All Statuses</option>
+                        @foreach (var status in MaintenanceTicketStatus.All)
+                        {
+                            <option value="@status">@status</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="toolbar-group toolbar-group-end">
+                    <RadzenButton Icon="refresh"
+                                  Text="Refresh"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@ReloadAsync" />
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(loadError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@loadError" />
+            }
+
+            @if (isLoading)
+            {
+                <div class="content-placeholder loading">
+                    <RadzenIcon Icon="build" Style="font-size: 42px;" />
+                    <h2>Loading maintenance tickets...</h2>
+                </div>
+            }
+            else if (filteredRows.Count == 0)
+            {
+                <div class="content-placeholder">
+                    <RadzenIcon Icon="search_off" Style="font-size: 42px;" />
+                    <h2>No tickets found</h2>
+                    <p>Create a ticket or adjust filters.</p>
+                </div>
+            }
+            else
+            {
+                <RadzenDataGrid Data="@filteredRows"
+                                TItem="MaintenanceRow"
+                                AllowPaging="true"
+                                AllowSorting="true"
+                                PageSize="10"
+                                Responsive="true"
+                                Class="inventory-grid">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="MaintenanceRow" Title="Ticket #">
+                            <Template Context="row">#@row.Ticket.Id</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="MaintenanceRow" Title="Asset">
+                            <Template Context="row">@row.MaterielName</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="MaintenanceRow" Title="Issue">
+                            <Template Context="row">@row.Ticket.ProblemDescription</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="MaintenanceRow" Title="Reported By">
+                            <Template Context="row">@row.ReportedByName</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="MaintenanceRow" Title="Reported At">
+                            <Template Context="row">@row.Ticket.ReportedAt.ToString("yyyy-MM-dd HH:mm")</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="MaintenanceRow" Title="Status">
+                            <Template Context="row">
+                                <span class="badge @StatusBadge(row.Ticket.Status)">@row.Ticket.Status</span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="MaintenanceRow" Title="Cost">
+                            <Template Context="row">@((row.Ticket.Cost ?? 0m).ToString("0.00"))</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="MaintenanceRow" Title="Actions" Filterable="false" Sortable="false" Width="250px">
+                            <Template Context="row">
+                                <div class="table-actions">
+                                    <RadzenButton Icon="edit"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => OpenEditModal(row.Ticket))" />
+                                    @if (!string.Equals(row.Ticket.Status, MaintenanceTicketStatus.Closed, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <RadzenButton Icon="check_circle"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Success"
+                                                      Shade="Shade.Lighter"
+                                                      Click="@(() => OpenCloseModal(row.Ticket))" />
+                                    }
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            }
         </div>
     </div>
 </div>
 
+@if (showEditorModal)
+{
+    <div class="modal-overlay" @onclick="CloseEditorModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isEditMode ? "Edit Ticket" : "Create Ticket")</h2>
+                <button type="button" class="modal-close" @onclick="CloseEditorModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(editorError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@editorError" />
+            }
+
+            <EditForm Model="@editorTicket" OnValidSubmit="@SaveTicketAsync">
+                <DataAnnotationsValidator />
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="ticket-materiel">Asset</label>
+                        <select id="ticket-materiel" value="@editorTicket.MaterielId" @onchange="OnEditorMaterielChanged">
+                            <option value="0">Select asset</option>
+                            @foreach (var asset in materiels.OrderBy(m => m.MaterielName))
+                            {
+                                <option value="@asset.Id">@asset.MaterielName (@asset.Type)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ticket-reporter">Reported By (optional)</label>
+                        <select id="ticket-reporter" value="@ToNullableIntValue(editorTicket.ReportedByEmployeeId)" @onchange="OnEditorReporterChanged">
+                            <option value="">Unknown</option>
+                            @foreach (var employee in employees.OrderBy(e => e.FullName))
+                            {
+                                <option value="@employee.Id">@employee.FullName (@employee.Role)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group form-group-span-2">
+                        <label for="ticket-problem">Problem Description</label>
+                        <InputTextArea id="ticket-problem" @bind-Value="editorTicket.ProblemDescription" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ticket-status">Status</label>
+                        <select id="ticket-status" value="@editorTicket.Status" @onchange="OnEditorStatusChanged">
+                            @foreach (var status in MaintenanceTicketStatus.All.Where(s => !string.Equals(s, MaintenanceTicketStatus.Closed, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                <option value="@status">@status</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ticket-cost">Cost</label>
+                        <InputNumber id="ticket-cost" @bind-Value="editorTicket.Cost" />
+                    </div>
+
+                    <div class="form-group form-group-span-2">
+                        <label for="ticket-resolution">Resolution (optional)</label>
+                        <InputTextArea id="ticket-resolution" @bind-Value="editorTicket.Resolution" />
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton ButtonType="ButtonType.Submit"
+                                  Icon="save"
+                                  Text="Save"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter" />
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@(_ => CloseEditorModal())" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (showCloseModal && closeTarget is not null)
+{
+    <div class="modal-overlay" @onclick="CloseCloseModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Close Ticket #@closeTarget.Id</h2>
+                <button type="button" class="modal-close" @onclick="CloseCloseModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(closeError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@closeError" />
+            }
+
+            <div class="form-group">
+                <label for="close-resolution">Resolution</label>
+                <InputTextArea id="close-resolution" @bind-Value="closeResolution" />
+            </div>
+
+            <div class="form-group">
+                <label for="close-cost">Final Cost</label>
+                <InputNumber id="close-cost" @bind-Value="closeCost" />
+            </div>
+
+            <div class="form-actions">
+                <RadzenButton Icon="check_circle"
+                              Text="Close Ticket"
+                              ButtonStyle="ButtonStyle.Success"
+                              Shade="Shade.Lighter"
+                              Click="@CloseTicketAsync" />
+                <RadzenButton Icon="cancel"
+                              Text="Cancel"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@(_ => CloseCloseModal())" />
+            </div>
+        </div>
+    </div>
+}
+
 @code {
-    protected override void OnInitialized()
+    private readonly List<MaintenanceRow> rows = [];
+    private readonly List<MaintenanceRow> filteredRows = [];
+    private readonly List<Materiel> materiels = [];
+    private readonly List<Employee> employees = [];
+
+    private bool isLoading = true;
+    private bool showEditorModal;
+    private bool showCloseModal;
+    private bool isEditMode;
+
+    private string searchText = string.Empty;
+    private string statusFilter = string.Empty;
+    private string? loadError;
+    private string? editorError;
+    private string? closeError;
+
+    private int? editingTicketId;
+    private MaintenanceTicket editorTicket = CreateDefaultTicket();
+    private MaintenanceTicket? closeTarget;
+    private string closeResolution = string.Empty;
+    private decimal? closeCost;
+
+    protected override async Task OnInitializedAsync()
     {
-        // Placeholder for future maintenance component logic
+        await ReloadAsync();
     }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var tickets = (await MaintenanceService.GetAllTicketsAsync()).ToList();
+            var materielQuery = await MaterielService.GetMateriels();
+            var employeeList = await EmployeeService.GetEmployeesList();
+
+            materiels.Clear();
+            materiels.AddRange(materielQuery.ToList());
+
+            employees.Clear();
+            employees.AddRange(employeeList);
+
+            rows.Clear();
+            rows.AddRange(tickets.Select(ticket => new MaintenanceRow(
+                ticket,
+                ResolveMaterielName(ticket.MaterielId, ticket.Materiel),
+                ResolveEmployeeName(ticket.ReportedByEmployeeId, ticket.ReportedBy))));
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Unable to load maintenance tickets: {ex.Message}";
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Load failed",
+                Detail = loadError,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnStatusChanged(ChangeEventArgs args)
+    {
+        statusFilter = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<MaintenanceRow> query = rows;
+        var term = searchText.Trim();
+
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(r =>
+                Contains(r.Ticket.ProblemDescription, term) ||
+                Contains(r.Ticket.Resolution, term) ||
+                Contains(r.MaterielName, term) ||
+                Contains(r.ReportedByName, term));
+        }
+
+        if (!string.IsNullOrWhiteSpace(statusFilter))
+        {
+            query = query.Where(r => string.Equals(r.Ticket.Status, statusFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        filteredRows.Clear();
+        filteredRows.AddRange(query.OrderByDescending(r => r.Ticket.ReportedAt));
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditMode = false;
+        editingTicketId = null;
+        editorError = null;
+        editorTicket = CreateDefaultTicket();
+        if (materiels.Count > 0)
+        {
+            editorTicket.MaterielId = materiels[0].Id;
+        }
+
+        showEditorModal = true;
+    }
+
+    private void OpenEditModal(MaintenanceTicket ticket)
+    {
+        isEditMode = true;
+        editingTicketId = ticket.Id;
+        editorError = null;
+        editorTicket = CloneTicket(ticket);
+        if (string.Equals(editorTicket.Status, MaintenanceTicketStatus.Closed, StringComparison.OrdinalIgnoreCase))
+        {
+            editorTicket.Status = MaintenanceTicketStatus.InProgress;
+        }
+        showEditorModal = true;
+    }
+
+    private void OpenCloseModal(MaintenanceTicket ticket)
+    {
+        closeTarget = ticket;
+        closeError = null;
+        closeResolution = ticket.Resolution ?? string.Empty;
+        closeCost = ticket.Cost;
+        showCloseModal = true;
+    }
+
+    private void OnEditorMaterielChanged(ChangeEventArgs args)
+    {
+        editorTicket.MaterielId = ParseRequiredInt(args.Value?.ToString());
+    }
+
+    private void OnEditorReporterChanged(ChangeEventArgs args)
+    {
+        editorTicket.ReportedByEmployeeId = ParseNullableInt(args.Value?.ToString());
+    }
+
+    private void OnEditorStatusChanged(ChangeEventArgs args)
+    {
+        editorTicket.Status = args.Value?.ToString() ?? MaintenanceTicketStatus.Open;
+    }
+
+    private async Task SaveTicketAsync()
+    {
+        if (!ValidateEditor(out var error))
+        {
+            editorError = error;
+            return;
+        }
+
+        editorError = null;
+        var payload = CloneTicket(editorTicket);
+        payload.ProblemDescription = payload.ProblemDescription.Trim();
+        payload.Resolution = string.IsNullOrWhiteSpace(payload.Resolution) ? null : payload.Resolution.Trim();
+
+        try
+        {
+            if (isEditMode && editingTicketId.HasValue)
+            {
+                await MaintenanceService.UpdateTicketAsync(editingTicketId.Value, payload);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Ticket updated",
+                    Detail = $"Ticket #{editingTicketId.Value} was updated.",
+                    Duration = 3000
+                });
+            }
+            else
+            {
+                await MaintenanceService.CreateTicketAsync(payload);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Ticket created",
+                    Detail = "Maintenance ticket was created.",
+                    Duration = 3000
+                });
+            }
+
+            CloseEditorModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            editorError = $"Unable to save ticket: {ex.Message}";
+        }
+    }
+
+    private async Task CloseTicketAsync()
+    {
+        if (closeTarget is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(closeResolution))
+        {
+            closeError = "Resolution is required to close a ticket.";
+            return;
+        }
+
+        closeError = null;
+
+        try
+        {
+            await MaintenanceService.CloseTicketAsync(closeTarget.Id, closeResolution.Trim(), closeCost);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Ticket closed",
+                Detail = $"Ticket #{closeTarget.Id} has been closed.",
+                Duration = 3000
+            });
+
+            CloseCloseModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            closeError = $"Unable to close ticket: {ex.Message}";
+        }
+    }
+
+    private void CloseEditorModal()
+    {
+        showEditorModal = false;
+        editorError = null;
+    }
+
+    private void CloseCloseModal()
+    {
+        showCloseModal = false;
+        closeTarget = null;
+        closeError = null;
+    }
+
+    private bool ValidateEditor(out string? error)
+    {
+        if (editorTicket.MaterielId <= 0)
+        {
+            error = "Please select an asset.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(editorTicket.ProblemDescription))
+        {
+            error = "Problem description is required.";
+            return false;
+        }
+
+        if (!MaintenanceTicketStatus.All.Contains(editorTicket.Status))
+        {
+            error = "Invalid status.";
+            return false;
+        }
+
+        if (editorTicket.Cost.HasValue && editorTicket.Cost.Value < 0)
+        {
+            error = "Cost cannot be negative.";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    private string ResolveMaterielName(int materielId, Materiel? materiel)
+    {
+        if (!string.IsNullOrWhiteSpace(materiel?.MaterielName))
+        {
+            return materiel.MaterielName;
+        }
+
+        var mapped = materiels.FirstOrDefault(m => m.Id == materielId);
+        return mapped?.MaterielName ?? $"Asset #{materielId}";
+    }
+
+    private string ResolveEmployeeName(int? employeeId, Employee? employee)
+    {
+        if (!string.IsNullOrWhiteSpace(employee?.FullName))
+        {
+            return employee.FullName;
+        }
+
+        if (!employeeId.HasValue)
+        {
+            return "Unknown";
+        }
+
+        var mapped = employees.FirstOrDefault(e => e.Id == employeeId.Value);
+        return mapped?.FullName ?? $"Employee #{employeeId.Value}";
+    }
+
+    private static string StatusBadge(string status) => status switch
+    {
+        MaintenanceTicketStatus.Open => "badge-warning",
+        MaintenanceTicketStatus.InProgress => "badge-primary",
+        MaintenanceTicketStatus.Closed => "badge-success",
+        _ => "badge-primary"
+    };
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static MaintenanceTicket CreateDefaultTicket() =>
+        new()
+        {
+            MaterielId = 0,
+            ProblemDescription = string.Empty,
+            Status = MaintenanceTicketStatus.Open,
+            ReportedAt = DateTime.UtcNow
+        };
+
+    private static MaintenanceTicket CloneTicket(MaintenanceTicket source) =>
+        new()
+        {
+            Id = source.Id,
+            MaterielId = source.MaterielId,
+            ProblemDescription = source.ProblemDescription,
+            ReportedByEmployeeId = source.ReportedByEmployeeId,
+            Status = source.Status,
+            Cost = source.Cost,
+            ReportedAt = source.ReportedAt,
+            ResolvedAt = source.ResolvedAt,
+            Resolution = source.Resolution
+        };
+
+    private static int ParseRequiredInt(string? value)
+    {
+        return int.TryParse(value, out var parsed) ? parsed : 0;
+    }
+
+    private static int? ParseNullableInt(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return int.TryParse(value, out var parsed) ? parsed : null;
+    }
+
+    private static string ToNullableIntValue(int? value) => value?.ToString() ?? string.Empty;
+
+    private sealed record MaintenanceRow(MaintenanceTicket Ticket, string MaterielName, string ReportedByName);
 }

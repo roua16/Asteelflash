@@ -1,28 +1,189 @@
 @page "/archived-missions"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.Assignments
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,Purchasing")]
+@inject IAssignmentService AssignmentService
 
 <PageTitle>Archived Missions - IT Stock Management</PageTitle>
 
 <div class="page-container">
     <div class="page-header">
-        <h1>Archived Missions</h1>
-        <p class="page-subtitle">View archived project missions</p>
-    </div>
-    
-    <div class="page-content">
-        <div class="content-placeholder">
-            <RadzenIcon Icon="event_repeat" Style="font-size: 48px; opacity: 0.5;" />
-            <h2>Mission Archive</h2>
-            <p>Access archived project missions and assignments.</p>
-            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Mission history and retrieval.</p>
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Archived Missions</h1>
+                <p class="page-subtitle">Track completed mission assignments and closure timelines.</p>
+            </div>
+            <RadzenButton Icon="refresh"
+                          Text="Refresh"
+                          ButtonStyle="ButtonStyle.Light"
+                          Shade="Shade.Lighter"
+                          Click="@ReloadAsync" />
         </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Mission Records</span>
+            <span class="metric-value">@filteredMissions.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Closed</span>
+            <span class="metric-value text-success">@filteredMissions.Count(m => m.RestoreDate.HasValue)</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Overdue Closures</span>
+            <span class="metric-value text-warning">@filteredMissions.Count(m => !m.RestoreDate.HasValue && m.RestoreDateLimit.HasValue && m.RestoreDateLimit.Value.Date < DateTime.UtcNow.Date)</span>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="page-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Search</span>
+                <div class="search-box">
+                    <input type="text"
+                           placeholder="Project, employee, description..."
+                           value="@searchText"
+                           @oninput="OnSearchChanged" />
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         Text="@loadError" />
+        }
+
+        @if (isLoading)
+        {
+            <div class="content-placeholder loading">
+                <RadzenIcon Icon="event_repeat" Style="font-size: 42px;" />
+                <h2>Loading mission history...</h2>
+            </div>
+        }
+        else if (filteredMissions.Count == 0)
+        {
+            <div class="content-placeholder">
+                <RadzenIcon Icon="event_repeat" Style="font-size: 42px;" />
+                <h2>No mission history found</h2>
+            </div>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@filteredMissions"
+                            TItem="Assignment"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            PageSize="10"
+                            Responsive="true"
+                            Class="inventory-grid">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Assignment" Title="Assignment #">
+                        <Template Context="a">#@a.Id</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Assignment" Title="Description">
+                        <Template Context="a">@a.Descipriton</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Assignment" Title="Project">
+                        <Template Context="a">@a.Project?.ProjectName</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Assignment" Title="Employee">
+                        <Template Context="a">@a.AssignedEmployee?.FullName</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Assignment" Title="Mission Flag">
+                        <Template Context="a">
+                            <span class="badge @(a.OnMission ? "badge-primary" : "badge-secondary")">
+                                @(a.OnMission ? "Mission" : "Closed")
+                            </span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Assignment" Title="Assigned">
+                        <Template Context="a">@a.Date.ToString("yyyy-MM-dd")</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Assignment" Title="Restore Limit">
+                        <Template Context="a">@DisplayDate(a.RestoreDateLimit)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Assignment" Title="Restore Date">
+                        <Template Context="a">@DisplayDate(a.RestoreDate)</Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
     </div>
 </div>
 
 @code {
-    protected override void OnInitialized()
+    private readonly List<Assignment> missionHistory = [];
+    private List<Assignment> filteredMissions = [];
+    private bool isLoading = true;
+    private string searchText = string.Empty;
+    private string? loadError;
+
+    protected override async Task OnInitializedAsync()
     {
-        // Placeholder for future archived missions component logic
+        await ReloadAsync();
     }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var assignmentsQuery = await AssignmentService.GetAssignments();
+            var assignments = assignmentsQuery.ToList();
+
+            missionHistory.Clear();
+            missionHistory.AddRange(assignments.Where(IsMissionHistoryRecord));
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load mission history: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var term = searchText.Trim();
+        IEnumerable<Assignment> query = missionHistory;
+
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(a =>
+                Contains(a.Descipriton, term) ||
+                Contains(a.Project?.ProjectName, term) ||
+                Contains(a.AssignedEmployee?.FullName, term));
+        }
+
+        filteredMissions = query
+            .OrderByDescending(a => a.RestoreDate ?? a.RestoreDateLimit ?? a.Date)
+            .ToList();
+    }
+
+    private static bool IsMissionHistoryRecord(Assignment assignment) =>
+        assignment.ProjectId.HasValue &&
+        (!assignment.OnMission || assignment.RestoreDate.HasValue || assignment.RestoreDateLimit.HasValue);
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static string DisplayDate(DateTime? value) => value?.ToString("yyyy-MM-dd") ?? "-";
 }

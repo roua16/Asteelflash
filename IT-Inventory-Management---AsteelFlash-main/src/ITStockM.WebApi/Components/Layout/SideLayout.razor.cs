@@ -53,8 +53,16 @@ namespace ITStockM.Components.Layout
 
             // NOTE: Do NOT call ProtectedLocalStorage here — it uses JS interop which is
             // unavailable during prerendering. All storage reads are deferred to OnAfterRenderAsync.
-            var deliveryOrders = await DeliveryOrderService.GetDeliveryOrdersList();
-            orderNumbersNF = deliveryOrders.Where(dlo => dlo.OrderNumber == null).Count();
+            try
+            {
+                var deliveryOrders = await DeliveryOrderService.GetDeliveryOrdersList();
+                orderNumbersNF = deliveryOrders.Where(dlo => dlo.OrderNumber == null).Count();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogDebug(ex, "Failed to load delivery orders badge count");
+                orderNumbersNF = 0;
+            }
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -151,11 +159,6 @@ namespace ITStockM.Components.Layout
         private void OnThemeChanged()
         {
             _ = InvokeAsync(StateHasChanged);
-        }
-
-        private void ForceRefresh(MouseEventArgs _)
-        {
-            NavigationManager.NavigateTo("delivery-order-history", forceLoad: true);
         }
 
         private async Task<string> LoadUserNameAsync()

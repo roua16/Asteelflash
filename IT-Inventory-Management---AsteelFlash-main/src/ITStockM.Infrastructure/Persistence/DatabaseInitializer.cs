@@ -1,4 +1,5 @@
 using ITStockM.Domain.Entities;
+using ITStockM.Domain.Enums;
 using ITStockM.Models.Constants;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -40,20 +41,18 @@ namespace ITStockM.Data
                 return;
             }
 
-            // Only seed if this is the first run (no employees exist)
-            if (!isFirstRun)
-            {
-                logger.LogInformation("Database already seeded. Skipping seed operations.");
-                return;
-            }
-
-            logger.LogInformation("First run detected. Starting database seeding...");
+            logger.LogInformation(
+                isFirstRun
+                    ? "First run detected. Starting database seeding..."
+                    : "Database exists. Ensuring seed baseline data is present...");
 
             await SeedAdminAsync(context, seedSection, logger, cancellationToken);
 
             if (seedDemoData)
             {
+                // Safe to run on every startup: SeedDemoDataAsync checks each table before insert.
                 await SeedDemoDataAsync(context, logger, cancellationToken);
+                await EnsureUiBaselineDataAsync(context, logger, cancellationToken);
             }
             else
             {
@@ -746,6 +745,234 @@ namespace ITStockM.Data
             }
 
             logger.LogInformation("Database seeding complete.");
+        }
+
+        private static async Task EnsureUiBaselineDataAsync(
+            ITStockManagmentContext context,
+            ILogger logger,
+            CancellationToken cancellationToken)
+        {
+            var hasChanges = false;
+
+            var requiredEmployees = new[]
+            {
+                new Employee
+                {
+                    FullName = "John Smith",
+                    Email = "john.smith@asteelflash.com",
+                    Post = "PDR Manager",
+                    Role = UserRoles.PDR,
+                    PhoneNumber = "+1234567891",
+                    Service = "Material Management"
+                },
+                new Employee
+                {
+                    FullName = "Sarah Johnson",
+                    Email = "sarah.johnson@asteelflash.com",
+                    Post = "Purchasing Manager",
+                    Role = UserRoles.Purchasing,
+                    PhoneNumber = "+1234567892",
+                    Service = "Procurement"
+                },
+                new Employee
+                {
+                    FullName = "Mike Davis",
+                    Email = "mike.davis@asteelflash.com",
+                    Post = "IT Support Specialist",
+                    Role = UserRoles.IT,
+                    PhoneNumber = "+1234567893",
+                    Service = "IT"
+                },
+                new Employee
+                {
+                    FullName = "Alice Brown",
+                    Email = "alice.brown@asteelflash.com",
+                    Post = "Infrastructure Manager",
+                    Role = UserRoles.Infrastructure,
+                    PhoneNumber = "+1234567894",
+                    Service = "Infrastructure"
+                },
+                new Employee
+                {
+                    FullName = "Thomas Miller",
+                    Email = "thomas.miller@asteelflash.com",
+                    Post = "Employee",
+                    Role = UserRoles.Employee,
+                    PhoneNumber = "+1234567897",
+                    Service = "General"
+                }
+            };
+
+            foreach (var employee in requiredEmployees)
+            {
+                var exists = await context.Employees
+                    .AnyAsync(e => e.Email == employee.Email, cancellationToken);
+                if (!exists)
+                {
+                    context.Employees.Add(employee);
+                    hasChanges = true;
+                }
+            }
+
+            var requiredProjects = new[]
+            {
+                "Website Redesign",
+                "Mobile App Development",
+                "Database Migration",
+                "Network Infrastructure Upgrade"
+            };
+            foreach (var projectName in requiredProjects)
+            {
+                var exists = await context.Projects
+                    .AnyAsync(p => p.ProjectName == projectName, cancellationToken);
+                if (!exists)
+                {
+                    context.Projects.Add(new Project { ProjectName = projectName });
+                    hasChanges = true;
+                }
+            }
+
+            var requiredSuppliers = new[]
+            {
+                ("TechCorp Supplies", "orders@techcorp.com"),
+                ("Global IT Solutions", "sales@globalit.com"),
+                ("Office Equipment Plus", "info@officeplus.com")
+            };
+            foreach (var (supplierName, supplierEmail) in requiredSuppliers)
+            {
+                var exists = await context.Suppliers
+                    .AnyAsync(s => s.Email == supplierEmail || s.SupplierName == supplierName, cancellationToken);
+                if (!exists)
+                {
+                    context.Suppliers.Add(new Supplier
+                    {
+                        SupplierName = supplierName,
+                        Email = supplierEmail,
+                        Adress = "Seed baseline address",
+                        PhoneNumber = "+1-555-0000"
+                    });
+                    hasChanges = true;
+                }
+            }
+
+            var requiredMaterials = new[]
+            {
+                new Materiel
+                {
+                    MaterielName = "Dell Latitude 5420 Laptop",
+                    Type = "Laptop",
+                    SerialNumber = "DL5420-001",
+                    QuantityITStock = 12,
+                    QuantityPDRStock = 4,
+                    IrreparableQuantity = 0,
+                    Repairing_Quantity = 1,
+                    Warranty = DateTime.UtcNow.AddYears(2),
+                    PurchaseDate = DateTime.UtcNow.AddMonths(-8),
+                    ExpectedLifetimeMonths = 48,
+                    LifecycleStatus = LifecycleStage.InStock
+                },
+                new Materiel
+                {
+                    MaterielName = "Lenovo ThinkCentre M70",
+                    Type = "Desktop",
+                    SerialNumber = "LNV-M70-015",
+                    QuantityITStock = 8,
+                    QuantityPDRStock = 3,
+                    IrreparableQuantity = 0,
+                    Repairing_Quantity = 0,
+                    Warranty = DateTime.UtcNow.AddYears(1),
+                    PurchaseDate = DateTime.UtcNow.AddMonths(-12),
+                    ExpectedLifetimeMonths = 60,
+                    LifecycleStatus = LifecycleStage.InStock
+                },
+                new Materiel
+                {
+                    MaterielName = "HP Monitor 24\"",
+                    Type = "Monitor",
+                    SerialNumber = "HPM24-021",
+                    QuantityITStock = 20,
+                    QuantityPDRStock = 6,
+                    IrreparableQuantity = 1,
+                    Repairing_Quantity = 1,
+                    Warranty = DateTime.UtcNow.AddMonths(9),
+                    PurchaseDate = DateTime.UtcNow.AddMonths(-20),
+                    ExpectedLifetimeMonths = 72,
+                    LifecycleStatus = LifecycleStage.InStock
+                }
+            };
+
+            foreach (var material in requiredMaterials)
+            {
+                var exists = await context.Materiels
+                    .AnyAsync(m => m.SerialNumber == material.SerialNumber, cancellationToken);
+                if (!exists)
+                {
+                    context.Materiels.Add(material);
+                    hasChanges = true;
+                }
+            }
+
+            if (hasChanges)
+            {
+                await context.SaveChangesAsync(cancellationToken);
+            }
+
+            if (!await context.Assignments.AnyAsync(cancellationToken))
+            {
+                var admin = await context.Employees.FirstOrDefaultAsync(e => e.Email == "admin@asteelflash.com", cancellationToken);
+                var assignedTo = await context.Employees.FirstOrDefaultAsync(e => e.Role == UserRoles.Employee, cancellationToken);
+                var project = await context.Projects.OrderBy(p => p.Id).FirstOrDefaultAsync(cancellationToken);
+                var material = await context.Materiels.OrderBy(m => m.Id).FirstOrDefaultAsync(cancellationToken);
+
+                if (admin != null && assignedTo != null && project != null)
+                {
+                    var assignment = new Assignment
+                    {
+                        AssignedTo = assignedTo.Id,
+                        AssignedBy = admin.Id,
+                        ProjectId = project.Id,
+                        Date = DateTime.UtcNow.AddDays(-7),
+                        Descipriton = "Baseline seeded assignment for UI flows",
+                        OnMission = true,
+                        RestoreDateLimit = DateTime.UtcNow.AddDays(30)
+                    };
+
+                    context.Assignments.Add(assignment);
+                    await context.SaveChangesAsync(cancellationToken);
+
+                    if (material != null)
+                    {
+                        context.AssignmentMateriels.Add(new AssignmentMateriel
+                        {
+                            AssignmentId = assignment.Id,
+                            MaterielId = material.Id,
+                            Qte = 1
+                        });
+                        await context.SaveChangesAsync(cancellationToken);
+                    }
+                }
+            }
+
+            if (!await context.AssetLifecycleRecords.AnyAsync(cancellationToken))
+            {
+                var materials = await context.Materiels.ToListAsync(cancellationToken);
+                foreach (var material in materials)
+                {
+                    context.AssetLifecycleRecords.Add(new AssetLifecycleRecord
+                    {
+                        MaterielId = material.Id,
+                        Stage = string.IsNullOrWhiteSpace(material.LifecycleStatus)
+                            ? LifecycleStage.InStock
+                            : material.LifecycleStatus,
+                        StartDate = DateTime.UtcNow.AddDays(-30),
+                        Notes = "Seed baseline lifecycle stage"
+                    });
+                }
+
+                await context.SaveChangesAsync(cancellationToken);
+            }
+
+            logger.LogInformation("Baseline UI seed consistency check complete.");
         }
 
         private static async Task ClearOldDataAsync(
