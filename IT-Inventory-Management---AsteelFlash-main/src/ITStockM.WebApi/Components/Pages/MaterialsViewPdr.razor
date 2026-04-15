@@ -338,6 +338,7 @@
     private Materiel editorModel = CreateDefaultMateriel();
     private Materiel? deleteTarget;
     private Materiel? operationTarget;
+    private int? operationTargetId;  // Store ID to reload fresh entity for update
 
     private string operationType = "ReceiveToPdr";
     private int operationQuantity = 1;
@@ -471,6 +472,7 @@
 
     private void OpenOperationModal(Materiel materiel)
     {
+        operationTargetId = materiel.Id;
         operationTarget = CloneMateriel(materiel);
         operationType = "ReceiveToPdr";
         operationQuantity = 1;
@@ -506,6 +508,7 @@
     {
         showOperationModal = false;
         operationTarget = null;
+        operationTargetId = null;
         operationError = null;
     }
 
@@ -560,7 +563,7 @@
 
     private async Task ApplyOperationAsync()
     {
-        if (operationTarget is null)
+        if (operationTarget is null || !operationTargetId.HasValue)
         {
             return;
         }
@@ -573,10 +576,16 @@
 
         operationError = null;
 
+        // Collect the changes that need to be applied
+        var quantityPdrChange = 0;
+        var quantityItChange = 0;
+        var repairingChange = 0;
+        var irreparableChange = 0;
+
         switch (operationType)
         {
             case "ReceiveToPdr":
-                operationTarget.QuantityPDRStock += operationQuantity;
+                quantityPdrChange = operationQuantity;
                 break;
 
             case "DistributeToIt":
@@ -585,8 +594,8 @@
                     operationError = "Cannot distribute more than available PDR stock.";
                     return;
                 }
-                operationTarget.QuantityPDRStock -= operationQuantity;
-                operationTarget.QuantityITStock += operationQuantity;
+                quantityPdrChange = -operationQuantity;
+                quantityItChange = operationQuantity;
                 break;
 
             case "SendToRepair":
@@ -595,8 +604,8 @@
                     operationError = "Cannot send to repair more than available PDR stock.";
                     return;
                 }
-                operationTarget.QuantityPDRStock -= operationQuantity;
-                operationTarget.Repairing_Quantity += operationQuantity;
+                quantityPdrChange = -operationQuantity;
+                repairingChange = operationQuantity;
                 break;
 
             case "MarkIrreparable":
@@ -605,8 +614,8 @@
                     operationError = "Cannot mark irreparable more than available PDR stock.";
                     return;
                 }
-                operationTarget.QuantityPDRStock -= operationQuantity;
-                operationTarget.IrreparableQuantity += operationQuantity;
+                quantityPdrChange = -operationQuantity;
+                irreparableChange = operationQuantity;
                 break;
 
             case "RepairToPdr":
@@ -615,14 +624,29 @@
                     operationError = "Cannot return more than current repairing quantity.";
                     return;
                 }
-                operationTarget.Repairing_Quantity -= operationQuantity;
-                operationTarget.QuantityPDRStock += operationQuantity;
+                repairingChange = -operationQuantity;
+                quantityPdrChange = operationQuantity;
                 break;
         }
 
         try
         {
-            await MaterielService.UpdateMateriel(operationTarget.Id, operationTarget);
+            // Load fresh entity to avoid tracking conflicts
+            var freshMateriel = await MaterielService.GetMaterielById(operationTargetId.Value);
+            if (freshMateriel is null)
+            {
+                operationError = "Material no longer exists.";
+                return;
+            }
+
+            // Apply changes to the fresh entity
+            freshMateriel.QuantityPDRStock += quantityPdrChange;
+            freshMateriel.QuantityITStock += quantityItChange;
+            freshMateriel.Repairing_Quantity += repairingChange;
+            freshMateriel.IrreparableQuantity += irreparableChange;
+
+            // Update the fresh entity (which is now tracked)
+            await MaterielService.UpdateMateriel(freshMateriel.Id, freshMateriel);
             NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Success,
