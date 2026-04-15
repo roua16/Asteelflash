@@ -1,0 +1,28 @@
+@page "/archived-missions"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,Purchasing")]
+
+<PageTitle>Archived Missions - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Archived Missions</h1>
+        <p class="page-subtitle">View archived project missions</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="event_repeat" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Mission Archive</h2>
+            <p>Access archived project missions and assignments.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Mission history and retrieval.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future archived missions component logic
+    }
+}

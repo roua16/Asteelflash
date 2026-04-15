@@ -41,7 +41,21 @@ public static class InfrastructureLayerServiceCollectionExtensions
 
         services.AddDbContext<ITStockManagmentContext>(options =>
         {
-            options.UseSqlite(configuration.GetConnectionString("ITStockManagmentConnection"));
+            var connectionString = configuration.GetConnectionString("ITStockManagmentConnection");
+
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException("Connection string 'ITStockManagmentConnection' is not configured.");
+            }
+
+            if (IsSqlServerConnection(connectionString))
+            {
+                options.UseSqlServer(connectionString);
+            }
+            else
+            {
+                options.UseSqlite(connectionString);
+            }
         });
 
         services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ITStockManagmentContext>());
@@ -86,5 +100,14 @@ public static class InfrastructureLayerServiceCollectionExtensions
         services.AddHostedService<AssetHealthBackgroundService>();
 
         return services;
+    }
+
+    private static bool IsSqlServerConnection(string connectionString)
+    {
+        return connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) ||
+               connectionString.Contains("Initial Catalog=", StringComparison.OrdinalIgnoreCase) ||
+               connectionString.Contains("Trusted_Connection=", StringComparison.OrdinalIgnoreCase) ||
+               connectionString.Contains("MultipleActiveResultSets=", StringComparison.OrdinalIgnoreCase) ||
+               connectionString.Contains("User Id=", StringComparison.OrdinalIgnoreCase);
     }
 }

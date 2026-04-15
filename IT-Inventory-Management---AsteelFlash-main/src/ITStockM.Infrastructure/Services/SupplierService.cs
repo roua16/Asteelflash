@@ -1,8 +1,8 @@
+using ITStockM.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
-using Radzen;
 
 namespace ITStockM.Services.Suppliers;
 
@@ -30,7 +30,7 @@ public class SupplierService : BaseCrudService<Supplier, IRepository<Supplier>>,
     /// <summary>
     /// Get suppliers with optional filtering.
     /// </summary>
-    public async Task<IQueryable<Supplier>> GetSuppliers(Query? query = null)
+    public async Task<IQueryable<Supplier>> GetSuppliers(QueryOptions? query = null)
     {
         return await GetAll(query);
     }
@@ -38,7 +38,7 @@ public class SupplierService : BaseCrudService<Supplier, IRepository<Supplier>>,
     /// <summary>
     /// Get suppliers list (helper for backwards compatibility).
     /// </summary>
-    public async Task<List<Supplier>> GetSuppliersList(Query? query = null)
+    public async Task<List<Supplier>> GetSuppliersList(QueryOptions? query = null)
     {
         var items = await GetAll(query);
         return await items.ToListAsync();

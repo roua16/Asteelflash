@@ -1,0 +1,28 @@
+@page "/offers-super-admin"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Offers Administration - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Offers Administration</h1>
+        <p class="page-subtitle">Admin panel for offers management</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="local_offer" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Offers Super Admin</h2>
+            <p>Full administrative control over offers and pricing.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Offer creation, pricing management, and tracking.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future offers admin component logic
+    }
+}

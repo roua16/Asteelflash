@@ -1,13 +1,13 @@
 using System.Linq;
 using System.Linq.Dynamic.Core;
-using Radzen;
+using ITStockM.Application.Common.Models;
 using System.Text.RegularExpressions;
 
 namespace ITStockM.Services.Utilities;
 
 public static class QueryExtensions
 {
-    public static IQueryable<T> ApplyQuery<T>(this IQueryable<T> items, Query query)
+    public static IQueryable<T> ApplyQuery<T>(this IQueryable<T> items, QueryOptions? query)
     {
         if (query != null)
         {

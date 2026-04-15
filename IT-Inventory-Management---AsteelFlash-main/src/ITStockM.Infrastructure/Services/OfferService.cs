@@ -1,7 +1,7 @@
+using ITStockM.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
-using Radzen;
 
 namespace ITStockM.Services.Offers;
 
@@ -29,7 +29,7 @@ public class OfferService : BaseCrudService<Offer, IRepository<Offer>>, IOfferSe
     /// <summary>
     /// Get offers with optional filtering.
     /// </summary>
-    public async Task<IQueryable<Offer>> GetOffers(Query? query = null)
+    public async Task<IQueryable<Offer>> GetOffers(QueryOptions? query = null)
     {
         return await GetAll(query);
     }
@@ -37,7 +37,7 @@ public class OfferService : BaseCrudService<Offer, IRepository<Offer>>, IOfferSe
     /// <summary>
     /// Get offers list (helper for backwards compatibility).
     /// </summary>
-    public async Task<List<Offer>> GetOffersList(Query? query = null)
+    public async Task<List<Offer>> GetOffersList(QueryOptions? query = null)
     {
         var items = await GetAll(query);
         return await items.ToListAsync();
@@ -97,4 +97,3 @@ public class OfferService : BaseCrudService<Offer, IRepository<Offer>>, IOfferSe
         return offer;
     }
 }
-

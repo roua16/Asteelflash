@@ -2,6 +2,7 @@ using ITStockM.Application.Features.Events;
 using ITStockM.Domain.Base;
 using ITStockM.Domain.Events;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ITStockM.Infrastructure.Services;
 

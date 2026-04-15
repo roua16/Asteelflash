@@ -1,0 +1,199 @@
+@page "/docs"
+@attribute [AllowAnonymous]
+@layout PublicLayout
+
+<div class="docs-container">
+    <div class="docs-header">
+        <div class="docs-header-content">
+            <img src="images/logoiconAsteel.png" alt="Asteelflash" class="docs-logo" />
+            <div>
+                <h1>IT Stock Management</h1>
+                <p class="docs-subtitle">Enterprise-level asset inventory management, lifecycle tracking, and maintenance scheduling.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="docs-content">
+        <div class="docs-section">
+            <h2>📊 System Overview</h2>
+            <div class="docs-grid">
+                <div class="docs-card">
+                    <h3>🚀 Features</h3>
+                    <ul>
+                        <li>Enterprise-grade asset tracking</li>
+                        <li>Lifecycle management</li>
+                        <li>Predictive maintenance</li>
+                        <li>Real-time status monitoring</li>
+                    </ul>
+                </div>
+                <div class="docs-card">
+                    <h3>📚 Documentation</h3>
+                    <ul>
+                        <li><a href="/swagger" target="_blank">📖 API Documentation</a></li>
+                        <li><a href="/api/v1/Health" target="_blank">🏥 Health Status</a></li>
+                        <li>Architecture: Clean Architecture (Domain → Application → Infrastructure → API)</li>
+                        <li>Framework: .NET 10 with ASP.NET Core</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="docs-section">
+            <h2>⚡ Quick Access</h2>
+            <div class="quick-links">
+                <a href="/swagger" class="quick-link-btn" target="_blank">
+                    <span class="quick-link-icon">📚</span>
+                    <span>
+                        <strong>Swagger Docs</strong>
+                        <small>Interactive API documentation</small>
+                    </span>
+                </a>
+                <a href="/" class="quick-link-btn">
+                    <span class="quick-link-icon">📊</span>
+                    <span>
+                        <strong>Dashboard</strong>
+                        <small>Main operations console</small>
+                    </span>
+                </a>
+                <a href="/api/v1/Health" class="quick-link-btn" target="_blank">
+                    <span class="quick-link-icon">🏥</span>
+                    <span>
+                        <strong>Health Check</strong>
+                        <small>System diagnostics</small>
+                    </span>
+                </a>
+                <a href="http://localhost:5080" class="quick-link-btn" target="_blank">
+                    <span class="quick-link-icon">📧</span>
+                    <span>
+                        <strong>SMTP4Dev</strong>
+                        <small>Email testing interface</small>
+                    </span>
+                </a>
+            </div>
+        </div>
+
+        <div class="docs-section">
+            <h2>📍 API Endpoints</h2>
+            <div class="endpoints-grid">
+                <div class="endpoint-card">
+                    <div class="endpoint-method">GET</div>
+                    <div class="endpoint-path">/api/v1/Health</div>
+                    <p>System health status</p>
+                </div>
+                <div class="endpoint-card">
+                    <div class="endpoint-method">GET</div>
+                    <div class="endpoint-path">/api/v1/AssetLifecycle/by-stage/{stage}</div>
+                    <p>Assets filtered by lifecycle stage</p>
+                </div>
+                <div class="endpoint-card">
+                    <div class="endpoint-method">GET</div>
+                    <div class="endpoint-path">/api/v1/Maintenance</div>
+                    <p>Maintenance tickets list</p>
+                </div>
+                <div class="endpoint-card">
+                    <div class="endpoint-method">POST</div>
+                    <div class="endpoint-path">/api/v1/Maintenance/{ticketId}/close</div>
+                    <p>Close an existing maintenance ticket</p>
+                </div>
+                <div class="endpoint-card">
+                    <div class="endpoint-method">GET</div>
+                    <div class="endpoint-path">/api/v1/Predictions/latest</div>
+                    <p>Latest predictive maintenance results</p>
+                </div>
+                <div class="endpoint-card">
+                    <div class="endpoint-method">GET</div>
+                    <div class="endpoint-path">/api/v1/Predictions/high-risk</div>
+                    <p>High-risk assets forecast</p>
+                </div>
+                <div class="endpoint-card">
+                    <div class="endpoint-method">POST</div>
+                    <div class="endpoint-path">/api/v1/Predictions/recalculate</div>
+                    <p>Recompute prediction models</p>
+                </div>
+                <div class="endpoint-card">
+                    <div class="endpoint-method">GET</div>
+                    <div class="endpoint-path">/swagger/index.html</div>
+                    <p>Interactive API documentation</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="docs-section">
+            <h2>🟢 System Status</h2>
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-indicator running"></div>
+                    <strong>Application</strong>
+                    <span>Running</span>
+                </div>
+                <div class="status-card">
+                    <div class="status-indicator running"></div>
+                    <strong>Database</strong>
+                    <span>Connected</span>
+                </div>
+                <div class="status-card">
+                    <div class="status-indicator running"></div>
+                    <strong>SMTP Service</strong>
+                    <span>Active (SMTP4Dev)</span>
+                </div>
+                <div class="status-card">
+                    <div class="status-indicator running"></div>
+                    <strong>API</strong>
+                    <span>Operational</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="docs-section">
+            <h2>🏗️ Architecture</h2>
+            <div class="architecture-info">
+                <p><strong>Clean Architecture Implementation:</strong></p>
+                <ul>
+                    <li><strong>Domain Layer:</strong> Core business entities and interfaces</li>
+                    <li><strong>Application Layer:</strong> CQRS with MediatR, business logic</li>
+                    <li><strong>Infrastructure Layer:</strong> EF Core, Data persistence, Email services</li>
+                    <li><strong>Presentation Layer:</strong> Blazor Components, REST API Controllers</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="docs-section">
+            <h2>📦 Technology Stack</h2>
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <h3>Backend</h3>
+                    <ul>
+                        <li>.NET 10</li>
+                        <li>ASP.NET Core 10</li>
+                        <li>Entity Framework Core 8.0.10 + Dapper 2.1.66</li>
+                        <li>SQL Server 2022</li>
+                        <li>MediatR (CQRS)</li>
+                    </ul>
+                </div>
+                <div class="tech-card">
+                    <h3>Frontend</h3>
+                    <ul>
+                        <li>Blazor Web App</li>
+                        <li>Radzen Components</li>
+                        <li>Interactive Server Rendering</li>
+                        <li>Responsive Design</li>
+                    </ul>
+                </div>
+                <div class="tech-card">
+                    <h3>Services</h3>
+                    <ul>
+                        <li>Swagger/OpenAPI</li>
+                        <li>Health Checks</li>
+                        <li>SMTP4Dev</li>
+                        <li>Docker Compose</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="docs-section docs-footer">
+            <p>© 2024 Asteelflash - IT Stock Management System</p>
+            <p>For more information, visit the <a href="/swagger" target="_blank">API Documentation</a></p>
+        </div>
+    </div>
+</div>

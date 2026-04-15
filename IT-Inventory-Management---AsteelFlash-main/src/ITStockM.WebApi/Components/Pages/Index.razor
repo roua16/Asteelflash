@@ -1,0 +1,165 @@
+@page "/"
+@page "/dashboard"
+@inject HttpClient Http
+
+<div class="dashboard-container">
+    <section class="dashboard-header">
+        <div class="header-content">
+            <div class="header-copy">
+                <h1>Operations Dashboard</h1>
+                <p class="header-subtitle">Production-ready command center for inventory, maintenance, and lifecycle operations.</p>
+            </div>
+            <div class="header-status @(IsHealthy ? "is-healthy" : "is-checking")">
+                <span class="header-status-dot" aria-hidden="true"></span>
+                <span class="header-status-label">@HealthDisplay</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="dashboard-content">
+        @if (isLoading)
+        {
+            <div class="loading-container">
+                <div class="spinner"></div>
+                <p>Loading system data...</p>
+            </div>
+        }
+        else
+        {
+            <section class="stats-grid" aria-label="Key metrics">
+                <article class="stat-card">
+                    <span class="stat-icon" aria-hidden="true"><RadzenIcon Icon="inventory_2" /></span>
+                    <div class="stat-body">
+                        <div class="stat-label">Total Assets</div>
+                        <div class="stat-value">1,243</div>
+                        <div class="stat-change positive">↑ 12% from last month</div>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <span class="stat-icon" aria-hidden="true"><RadzenIcon Icon="build" /></span>
+                    <div class="stat-body">
+                        <div class="stat-label">Active Maintenance</div>
+                        <div class="stat-value">24</div>
+                        <div class="stat-change positive">✓ All on schedule</div>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <span class="stat-icon" aria-hidden="true"><RadzenIcon Icon="pending_actions" /></span>
+                    <div class="stat-body">
+                        <div class="stat-label">Pending Items</div>
+                        <div class="stat-value">8</div>
+                        <div class="stat-change warning">! Requires attention</div>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <span class="stat-icon" aria-hidden="true"><RadzenIcon Icon="monitor_heart" /></span>
+                    <div class="stat-body">
+                        <div class="stat-label">System Health</div>
+                        <div class="stat-value">@HealthDisplay</div>
+                        <div class="stat-change positive">● All services running</div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="dashboard-section quick-actions">
+                <div class="section-header-row">
+                    <h2 class="section-title">Quick Actions</h2>
+                </div>
+                <div class="actions-grid">
+                    <a href="/docs" class="action-card">
+                        <span class="action-icon" aria-hidden="true"><RadzenIcon Icon="description" /></span>
+                        <h3>Documentation</h3>
+                        <p>System overview & API docs</p>
+                    </a>
+                    <a href="/swagger" class="action-card" target="_blank">
+                        <span class="action-icon" aria-hidden="true"><RadzenIcon Icon="menu_book" /></span>
+                        <h3>Swagger API</h3>
+                        <p>Interactive API documentation</p>
+                    </a>
+                    <a href="/api/v1/Health" class="action-card" target="_blank">
+                        <span class="action-icon" aria-hidden="true"><RadzenIcon Icon="health_and_safety" /></span>
+                        <h3>Health Check</h3>
+                        <p>System diagnostics</p>
+                    </a>
+                    <a href="http://localhost:5080" class="action-card" target="_blank">
+                        <span class="action-icon" aria-hidden="true"><RadzenIcon Icon="alternate_email" /></span>
+                        <h3>Email Testing</h3>
+                        <p>SMTP4Dev interface</p>
+                    </a>
+                </div>
+            </section>
+
+            <section class="dashboard-section system-status">
+                <div class="section-header-row">
+                    <h2 class="section-title">System Status</h2>
+                </div>
+                <div class="status-cards">
+                    <div class="status-card">
+                        <div class="status-indicator online"></div>
+                        <RadzenIcon Icon="apps" class="status-card-icon" />
+                        <div>
+                            <strong>Application</strong>
+                            <span class="status-text">Running</span>
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-indicator online"></div>
+                        <RadzenIcon Icon="storage" class="status-card-icon" />
+                        <div>
+                            <strong>Database</strong>
+                            <span class="status-text">Connected</span>
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-indicator online"></div>
+                        <RadzenIcon Icon="mark_email_read" class="status-card-icon" />
+                        <div>
+                            <strong>SMTP Service</strong>
+                            <span class="status-text">Active</span>
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-indicator online"></div>
+                        <RadzenIcon Icon="cloud_done" class="status-card-icon" />
+                        <div>
+                            <strong>API</strong>
+                            <span class="status-text">Operational</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        }
+    </div>
+</div>
+
+@code {
+    private bool isLoading = true;
+    private HealthStatus? healthStatus;
+    private string HealthDisplay => healthStatus?.status?.ToUpperInvariant() ?? "CHECKING";
+    private bool IsHealthy => string.Equals(healthStatus?.status, "healthy", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            healthStatus = await Http.GetFromJsonAsync<HealthStatus>("/api/v1/Health");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading health: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public class HealthStatus
+    {
+        public string? status { get; set; }
+        public Dictionary<string, object>? checks { get; set; }
+    }
+}

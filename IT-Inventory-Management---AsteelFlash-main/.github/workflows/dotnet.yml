@@ -24,7 +24,7 @@ jobs:
         run: dotnet restore
 
       - name: Build App
-        run: bash ./scripts/build-app.sh ITStockM.csproj
+        run: bash ./scripts/build-app.sh src/ITStockM.WebApi/ITStockM.WebApi.csproj
 
       - name: Architecture Regression Guard
         run: bash ./scripts/check-architecture-regressions.sh
@@ -64,7 +64,7 @@ jobs:
           dotnet-version: ${{ matrix.dotnet-version }}
 
       - name: Build Tests
-        run: bash ./scripts/build-tests.sh ITStockM.Tests/ITStockM.Tests.csproj
+        run: bash ./scripts/build-tests.sh src/ITStockM.Tests/ITStockM.Tests.csproj
 
       - name: Test
-        run: dotnet test ITStockM.Tests/ITStockM.Tests.csproj --no-build --verbosity normal
+        run: dotnet test src/ITStockM.Tests/ITStockM.Tests.csproj --no-build --verbosity normal

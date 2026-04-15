@@ -1,0 +1,28 @@
+@page "/materials-view-interface"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,Purchasing,IT")]
+
+<PageTitle>Materials View - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Materials Inventory</h1>
+        <p class="page-subtitle">View and manage IT inventory materials</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="inventory_2" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Materials Management</h2>
+            <p>Materials view interface for Admin, Purchasing, and IT roles.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Full inventory listing, search, and filtering.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future component logic
+    }
+}

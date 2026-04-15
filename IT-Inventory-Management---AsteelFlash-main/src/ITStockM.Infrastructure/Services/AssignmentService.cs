@@ -1,9 +1,9 @@
+using ITStockM.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
-using Radzen;
 
 namespace ITStockM.Services.Assignments;
 
@@ -30,7 +30,7 @@ public class AssignmentService : BaseCrudService<Assignment, IAssignmentReposito
         return _assignmentRepository.QueryWithIncludes();
     }
 
-    public async Task<IQueryable<Assignment>> GetAssignments(Query query = null)
+    public async Task<IQueryable<Assignment>> GetAssignments(QueryOptions? query = null)
     {
         return await GetAll(query);
     }

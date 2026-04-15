@@ -1,7 +1,7 @@
+using ITStockM.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
-using Radzen;
 
 namespace ITStockM.Services.Projects;
 
@@ -19,7 +19,7 @@ public class ProjectService : BaseCrudService<Project, IRepository<Project>>, IP
     /// <summary>
     /// Get projects with optional filtering.
     /// </summary>
-    public async Task<IQueryable<Project>> GetProjects(Query? query = null)
+    public async Task<IQueryable<Project>> GetProjects(QueryOptions? query = null)
     {
         return await GetAll(query);
     }
@@ -27,7 +27,7 @@ public class ProjectService : BaseCrudService<Project, IRepository<Project>>, IP
     /// <summary>
     /// Get projects list (helper for backwards compatibility).
     /// </summary>
-    public async Task<List<Project>> GetProjectsList(Query? query = null)
+    public async Task<List<Project>> GetProjectsList(QueryOptions? query = null)
     {
         var items = await GetAll(query);
         return await items.ToListAsync();
@@ -72,4 +72,3 @@ public class ProjectService : BaseCrudService<Project, IRepository<Project>>, IP
         return project;
     }
 }
-

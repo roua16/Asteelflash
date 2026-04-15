@@ -1,11 +1,11 @@
 using System.Linq;
+using ITStockM.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Base;
 using ITStockM.Domain.Exceptions;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
 using ITStockM.Services.Utilities;
-using Radzen;
 
 namespace ITStockM.Services
 {
@@ -14,7 +14,7 @@ namespace ITStockM.Services
     /// Eliminates code duplication across all entity services (~3,671 LOC reduced to ~500 LOC).
     /// 
     /// Provides:
-    /// - Query with dynamic filtering via Radzen Query
+    /// - Query with dynamic filtering via Application query options
     /// - GetById operations
     /// - Create with notifications
     /// - Update with existence validation
@@ -40,7 +40,7 @@ namespace ITStockM.Services
         /// <summary>
         /// Gets all entities with optional filtering and expansion.
         /// </summary>
-        public virtual async Task<IQueryable<TEntity>> GetAll(Query? query = null)
+        public virtual async Task<IQueryable<TEntity>> GetAll(QueryOptions? query = null)
         {
             IQueryable<TEntity> items = Repository.Query();
             items = ApplyIncludes(items);

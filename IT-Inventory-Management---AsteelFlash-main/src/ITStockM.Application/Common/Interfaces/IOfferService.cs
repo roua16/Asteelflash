@@ -1,12 +1,12 @@
+using ITStockM.Application.Common.Models;
 using ITStockM.Domain.Entities;
-using Radzen;
 
 namespace ITStockM.Services.Offers;
 
 public interface IOfferService
 {
-    Task<IQueryable<Offer>> GetOffers(Query query = null);
-    Task<List<Offer>> GetOffersList(Query query = null);
+    Task<IQueryable<Offer>> GetOffers(QueryOptions? query = null);
+    Task<List<Offer>> GetOffersList(QueryOptions? query = null);
     Task<Offer?> GetOfferById(int id);
     Task<IEnumerable<Offer>> GetOffersByIds(List<int> ids);
     Task<Offer> CreateOffer(Offer offer);

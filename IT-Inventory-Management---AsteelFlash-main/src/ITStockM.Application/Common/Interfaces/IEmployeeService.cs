@@ -1,12 +1,12 @@
+using ITStockM.Application.Common.Models;
 using ITStockM.Domain.Entities;
-using Radzen;
 
 namespace ITStockM.Services.Employees;
 
 public interface IEmployeeService
 {
-    Task<IQueryable<Employee>> GetEmployees(Query query = null);
-    Task<List<Employee>> GetEmployeesList(Query query = null);
+    Task<IQueryable<Employee>> GetEmployees(QueryOptions? query = null);
+    Task<List<Employee>> GetEmployeesList(QueryOptions? query = null);
     Task<Employee?> GetEmployeeById(int id);
     Task<Employee> CreateEmployee(Employee employee);
     Task<Employee> UpdateEmployee(int id, Employee employee);

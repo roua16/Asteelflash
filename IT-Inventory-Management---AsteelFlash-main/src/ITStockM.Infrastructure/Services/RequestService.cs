@@ -1,8 +1,8 @@
+using ITStockM.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
-using Radzen;
 
 namespace ITStockM.Services.Requests;
 
@@ -30,7 +30,7 @@ public class RequestService : BaseCrudService<Request, IRequestRepository>, IReq
     /// <summary>
     /// Get requests with optional filtering.
     /// </summary>
-    public async Task<IQueryable<Request>> GetRequests(Query? query = null)
+    public async Task<IQueryable<Request>> GetRequests(QueryOptions? query = null)
     {
         return await GetAll(query);
     }
@@ -38,7 +38,7 @@ public class RequestService : BaseCrudService<Request, IRequestRepository>, IReq
     /// <summary>
     /// Get requests list (helper for backwards compatibility).
     /// </summary>
-    public async Task<List<Request>> GetRequestsList(Query? query = null)
+    public async Task<List<Request>> GetRequestsList(QueryOptions? query = null)
     {
         var items = await GetAll(query);
         return await items.ToListAsync();

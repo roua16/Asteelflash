@@ -1,0 +1,28 @@
+@page "/asset-predictions"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,IT,Infrastructure")]
+
+<PageTitle>Asset Health Predictions - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Asset Health Predictions</h1>
+        <p class="page-subtitle">Monitor asset health and predict failures</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="monitoring" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Health Prediction Analytics</h2>
+            <p>View predicted asset failures and health scores.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Health dashboard, risk analysis, and replacement recommendations.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future predictions component logic
+    }
+}

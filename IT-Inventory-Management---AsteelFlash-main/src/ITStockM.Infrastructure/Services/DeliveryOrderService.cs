@@ -1,3 +1,4 @@
+using ITStockM.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Domain.Exceptions;
@@ -5,7 +6,6 @@ using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
 using ITStockM.Services.Utilities;
 using Microsoft.Extensions.DependencyInjection;
-using Radzen;
 
 namespace ITStockM.Services.DeliveryOrders;
 
@@ -35,12 +35,12 @@ public class DeliveryOrderService : BaseCrudService<DeliveryOrder, IDeliveryOrde
             .Include(i => i.Employee);
     }
 
-    public async Task<IQueryable<DeliveryOrder>> GetDeliveryOrders(Query query = null)
+    public async Task<IQueryable<DeliveryOrder>> GetDeliveryOrders(QueryOptions? query = null)
     {
         return await GetAll(query);
     }
 
-    public async Task<List<DeliveryOrder>> GetDeliveryOrdersList(Query query = null)
+    public async Task<List<DeliveryOrder>> GetDeliveryOrdersList(QueryOptions? query = null)
     {
         using var scope = _scopeFactory.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<ITStockM.Data.ITStockManagmentContext>();

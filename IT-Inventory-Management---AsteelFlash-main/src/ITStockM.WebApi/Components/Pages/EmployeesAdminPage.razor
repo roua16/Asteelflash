@@ -1,0 +1,28 @@
+@page "/employees-super-admin"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Employees Administration - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Employees Administration</h1>
+        <p class="page-subtitle">Admin panel for employee management</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="people" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Employees Super Admin</h2>
+            <p>Full administrative control over employee database.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Employee CRUD, department management, and roles.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future employees admin component logic
+    }
+}

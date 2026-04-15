@@ -1,0 +1,58 @@
+@implements IDisposable
+@inject AppThemeService AppThemeService
+
+<button
+    type="button"
+    class="@ResolvedClass"
+    @onclick="ToggleThemeAsync"
+    role="switch"
+    aria-checked="@AppThemeService.IsDark"
+    data-theme="@CurrentThemeMode"
+    title="@ButtonLabel"
+    aria-label="@ButtonLabel">
+    <span class="theme-toggle-track" aria-hidden="true">
+        <span class="theme-toggle-icon theme-toggle-icon-sun">
+            <RadzenIcon Icon="light_mode" />
+        </span>
+        <span class="theme-toggle-icon theme-toggle-icon-moon">
+            <RadzenIcon Icon="dark_mode" />
+        </span>
+        <span class="theme-toggle-thumb">
+            <RadzenIcon Icon="@CurrentModeIcon" />
+        </span>
+    </span>
+</button>
+
+@code {
+    [Parameter]
+    public string Class { get; set; } = string.Empty;
+
+    private string CurrentModeIcon => AppThemeService.IsDark ? "dark_mode" : "light_mode";
+    private string CurrentThemeMode => AppThemeService.IsDark ? "dark" : "light";
+
+    private string ButtonLabel => AppThemeService.IsDark ? "Switch to light mode" : "Switch to dark mode";
+
+    private string ResolvedClass => string.IsNullOrWhiteSpace(Class)
+        ? "theme-toggle-btn"
+        : $"theme-toggle-btn {Class}";
+
+    protected override void OnInitialized()
+    {
+        AppThemeService.ThemeChanged += OnThemeChanged;
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        await AppThemeService.ToggleAsync();
+    }
+
+    private void OnThemeChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AppThemeService.ThemeChanged -= OnThemeChanged;
+    }
+}

@@ -1,0 +1,28 @@
+@page "/requests-super-admin"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Requests Administration - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Requests Administration</h1>
+        <p class="page-subtitle">Admin panel for purchase requests</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="description" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Requests Super Admin</h2>
+            <p>Full administrative control over purchase requests.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Request management, approval workflows, and audit trails.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future requests admin component logic
+    }
+}

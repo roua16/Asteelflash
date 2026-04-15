@@ -1,0 +1,28 @@
+﻿@page "/access-denied"
+@layout MainLayout
+<div class="access-denied-page">
+    <div class="access-denied-container">
+        <div class="access-denied-card">
+            <div class="card-body">
+                <div class="icon-container">
+                    <RadzenIcon Icon="block" Class="icon" />
+                </div>
+
+                <h3 class="message-title">Permission Denied</h3>
+                <p class="message-description">
+                    You don't have the necessary permissions to access this page.
+                    Please contact your administrator if you believe this is an error.
+                </p>
+
+                <div class="action-buttons">
+                    <RadzenButton Click="@(() => NavigationManager.NavigateTo("/"))"
+                                  ButtonStyle="ButtonStyle.Primary" Shade="Shade.Lighter" Variant="Variant.Filled"
+                                  Class="home-button">
+                        <RadzenIcon Icon="home" Class="icon-small" />
+                        <span>Return to Dashboard</span>
+                    </RadzenButton>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,8 +1,8 @@
+using ITStockM.Application.Common.Models;
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Radzen;
 
 namespace ITStockM.Services.AssignmentMateriels;
 
@@ -34,7 +34,7 @@ public class AssignmentMaterielService : BaseCrudService<AssignmentMateriel, IRe
     /// <summary>
     /// Get assignment materiels with optional filtering.
     /// </summary>
-    public async Task<IQueryable<AssignmentMateriel>> GetAssignmentMateriels(Query? query = null)
+    public async Task<IQueryable<AssignmentMateriel>> GetAssignmentMateriels(QueryOptions? query = null)
     {
         return await GetAll(query);
     }
@@ -84,4 +84,3 @@ public class AssignmentMaterielService : BaseCrudService<AssignmentMateriel, IRe
         return entity;
     }
 }
-

@@ -1,6 +1,6 @@
 using MediatR;
-using ITStockM.Domain.Entities;
+using ITStockM.Application.Features.Maintenance.DTOs;
 
 namespace ITStockM.Application.Features.Maintenance.Queries;
 
-public sealed record GetTicketsByMaterielQuery(int MaterielId) : IRequest<IEnumerable<MaintenanceTicket>>;
+public sealed record GetTicketsByMaterielQuery(int MaterielId) : IRequest<IEnumerable<MaintenanceTicketDto>>;

@@ -1,0 +1,28 @@
+@page "/suppliers"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,Purchasing,PDR")]
+
+<PageTitle>Suppliers - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Suppliers Management</h1>
+        <p class="page-subtitle">Manage vendor and supplier information</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="storefront" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Supplier Database</h2>
+            <p>Maintain supplier contacts and purchase agreements.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Supplier management, ratings, and contact information.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future suppliers component logic
+    }
+}

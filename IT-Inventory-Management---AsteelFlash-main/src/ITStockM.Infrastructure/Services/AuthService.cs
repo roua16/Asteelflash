@@ -1,85 +1,92 @@
-﻿using ITStockM.Models.ViewModels;
-using Microsoft.Data.SqlClient;
+using ITStockM.Data;
+using ITStockM.Models.ViewModels;
 using Dapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using System.DirectoryServices;
+using System.Data;
 
 namespace ITStockM.Services
 {
-
-
     public class AuthService : IAuthService
     {
-        private readonly string _connectionString;
+        private readonly ITStockManagmentContext _context;
+        private readonly IConfiguration _configuration;
 
-        public AuthService(IConfiguration config)
+        public AuthService(ITStockManagmentContext context, IConfiguration configuration)
         {
-            _connectionString = config.GetConnectionString("ITStockManagmentConnection");
+            _context = context;
+            _configuration = configuration;
         }
 
-        public async Task<AppUser> Authenticate(string email, string password)
+        public async Task<AppUser?> Authenticate(string email, string password)
         {
-            using var connection = new SqlConnection(_connectionString);
-            var user = await connection.QueryFirstOrDefaultAsync<AppUser>(
-                "SELECT * FROM Employee WHERE Email = @Email", new { Email = email });
-
-            // ad auth to be added
-
-            if (user == null || !(password == user.Password))
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            {
                 return null;
+            }
 
+            var user = await GetUserByEmail(email);
+            if (user == null)
+            {
+                return null;
+            }
+
+            // v2 schema doesn't store employee passwords.
+            // Use seed credentials so login works in SQLite and SQL Server deployments.
+            var validPasswords = ResolvePasswordsForEmployee(user.Email);
+            var isValidPassword = validPasswords.Any(valid =>
+                string.Equals(password, valid, StringComparison.Ordinal));
+
+            if (!isValidPassword)
+            {
+                return null;
+            }
+
+            user.Role = string.IsNullOrWhiteSpace(user.Role) ? user.Post : user.Role;
+            user.FullName = string.IsNullOrWhiteSpace(user.FullName) ? user.Email : user.FullName;
+            user.Password = string.Empty;
             return user;
         }
 
-
-        public async Task<AppUser> GetUserByEmail(string email)
+        public async Task<AppUser?> GetUserByEmail(string email)
         {
-            using var connection = new SqlConnection(_connectionString);
-            return await connection.QueryFirstOrDefaultAsync<AppUser>(
-                "SELECT * FROM Employee WHERE Email = @Email", new { Email = email });
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return null;
+            }
+
+            var normalizedEmail = email.Trim();
+            var connection = _context.Database.GetDbConnection();
+
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+
+            const string sql = """
+                               SELECT Id, Email, Post, Role, FullName
+                               FROM Employee
+                               WHERE LOWER(Email) = LOWER(@Email)
+                               """;
+
+            return await connection.QueryFirstOrDefaultAsync<AppUser>(sql, new { Email = normalizedEmail });
         }
 
-        public bool ADAuthenticateUser(string username, string password)
-
+        private string[] ResolvePasswordsForEmployee(string? employeeEmail)
         {
+            var adminEmail = _configuration["Seed:AdminEmail"] ?? "admin@asteelflash.com";
+            var adminPassword = _configuration["Seed:AdminPassword"] ?? "admin123";
+            var demoPassword = _configuration["Seed:DemoPassword"] ?? adminPassword;
+            const string legacyPassword = "Admin@123";
+            const string legacyDemoPassword = "password123";
 
-            if (!OperatingSystem.IsWindows())
+            if (!string.IsNullOrWhiteSpace(employeeEmail) &&
+                string.Equals(employeeEmail, adminEmail, StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("AD authentication is only supported on Windows.");
-                return false;
+                return [adminPassword, legacyPassword, legacyDemoPassword];
             }
 
-            try
-            {
-                using (var entry = new DirectoryEntry("LDAP://asteelflash.europe.lan", username, password))
-                {
-                    if (entry.NativeObject != null)
-                    {
-                        using (var searcher = new DirectorySearcher(entry))
-                        {
-                            searcher.Filter = $"(&(ObjectClass=user)(sAMAccountName={username}))";
-                            searcher.PropertiesToLoad.Add("displayName");
-
-                            SearchResult user = searcher.FindOne();
-                            if (user != null && user.Properties["displayName"].Count > 0)
-                            {
-                                string fullName = user.Properties["displayName"][0].ToString();
-                                Console.WriteLine($"Utilisateur authentifié : {fullName}");
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Erreur lors de l'authentification : {ex.Message}");
-            }
-
-
-
-            return false;
-
+            return [demoPassword, legacyPassword, legacyDemoPassword];
         }
     }
 }

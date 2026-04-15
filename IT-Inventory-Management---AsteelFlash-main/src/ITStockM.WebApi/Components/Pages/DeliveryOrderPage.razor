@@ -1,0 +1,28 @@
+@page "/delivery-order"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,Purchasing,PDR")]
+
+<PageTitle>Add Delivery Orders - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Add Delivery Orders</h1>
+        <p class="page-subtitle">Create new delivery orders</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="add_circle" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Delivery Order Creation</h2>
+            <p>Create and submit new delivery orders for shipments.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Order form, validation, and submission.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future delivery order component logic
+    }
+}

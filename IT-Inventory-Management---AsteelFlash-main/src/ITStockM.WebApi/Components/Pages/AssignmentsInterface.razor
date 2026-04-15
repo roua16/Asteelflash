@@ -1,0 +1,28 @@
+@page "/assignments-interface"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,IT,Infrastructure,Employee")]
+
+<PageTitle>Materials Assignments - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Material Assignments</h1>
+        <p class="page-subtitle">Manage employee and project assignments</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="assignment" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Assignments Management</h2>
+            <p>View and manage materials assigned to employees and projects.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Assignment creation, tracking, and history.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future assignments component logic
+    }
+}

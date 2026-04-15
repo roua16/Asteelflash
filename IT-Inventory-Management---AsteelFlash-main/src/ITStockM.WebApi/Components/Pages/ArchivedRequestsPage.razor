@@ -1,0 +1,28 @@
+@page "/archived-requests-page"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,Purchasing")]
+
+<PageTitle>Archived Requests - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Archived Requests</h1>
+        <p class="page-subtitle">View archived purchase requests</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="archive" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Request Archive</h2>
+            <p>Access historical and archived purchase requests.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Archive search, filtering, and retrieval.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future archived requests component logic
+    }
+}

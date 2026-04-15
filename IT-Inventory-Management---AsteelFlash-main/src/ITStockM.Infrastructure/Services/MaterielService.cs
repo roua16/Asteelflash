@@ -1,8 +1,8 @@
+using ITStockM.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
 using ITStockM.Services.Interfaces;
-using Radzen;
 
 namespace ITStockM.Services.Materiels;
 
@@ -32,7 +32,7 @@ public class MaterielService : BaseCrudService<Materiel, IMaterielRepository>, I
     /// <summary>
     /// Get materiels with optional filtering.
     /// </summary>
-    public async Task<IQueryable<Materiel>> GetMateriels(Query? query = null)
+    public async Task<IQueryable<Materiel>> GetMateriels(QueryOptions? query = null)
     {
         return await GetAll(query);
     }
@@ -109,4 +109,3 @@ public class MaterielService : BaseCrudService<Materiel, IMaterielRepository>, I
             await NotificationService.NotifyMaterielDeleted(entity);
     }
 }
-

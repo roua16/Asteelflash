@@ -1,6 +1,6 @@
+using ITStockM.Application.Features.AssetLifecycle.DTOs;
 using MediatR;
-using ITStockM.Domain.Entities;
 
 namespace ITStockM.Application.Features.AssetLifecycle.Queries;
 
-public sealed record GetLifecycleHistoryQuery(int MaterielId) : IRequest<IEnumerable<AssetLifecycleRecord>>;
+public sealed record GetLifecycleHistoryQuery(int MaterielId) : IRequest<IEnumerable<AssetLifecycleRecordDto>>;

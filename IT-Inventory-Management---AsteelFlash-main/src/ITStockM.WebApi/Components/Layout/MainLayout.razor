@@ -1,0 +1,31 @@
+@inherits LayoutComponentBase
+
+<RadzenComponents />
+@if (NavigationManager.Uri.Contains("access-denied"))
+{
+    <ITStockM.Components.Pages.auth.AccessDenied />
+}
+else
+{
+    <AuthorizeView>
+        <Authorized>
+            <RadzenLayout class="@($"app-shell {ThemeClass}")" data-theme="@ThemeDataAttribute">
+                <CascadingValue Value="ThemeProvider" IsFixed="false">
+                    <SideLayout />
+                    <RadzenBody class="app-body">
+                        <main class="app-scroll-area">
+                            <div class="app-content-shell">
+                                @Body
+                            </div>
+                        </main>
+                    </RadzenBody>
+                </CascadingValue>
+            </RadzenLayout>
+        </Authorized>
+        <NotAuthorized>
+            <ITStockM.Components.Pages.auth.Login />
+        </NotAuthorized>
+    </AuthorizeView>
+}
+
+

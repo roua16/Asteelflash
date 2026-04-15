@@ -53,13 +53,11 @@ http://localhost:5000
 
 ```
 src/
-├── Domain/              # Business logic, entities, events
-├── Application/         # CQRS commands, queries, interfaces
-├── Infrastructure/      # EF Core, repositories, services
-└── WebApi/             # Controllers, middleware, DI
-
-ITStockM.Tests/         # Unit & integration tests
-docs/                   # Documentation & legacy code
+├── ITStockM.Domain/         # Business logic, entities, events
+├── ITStockM.Application/    # CQRS commands, queries, interfaces, DTOs
+├── ITStockM.Infrastructure/ # EF Core, repositories, integrations, services
+├── ITStockM.WebApi/         # Controllers, middleware, Blazor UI, composition root
+└── ITStockM.Tests/          # Unit, integration, and UI tests
 ```
 
 ## Key Features
@@ -120,10 +118,10 @@ GET    /api/deliveryorder/{id}    # Get order details
 
 ```bash
 # Run all tests
-dotnet test ITStockM.Tests.csproj
+dotnet test src/ITStockM.Tests/ITStockM.Tests.csproj
 
 # Run specific test class
-dotnet test --filter "ClassName=EventHandlerTests"
+dotnet test src/ITStockM.Tests/ITStockM.Tests.csproj --filter "ClassName=EventHandlerTests"
 
 # Generate coverage report
 dotnet test /p:CollectCoverageRatio=80
@@ -197,7 +195,12 @@ dotnet ef migrations remove
 
 ## Documentation
 
-See `/docs` folder for:
+Core references:
+- `ARCHITECTURE_CHECKLIST.md` - strict clean-architecture checklist and phased refactor plan
+- `/swagger` - OpenAPI endpoint documentation
+- `/docs` - system status/navigation page
+
+Additional docs:
 - `QUICK_START.md` - Detailed setup guide
 - `ARCHITECTURE.md` - Architecture patterns
 - `IMPLEMENTATION.md` - Implementation details

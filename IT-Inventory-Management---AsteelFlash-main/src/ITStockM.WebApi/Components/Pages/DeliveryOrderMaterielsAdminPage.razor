@@ -1,0 +1,28 @@
+@page "/delivery-order-materiels-super-admin"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Delivery Order Materials Administration - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Delivery Order Materials Administration</h1>
+        <p class="page-subtitle">Admin panel for delivery order materials</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="receipt" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Delivery Order Materials Super Admin</h2>
+            <p>Administrative management of order line items.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Order detail management and updates.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future delivery order materials admin component logic
+    }
+}

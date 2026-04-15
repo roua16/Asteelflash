@@ -1,4 +1,5 @@
-﻿using ITStockM.Domain.Entities;
+using ITStockM.Domain.Entities;
+using ITStockM.Application.Common.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,7 +9,6 @@ using ITStockM.Services.DeliveryOrders;
 using ITStockM.Services.Requests;
 using ITStockM.Services.Interfaces;
 using Microsoft.IdentityModel.Tokens;
-using Radzen;
 
 namespace ITStockM.Services
 {
@@ -35,10 +35,10 @@ namespace ITStockM.Services
 
                     try
                     {
-                        var assignments = (await assignmentService.GetAssignments(new Query { Expand = "AssignmentMateriels, AssignedEmployee, Employee" }))
+                        var assignments = (await assignmentService.GetAssignments(new QueryOptions { Expand = "AssignmentMateriels, AssignedEmployee, Employee" }))
                             .Where(a => a.OnMission && a.RestoreDate == null && a.RestoreDateLimit > DateTime.Today).ToList();
                         var deliveryorders = (await deliveryOrderService.GetDeliveryOrders()).Where(dlo => dlo.OrderNumber == null).ToList();
-                        var requests = (await requestService.GetRequests(new Query
+                        var requests = (await requestService.GetRequests(new QueryOptions
                         {
                             Filter = $@"i => i.Status == @0",
                             FilterParameters = new object[] { "Done" },

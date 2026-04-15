@@ -1,8 +1,12 @@
 namespace ITStockM.WebApi.Middleware;
 
+using FluentValidation;
 using System.Net;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
+using BusinessRuleViolationException = ITStockM.Domain.Exceptions.BusinessRuleViolationException;
+using DomainInvalidOperationException = ITStockM.Domain.Exceptions.InvalidOperationException;
+using EntityNotFoundException = ITStockM.Domain.Exceptions.EntityNotFoundException;
 
 /// <summary>
 /// Comprehensive global exception handling middleware for standardized error responses.
@@ -45,13 +49,48 @@ public sealed class GlobalExceptionMiddleware
 
         return exception switch
         {
+            EntityNotFoundException => HandleEntityNotFoundException(context, (EntityNotFoundException)exception, response),
+            BusinessRuleViolationException => HandleBusinessRuleViolationException(context, (BusinessRuleViolationException)exception, response),
+            DomainInvalidOperationException => HandleDomainInvalidOperationException(context, (DomainInvalidOperationException)exception, response),
+            ValidationException => HandleValidationException(context, (ValidationException)exception, response),
             ArgumentNullException => HandleArgumentNullException(context, (ArgumentNullException)exception, response),
             ArgumentException => HandleArgumentException(context, (ArgumentException)exception, response),
             UnauthorizedAccessException => HandleUnauthorizedException(context, response),
             KeyNotFoundException => HandleNotFoundException(context, response),
-            InvalidOperationException => HandleInvalidOperationException(context, response),
+            System.InvalidOperationException => HandleInvalidOperationException(context, response),
             _ => HandleGenericException(context, response)
         };
+    }
+
+    private static Task HandleEntityNotFoundException(HttpContext context, EntityNotFoundException exception, ErrorResponse response)
+    {
+        context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+        response.Message = exception.Message;
+        return context.Response.WriteAsJsonAsync(response);
+    }
+
+    private static Task HandleBusinessRuleViolationException(HttpContext context, BusinessRuleViolationException exception, ErrorResponse response)
+    {
+        context.Response.StatusCode = (int)HttpStatusCode.UnprocessableEntity;
+        response.Message = exception.Message;
+        return context.Response.WriteAsJsonAsync(response);
+    }
+
+    private static Task HandleDomainInvalidOperationException(HttpContext context, DomainInvalidOperationException exception, ErrorResponse response)
+    {
+        context.Response.StatusCode = (int)HttpStatusCode.UnprocessableEntity;
+        response.Message = exception.Message;
+        return context.Response.WriteAsJsonAsync(response);
+    }
+
+    private static Task HandleValidationException(HttpContext context, ValidationException exception, ErrorResponse response)
+    {
+        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+        response.Message = "Validation failed";
+        response.Details = exception.Errors
+            .GroupBy(e => e.PropertyName)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+        return context.Response.WriteAsJsonAsync(response);
     }
 
     private static Task HandleArgumentNullException(HttpContext context, ArgumentNullException exception, ErrorResponse response)
@@ -112,5 +151,8 @@ public sealed class GlobalExceptionMiddleware
 
         [JsonPropertyName("traceId")]
         public required string TraceId { get; set; }
+
+        [JsonPropertyName("details")]
+        public object? Details { get; set; }
     }
 }

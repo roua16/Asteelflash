@@ -16,8 +16,9 @@ namespace ITStockM.Data
             ILogger logger,
             CancellationToken cancellationToken = default)
         {
-            await context.Database.MigrateAsync(cancellationToken);
-            logger.LogInformation("Database migrations applied.");
+            // Use EnsureCreatedAsync for SQLite which doesn't need migrations
+            await context.Database.EnsureCreatedAsync(cancellationToken);
+            logger.LogInformation("Database schema ensured.");
 
             var seedSection = configuration.GetSection("Seed");
             var seedEnabled = seedSection.GetValue("Enabled", environment.IsDevelopment());

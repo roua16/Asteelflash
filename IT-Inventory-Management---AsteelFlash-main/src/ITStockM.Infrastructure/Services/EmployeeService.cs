@@ -1,7 +1,7 @@
+using ITStockM.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using ITStockM.Domain.Entities;
 using ITStockM.Repositories;
-using Radzen;
 
 namespace ITStockM.Services.Employees;
 
@@ -19,7 +19,7 @@ public class EmployeeService : BaseCrudService<Employee, IRepository<Employee>>,
     /// <summary>
     /// Get employees with optional filtering.
     /// </summary>
-    public async Task<IQueryable<Employee>> GetEmployees(Query? query = null)
+    public async Task<IQueryable<Employee>> GetEmployees(QueryOptions? query = null)
     {
         return await GetAll(query);
     }
@@ -27,7 +27,7 @@ public class EmployeeService : BaseCrudService<Employee, IRepository<Employee>>,
     /// <summary>
     /// Get employees list (helper for backwards compatibility).
     /// </summary>
-    public async Task<List<Employee>> GetEmployeesList(Query? query = null)
+    public async Task<List<Employee>> GetEmployeesList(QueryOptions? query = null)
     {
         var items = await GetAll(query);
         return await items.ToListAsync();
@@ -72,4 +72,3 @@ public class EmployeeService : BaseCrudService<Employee, IRepository<Employee>>,
         return employee;
     }
 }
-

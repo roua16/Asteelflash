@@ -14,15 +14,28 @@ namespace ITStockM.Infrastructure.Persistence
         {
             var optionsBuilder = new DbContextOptionsBuilder<ITStockManagmentContext>();
 
-            // Use SQL Server with a development connection string
-            // This can be overridden via environment variables or configuration files
-            var connectionString = Environment.GetEnvironmentVariable("DefaultConnection")
-                ?? "Server=.;Database=ITStockManagment;Trusted_Connection=true;Encrypt=false";
+            var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__ITStockManagmentConnection")
+                ?? "Data Source=ITStockManagement.db";
 
-            optionsBuilder.UseSqlServer(connectionString, options =>
-                options.MigrationsHistoryTable("__EFMigrationsHistory", "dbo"));
+            if (IsSqlServerConnection(connectionString))
+            {
+                optionsBuilder.UseSqlServer(connectionString);
+            }
+            else
+            {
+                optionsBuilder.UseSqlite(connectionString);
+            }
 
             return new ITStockManagmentContext(optionsBuilder.Options);
+        }
+
+        private static bool IsSqlServerConnection(string connectionString)
+        {
+            return connectionString.Contains("Server=", StringComparison.OrdinalIgnoreCase) ||
+                   connectionString.Contains("Initial Catalog=", StringComparison.OrdinalIgnoreCase) ||
+                   connectionString.Contains("Trusted_Connection=", StringComparison.OrdinalIgnoreCase) ||
+                   connectionString.Contains("MultipleActiveResultSets=", StringComparison.OrdinalIgnoreCase) ||
+                   connectionString.Contains("User Id=", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

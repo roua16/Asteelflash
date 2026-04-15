@@ -1,0 +1,28 @@
+@page "/assignments-archive"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Archived Assignments - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <h1>Archived Assignments</h1>
+        <p class="page-subtitle">View archived material assignments</p>
+    </div>
+    
+    <div class="page-content">
+        <div class="content-placeholder">
+            <RadzenIcon Icon="inventory_2" Style="font-size: 48px; opacity: 0.5;" />
+            <h2>Assignment Archive</h2>
+            <p>Access archived material-to-employee assignments.</p>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">Coming soon: Archive retrieval and historical analysis.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // Placeholder for future archived assignments component logic
+    }
+}

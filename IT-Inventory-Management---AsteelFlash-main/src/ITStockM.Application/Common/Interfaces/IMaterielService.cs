@@ -1,12 +1,12 @@
 using System.Linq;
+using ITStockM.Application.Common.Models;
 using ITStockM.Domain.Entities;
-using Radzen;
 
 namespace ITStockM.Services.Materiels;
 
 public interface IMaterielService
 {
-    Task<IQueryable<Materiel>> GetMateriels(Query query = null);
+    Task<IQueryable<Materiel>> GetMateriels(QueryOptions? query = null);
     Task<Materiel?> GetMaterielById(int id);
     Task<Materiel?> GetMaterielByName(string name);
     Task<Materiel> CreateMateriel(Materiel materiel);
