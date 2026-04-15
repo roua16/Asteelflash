@@ -2,6 +2,7 @@
 @using System.Text.Json
 @inject GeminiChatStateService ChatStateService
 @inject HttpClient Http
+@inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
 
 <div class="gemini-fab" @onclick="ToggleChatAsync" title="Open AI Chat">
@@ -120,7 +121,11 @@
         try
         {
             var request = new { message = userMessage };
-            var response = await Http.PostAsJsonAsync("/api/gemini-chat/send", request);
+
+            // Use absolute URL based on current navigation URI
+            var baseUri = NavigationManager.BaseUri.TrimEnd('/');
+            var uri = $"{baseUri}/api/gemini-chat/send";
+            var response = await Http.PostAsJsonAsync(uri, request);
 
             if (!response.IsSuccessStatusCode)
             {

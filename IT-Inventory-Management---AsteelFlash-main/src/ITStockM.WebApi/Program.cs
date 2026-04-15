@@ -71,13 +71,14 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     services.AddScoped<AppThemeService>();
     services.AddHttpContextAccessor();
 
-    // Gemini Chat Services
+    // Gemini Chat Services - Dependency Injection with Interface Abstraction
     services.AddScoped<GeminiChatStateService>();
-    services.AddScoped<GeminiChatService>();
+    services.AddScoped<IGeminiService, GeminiChatService>();
     services.AddHttpClient<GeminiChatService>()
         .ConfigureHttpClient(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("User-Agent", "ITStockM-AsteelFlash/1.0");
         });
 
     services.AddControllers(options =>
