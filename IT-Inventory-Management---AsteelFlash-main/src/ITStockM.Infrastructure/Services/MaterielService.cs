@@ -34,11 +34,11 @@ public class MaterielService : BaseCrudService<Materiel, IMaterielRepository>, I
     /// </summary>
     public override async Task<IQueryable<Materiel>> GetAll(QueryOptions? query = null)
     {
-        var items = base.GetAll(query);
+        var items = await base.GetAll(query);
         return ApplyIncludes(items);
     }
 
-public async Task<IQueryable<Materiel>> GetMateriels(QueryOptions? query = null) => await GetAll(query);
+    public async Task<IQueryable<Materiel>> GetMateriels(QueryOptions? query = null) => await GetAll(query);
 
     /// <summary>
     /// Get materiel by ID.
