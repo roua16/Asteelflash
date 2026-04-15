@@ -12,9 +12,9 @@
 - Edit \`src/ITStockM.Infrastructure/Services/BaseCrudService.cs\`
 - Change Update: load existing → copy properties from DTO → Update(existing)
 
-### 4. Enable EF sensitive logging in appsettings
+### 4. Enable EF sensitive logging in appsettings [✅ COMPLETED]
 - Edit \`src/ITStockM.WebApi/appsettings.Development.json\`
-- Add \`EnableSensitiveDataLogging: true\` to DbContext options
+- Added EF Core detailed logging for debugging
 
 ### 5. Test & Verify
 - Navigate to \`/materials-view-interface-pdr\`

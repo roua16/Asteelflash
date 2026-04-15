@@ -32,26 +32,11 @@ public class MaterielService : BaseCrudService<Materiel, IMaterielRepository>, I
     /// <summary>
     /// Get materiels with optional filtering.
     /// </summary>
-public override async Task<IQueryable<Materiel>> GetAll(QueryOptions? query = null)
-{
-    var items = Repository.Query().AsNoTracking();
-    items = ApplyIncludes(items);
-
-    if (query != null)
+    public override async Task<IQueryable<Materiel>> GetAll(QueryOptions? query = null)
     {
-        if (!string.IsNullOrEmpty(query.Expand))
-        {
-            var propertiesToExpand = query.Expand.Split(',');
-            foreach (var p in propertiesToExpand)
-            {
-                items = items.Include(p.Trim());
-            }
-        }
-        items = items.ApplyQuery(query);
+        var items = base.GetAll(query);
+        return ApplyIncludes(items);
     }
-
-    return items;
-}
 
 public async Task<IQueryable<Materiel>> GetMateriels(QueryOptions? query = null) => await GetAll(query);
 
