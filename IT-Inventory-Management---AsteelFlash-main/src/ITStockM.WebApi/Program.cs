@@ -71,6 +71,19 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
     services.AddScoped<AppThemeService>();
     services.AddHttpContextAccessor();
 
+    // Configure HttpClient for Blazor components
+    services.AddScoped(sp =>
+    {
+        var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+        var request = httpContextAccessor.HttpContext?.Request;
+        var baseAddress = request != null
+            ? $"{request.Scheme}://{request.Host}"
+            : "http://localhost:8080";
+        
+        var client = new HttpClient { BaseAddress = new Uri(baseAddress) };
+        return client;
+    });
+
     // Gemini Chat Services - Dependency Injection with Interface Abstraction
     services.AddScoped<GeminiChatStateService>();
     services.AddScoped<IGeminiService, GeminiChatService>();
