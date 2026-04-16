@@ -35,7 +35,9 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100dvh;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
     background:
         radial-gradient(circle at 12% 14%, rgba(99, 102, 241, 0.26), transparent 34%),
         radial-gradient(circle at 88% 6%, rgba(34, 211, 238, 0.18), transparent 30%),
@@ -2793,3 +2795,131 @@ body.theme-light select {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
 }
 
+/* Global visual polish overrides */
+:root {
+    --app-surface-elevated: #344357;
+    --app-text-soft: #cbd5e1;
+    --app-field-bg: rgba(15, 23, 42, 0.42);
+    --app-field-border: rgba(148, 163, 184, 0.28);
+    --app-row-alt: rgba(99, 102, 241, 0.08);
+    --app-row-hover: rgba(34, 211, 238, 0.14);
+    --app-gap-lg: clamp(14px, 1.4vw, 22px);
+    --app-gap-md: clamp(10px, 1vw, 16px);
+}
+
+body.theme-light {
+    --app-surface-elevated: #eef2ff;
+    --app-text-soft: #334155;
+    --app-field-bg: #ffffff;
+    --app-field-border: #cbd5e1;
+    --app-row-alt: rgba(15, 23, 42, 0.03);
+    --app-row-hover: rgba(79, 70, 229, 0.08);
+}
+
+.app-content-shell {
+    border-color: var(--app-border);
+    background: linear-gradient(160deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+}
+
+.page-container {
+    padding: clamp(1.15rem, 1.35vw, 1.7rem);
+    margin: 0 auto 1.25rem;
+    border-radius: 24px;
+}
+
+.panel {
+    border: 1px solid var(--app-border);
+    border-radius: 18px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, transparent 42%),
+        linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+    box-shadow: var(--app-shadow-sm);
+    overflow: hidden;
+}
+
+.panel-header {
+    gap: 0.75rem;
+    padding: 0.95rem 1rem;
+    border-bottom: 1px solid var(--app-border);
+}
+
+.panel-title {
+    color: var(--app-text);
+}
+
+.panel-count {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--app-field-border);
+    border-radius: 999px;
+    padding: 0.28rem 0.62rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--app-text-soft);
+    background: var(--app-field-bg);
+    white-space: nowrap;
+}
+
+.panel-body {
+    padding: 0.95rem;
+}
+
+.form-field {
+    margin-bottom: 0.82rem;
+}
+
+.field-label {
+    color: var(--app-text-soft);
+}
+
+:is(.rz-textbox, .rz-inputtext, .rz-textarea, .rz-dropdown, .rz-dropdown-label, .rz-numeric-input input, .rz-datepicker input) {
+    background: var(--app-field-bg) !important;
+    border-color: var(--app-field-border) !important;
+    color: var(--app-text) !important;
+}
+
+:is(.rz-textbox, .rz-inputtext, .rz-textarea, .rz-dropdown, .rz-numeric-input input, .rz-datepicker input):focus,
+:is(.rz-dropdown, .rz-dropdown-label):focus-within {
+    border-color: var(--app-primary) !important;
+    box-shadow: var(--app-glow) !important;
+}
+
+:is(.rz-data-grid, .rz-datatable, .rz-grid-table, .rz-datatable table, .rz-grid-table table) {
+    background: transparent;
+    color: var(--app-text);
+}
+
+:is(.rz-datatable-header, .rz-datatable-thead th, .rz-grid-table thead th) {
+    background: var(--app-surface-elevated);
+    color: var(--app-text-soft);
+    border-bottom-color: var(--app-border);
+}
+
+:is(.rz-datatable-data tr:nth-child(even), .rz-datatable-tbody tr:nth-child(even), .rz-grid-table tbody tr:nth-child(even)) {
+    background: var(--app-row-alt);
+}
+
+:is(.rz-datatable-data tr:hover, .rz-datatable-tbody tr:hover, .rz-grid-table tbody tr:hover) {
+    background: var(--app-row-hover);
+}
+
+:is(.rz-datatable-data td, .rz-datatable-tbody td, .rz-grid-table td) {
+    border-bottom-color: var(--app-border);
+    color: var(--app-text);
+}
+
+.rz-button {
+    border-radius: 12px;
+}
+
+@media (max-width: 900px) {
+    .panel-header,
+    .panel-body {
+        padding: 0.82rem;
+    }
+
+    .page-container {
+        padding: 1rem;
+    }
+}

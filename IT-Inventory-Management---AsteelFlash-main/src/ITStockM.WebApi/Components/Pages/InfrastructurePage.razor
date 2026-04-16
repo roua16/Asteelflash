@@ -1,8 +1,19 @@
-﻿@page "/infra-interface"
+@page "/infra-interface"
 @using ITStockM.Domain.Entities
 @using ITStockM.Models.ViewModels
-@using System.Net.Http.Json
-@inject HttpClient Http
+@using ITStockM.Services.Employees
+@using ITStockM.Services.Offers
+@using ITStockM.Services.Projects
+@using ITStockM.Services.Requests
+@using System.IO
+@using System.Linq
+@using System.Security.Claims
+@attribute [Authorize(Roles = "Admin,IT,Infrastructure")]
+@inject IRequestService RequestService
+@inject IOfferService OfferService
+@inject IEmployeeService EmployeeService
+@inject IProjectService ProjectService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
@@ -70,10 +81,14 @@
                                 <div class="form-field">
                                     <label class="field-label">Supporting Documents</label>
                                     <RadzenUpload ChooseText="Upload File" Change="@OnFileUpload" Class="upload-full" />
+                                    @if (!string.IsNullOrWhiteSpace(uploadedFileName))
+                                    {
+                                        <small class="upload-file-name">Attached: @uploadedFileName</small>
+                                    }
                                 </div>
 
                                 <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" JustifyContent="JustifyContent.Center" Class="form-actions">
-                                    <RadzenButton Text="Save" Icon="save" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Info" />
+                                    <RadzenButton Text="@(isEditMode ? "Update" : "Save")" Icon="@(isEditMode ? "edit" : "save")" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Info" />
                                     <RadzenButton Text="Reset" Icon="highlight_off" Click="@ResetForm" ButtonStyle="ButtonStyle.Danger" />
                                 </RadzenStack>
                             </RadzenTemplateForm>
@@ -88,12 +103,16 @@
                                 <RadzenIcon Icon="alarm" />
                             </div>
                             <h2 class="panel-title">Requests Queue</h2>
+                            <span class="panel-count">@requests.Count item(s)</span>
                         </div>
 
                         <div class="panel-body">
-                            <RadzenDataGrid Data="@requests" TItem="Request" AllowFiltering="true" AllowPaging="true" AllowSorting="true" PageSize="10" RowDoubleClick="@EditRow">
+                            <RadzenDataGrid Data="@requests" TItem="Request" AllowFiltering="true" AllowPaging="false" AllowSorting="true" RowDoubleClick="@EditRow">
                                 <Columns>
                                     <RadzenDataGridColumn TItem="Request" Property="Title" Title="Title" />
+                                    <RadzenDataGridColumn TItem="Request" Property="ProjectName" Title="Project" />
+                                    <RadzenDataGridColumn TItem="Request" Property="MaterialType" Title="Material Type" />
+                                    <RadzenDataGridColumn TItem="Request" Property="Date" Title="Date" FormatString="{0:yyyy-MM-dd}" />
 
                                     <RadzenDataGridColumn TItem="Request" Property="Status" Title="Status">
                                         <Template Context="item">
@@ -103,7 +122,10 @@
 
                                     <RadzenDataGridColumn TItem="Request" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
                                         <Template Context="item">
-                                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(args => DeleteRequest(item.Id))" />
+                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" JustifyContent="JustifyContent.Center">
+                                                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(args => BeginEdit(item))" />
+                                                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(args => DeleteRequest(item.Id))" />
+                                            </RadzenStack>
                                         </Template>
                                     </RadzenDataGridColumn>
                                 </Columns>
@@ -117,13 +139,21 @@
                                 <RadzenIcon Icon="book" />
                             </div>
                             <h2 class="panel-title">Available Offers</h2>
+                            <span class="panel-count">@groupedOffers.Count item(s)</span>
                         </div>
 
                         <div class="panel-body">
-                            <RadzenDataGrid Data="@groupedOffers" TItem="InfraViewModel" AllowFiltering="true" AllowPaging="true" AllowSorting="true" PageSize="10">
+                            <RadzenDataGrid Data="@groupedOffers" TItem="InfraViewModel" AllowFiltering="true" AllowPaging="false" AllowSorting="true">
                                 <Columns>
+                                    <RadzenDataGridColumn TItem="InfraViewModel" Property="RequestId" Title="Request ID" Width="110px" />
                                     <RadzenDataGridColumn TItem="InfraViewModel" Property="RequestTitle" Title="Request" />
-                                    <RadzenDataGridColumn TItem="InfraViewModel" Property="OffersAvai" Title="Available Offers" />
+                                    <RadzenDataGridColumn TItem="InfraViewModel" Property="OffersAvai" Title="Available Offers">
+                                        <Template Context="item">
+                                            <RadzenBadge
+                                                Text="@((item.OffersAvai ?? 0).ToString())"
+                                                BadgeStyle="@((item.OffersAvai ?? 0) > 0 ? BadgeStyle.Success : BadgeStyle.Secondary)" />
+                                        </Template>
+                                    </RadzenDataGridColumn>
                                 </Columns>
                             </RadzenDataGrid>
                         </div>
@@ -140,31 +170,101 @@
     private List<Request> requests = new();
     private Request request = new();
     private List<InfraViewModel> groupedOffers = new();
+    private List<Employee> employees = new();
+    private bool isEditMode;
+    private bool errorVisible;
+    private string uploadedFileName = string.Empty;
 
-
-private bool errorVisible;
-
-    private List<string> projectNames = new() { "Project A", "Project B", "Project C" };
+    private const long MaxUploadSizeBytes = 10 * 1024 * 1024;
+    private List<string> projectNames = new();
     private List<string> materialTypes = new() { "Hardware", "Software", "Network", "Security" };
     private List<string> statuses = new() { "Pending", "In Progress", "Approved", "Rejected", "Done" };
 
-    private readonly string apiBase = "api/v1/infrastructure";
-
     protected override async Task OnInitializedAsync()
+    {
+        await LoadEmployees();
+        await LoadProjects();
+        await ResetForm();
+        await ReloadData();
+    }
+
+    private async Task ReloadData()
     {
         await LoadRequests();
         await LoadOffers();
+    }
+
+    private async Task LoadEmployees()
+    {
+        try
+        {
+            employees = (await EmployeeService.GetEmployeesList())
+                .Where(e => !e.IsDeleted)
+                .OrderBy(e => e.FullName)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            employees = new();
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Infrastructure",
+                Detail = $"Failed to load employees: {ex.Message}",
+                Duration = 5000
+            });
+        }
+    }
+
+    private async Task LoadProjects()
+    {
+        try
+        {
+            projectNames = (await ProjectService.GetProjectsList())
+                .Where(p => !p.IsDeleted && !string.IsNullOrWhiteSpace(p.ProjectName))
+                .Select(p => p.ProjectName)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(name => name)
+                .ToList();
+
+            if (projectNames.Count == 0)
+            {
+                projectNames = ["General", "Operations", "Infrastructure"];
+            }
+        }
+        catch (Exception ex)
+        {
+            projectNames = ["General", "Operations", "Infrastructure"];
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Infrastructure",
+                Detail = $"Projects list unavailable: {ex.Message}",
+                Duration = 5000
+            });
+        }
     }
 
     private async Task LoadRequests()
     {
         try
         {
-            requests = await Http.GetFromJsonAsync<List<Request>>($"{apiBase}/requests") ?? new();
+            requests = (await RequestService.GetRequestsList())
+                .Where(r => !r.IsDeleted)
+                .OrderByDescending(r => r.Date)
+                .ThenByDescending(r => r.Id)
+                .ToList();
         }
-        catch
+        catch (Exception ex)
         {
             requests = new();
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Infrastructure",
+                Detail = $"Failed to load requests: {ex.Message}",
+                Duration = 5000
+            });
         }
     }
 
@@ -172,11 +272,64 @@ private bool errorVisible;
     {
         try
         {
-            groupedOffers = await Http.GetFromJsonAsync<List<InfraViewModel>>($"{apiBase}/offers") ?? new();
+            var offers = (await OfferService.GetOffersList())
+                .Where(o => !o.IsDeleted)
+                .ToList();
+
+            var offerGroups = offers
+                .GroupBy(o => o.RequestId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.ToList());
+
+            var offersByRequest = requests
+                .Select(requestItem =>
+                {
+                    var requestOffers = offerGroups.TryGetValue(requestItem.Id, out var list)
+                        ? list
+                        : [];
+
+                    return new InfraViewModel
+                    {
+                        RequestId = requestItem.Id,
+                        RequestTitle = string.IsNullOrWhiteSpace(requestItem.Title) ? $"Request #{requestItem.Id}" : requestItem.Title,
+                        OffersAvai = requestOffers.Count,
+                        OffreId = requestOffers.Select(o => o.Id).ToList()
+                    };
+                })
+                .ToList();
+
+            var orphanOffers = offerGroups
+                .Where(group => requests.All(r => r.Id != group.Key))
+                .Select(group =>
+                {
+                    var firstOffer = group.Value.First();
+                    var requestTitle = firstOffer.Request?.Title ?? $"Request #{group.Key}";
+
+                    return new InfraViewModel
+                    {
+                        RequestId = group.Key,
+                        RequestTitle = requestTitle,
+                        OffersAvai = group.Value.Count,
+                        OffreId = group.Value.Select(o => o.Id).ToList()
+                    };
+                });
+
+            groupedOffers = offersByRequest
+                .Concat(orphanOffers)
+                .OrderByDescending(model => model.RequestId)
+                .ToList();
         }
-        catch
+        catch (Exception ex)
         {
             groupedOffers = new();
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Infrastructure",
+                Detail = $"Failed to load offers: {ex.Message}",
+                Duration = 5000
+            });
         }
     }
 
@@ -186,45 +339,98 @@ private bool errorVisible;
 
         try
         {
-            var response = await Http.PostAsJsonAsync($"{apiBase}/request", request);
-
-            if (response.IsSuccessStatusCode)
+            var employeeId = await ResolveCurrentEmployeeIdAsync();
+            if (employeeId <= 0)
             {
+                errorVisible = true;
                 NotificationService.Notify(new NotificationMessage
                 {
-                    Severity = NotificationSeverity.Success,
-                    Summary = "Success",
-                    Detail = "Request saved successfully",
-                    Duration = 4000
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Infrastructure",
+                    Detail = "Unable to identify employee for the request.",
+                    Duration = 5000
                 });
+                return;
+            }
 
-                request = new Request();
-                await LoadRequests();
-                await LoadOffers();
+            request.EmployeeId = employeeId;
+            request.Date = request.Date == default ? DateTime.UtcNow : request.Date;
+            request.Status = string.IsNullOrWhiteSpace(request.Status) ? "Pending" : request.Status;
+            request.Title = request.Title?.Trim();
+            request.Description = request.Description?.Trim();
+            request.ProjectName = request.ProjectName?.Trim();
+            request.MaterialType = request.MaterialType?.Trim();
+
+            if (!isEditMode && request.File is null)
+            {
+                request.File = Array.Empty<byte>();
+            }
+
+            if (isEditMode)
+            {
+                await RequestService.UpdateRequest(request.Id, request);
             }
             else
             {
-                errorVisible = true;
+                await RequestService.CreateRequest(request);
             }
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Success",
+                Detail = isEditMode ? "Request updated successfully" : "Request saved successfully",
+                Duration = 4000
+            });
+
+            await ResetForm();
+            await ReloadData();
         }
-        catch
+        catch (Exception ex)
         {
             errorVisible = true;
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Infrastructure",
+                Detail = $"Failed to save request: {ex.Message}",
+                Duration = 5000
+            });
         }
     }
 
-    private void ResetForm()
+    private async Task ResetForm()
     {
-        request = new Request();
+        request = new Request
+        {
+            EmployeeId = await ResolveCurrentEmployeeIdAsync(),
+            Date = DateTime.UtcNow.Date,
+            Status = "Pending"
+        };
+        isEditMode = false;
         errorVisible = false;
+        uploadedFileName = string.Empty;
     }
 
     private async Task EditRow(DataGridRowMouseEventArgs<Request> args)
     {
         if (args.Data != null)
         {
-            await DialogService.Alert($"Request: {args.Data.Title}", "Request Details");
+            BeginEdit(args.Data);
         }
+    }
+
+    private void BeginEdit(Request source)
+    {
+        request = CloneRequest(source);
+        if (request.Date == default)
+        {
+            request.Date = DateTime.UtcNow.Date;
+        }
+
+        uploadedFileName = request.FileName ?? string.Empty;
+        isEditMode = true;
+        errorVisible = false;
     }
 
     private async Task DeleteRequest(int id)
@@ -233,11 +439,14 @@ private bool errorVisible;
 
         if (confirm == true)
         {
-            var response = await Http.DeleteAsync($"{apiBase}/request/{id}");
-
-            if (response.IsSuccessStatusCode)
+            try
             {
-                await LoadRequests();
+                await RequestService.DeleteRequest(id);
+                if (isEditMode && request.Id == id)
+                {
+                    await ResetForm();
+                }
+                await ReloadData();
 
                 NotificationService.Notify(new NotificationMessage
                 {
@@ -247,17 +456,35 @@ private bool errorVisible;
                     Duration = 4000
                 });
             }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Infrastructure",
+                    Detail = $"Failed to delete request: {ex.Message}",
+                    Duration = 5000
+                });
+            }
         }
     }
 
     private async Task OnFileUpload(UploadChangeEventArgs args)
     {
-        foreach (var file in args.Files)
+        var selectedFile = args.Files.FirstOrDefault();
+        if (selectedFile is null)
         {
-            Console.WriteLine(file.Name);
+            return;
         }
 
-        await Task.CompletedTask;
+        await using var stream = selectedFile.OpenReadStream(MaxUploadSizeBytes);
+        using var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream);
+
+        request.File = memoryStream.ToArray();
+        request.FileName = selectedFile.Name;
+        request.FileExtension = Path.GetExtension(selectedFile.Name);
+        uploadedFileName = selectedFile.Name;
     }
 
     private BadgeStyle GetStatusStyle(string? status)
@@ -273,5 +500,36 @@ private bool errorVisible;
         };
     }
 
+    private async Task<int> ResolveCurrentEmployeeIdAsync()
+    {
+        var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var idClaim = authenticationState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (int.TryParse(idClaim, out var claimEmployeeId) && employees.Any(e => e.Id == claimEmployeeId))
+        {
+            return claimEmployeeId;
+        }
+
+        return employees.FirstOrDefault()?.Id ?? 0;
+    }
+
+    private static Request CloneRequest(Request source)
+    {
+        return new Request
+        {
+            Id = source.Id,
+            EmployeeId = source.EmployeeId,
+            Title = source.Title,
+            ProjectName = source.ProjectName,
+            Description = source.Description,
+            MaterialType = source.MaterialType,
+            Date = source.Date,
+            Status = source.Status,
+            File = source.File,
+            FileExtension = source.FileExtension,
+            FileName = source.FileName,
+            ApprovedAt = source.ApprovedAt
+        };
+    }
 
 }

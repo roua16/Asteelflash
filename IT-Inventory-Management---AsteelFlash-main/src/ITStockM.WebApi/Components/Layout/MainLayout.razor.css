@@ -9,9 +9,9 @@
     overflow: hidden;
     position: relative;
     background:
-        radial-gradient(1200px 620px at 6% -12%, rgba(79, 70, 229, 0.28), transparent 58%),
-        radial-gradient(920px 520px at 100% -4%, rgba(34, 211, 238, 0.2), transparent 56%),
-        linear-gradient(180deg, #0f172a 0%, #111d30 100%);
+        radial-gradient(1200px 620px at 6% -12%, rgba(79, 70, 229, 0.24), transparent 58%),
+        radial-gradient(920px 520px at 100% -4%, rgba(34, 211, 238, 0.16), transparent 56%),
+        linear-gradient(180deg, var(--app-bg) 0%, var(--app-bg-soft) 100%);
 }
 
 ::deep .rz-layout {
@@ -33,11 +33,15 @@
 
 .app-scroll-area {
     height: 100%;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: var(--shell-pad);
     padding-bottom: clamp(12px, 1.2vw, 20px);
     scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable both-edges;
 }
 
 .app-content-shell {
@@ -46,8 +50,8 @@
     min-height: 100%;
     padding: clamp(14px, 1.35vw, 22px);
     border-radius: 20px;
-    border: 1px solid #334155;
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 55, 0.9) 100%);
+    border: 1px solid var(--app-border);
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 55, 0.88) 100%);
     box-shadow: 0 24px 56px rgba(2, 8, 23, 0.5);
     position: relative;
     z-index: 1;
@@ -83,8 +87,8 @@ body.theme-light .app-shell,
 
 body.theme-light .app-content-shell,
 .app-shell.theme-light .app-content-shell {
-    border-color: #e2e8f0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 250, 252, 0.99));
+    border-color: var(--app-border);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
     box-shadow: 0 20px 44px rgba(15, 23, 42, 0.1);
 }
 

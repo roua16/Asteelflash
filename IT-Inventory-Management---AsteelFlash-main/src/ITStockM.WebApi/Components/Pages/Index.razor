@@ -1,289 +1,399 @@
 @page "/"
 @page "/dashboard"
 
-@using System.Net.Http.Json
+@using System.Globalization
+@using System.Security.Claims
 @using ITStockM.Application.Features.Dashboard.DTOs
-@inject HttpClient Http
-@inject DialogService DialogService
+@using ITStockM.Services.Assignments
+@using ITStockM.Services.Materiels
+@attribute [Authorize(Roles = "Admin,PDR,Purchasing,IT,Infrastructure,Employee")]
+@inject IMaterielService MaterielService
+@inject IAssignmentService AssignmentService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NotificationService NotificationService
 
-<style>
-    .dashboard-container {
-        max-width: 1400px;
-        margin: auto;
-        padding: 1.5rem;
-    }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .stat-card {
-        padding: 1rem;
-        border-radius: 12px;
-        background: #fff;
-        border: 1px solid #eee;
-    }
-
-    .stat-value {
-        font-size: 1.8rem;
-        font-weight: bold;
-    }
-
-    .stat-change {
-        font-size: 0.8rem;
-    }
-
-    .positive {
-        color: green;
-    }
-
-    .warning {
-        color: orange;
-    }
-
-    .danger {
-        color: red;
-    }
-
-    .dashboard-section {
-        background: white;
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        border: 1px solid #eee;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th, td {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-        text-align: left;
-    }
-
-    th {
-        background: #f8f9fa;
-    }
-
-    .badge {
-        padding: 4px 8px;
-        border-radius: 6px;
-        color: white;
-        font-size: 12px;
-    }
-
-    .ok {
-        background: green;
-    }
-
-    .low {
-        background: orange;
-    }
-
-    .critical {
-        background: red;
-    }
-
-    .rank {
-        background: #2563eb;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 50%;
-    }
-
-    .grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-    }
-
-    .loading-spinner {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 200px;
-        gap: 10px;
-    }
-
-    .spinner {
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #2563eb;
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        animation: spin 1s linear infinite;
-    }
-
-    .error-message {
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-        padding: 12px;
-        border-radius: 6px;
-        margin-bottom: 1rem;
-    }
-</style>
-
 <div class="dashboard-container">
+    <section class="dashboard-header">
+        <div class="header-content">
+            <div class="header-copy">
+                <h1>IT Inventory Dashboard</h1>
+                <p class="header-subtitle">
+                    Unified operations view for stock health, assignment flow, and inventory trends.
+                </p>
+            </div>
+            <div class="header-meta">
+                <span class="meta-pill">
+                    <RadzenIcon Icon="calendar_today" />
+                    @DateTime.Now.ToString("ddd, MMM d")
+                </span>
+                <span class="meta-pill">
+                    <RadzenIcon Icon="person" />
+                    @CurrentUserRole
+                </span>
+                <div class="header-status @(string.IsNullOrWhiteSpace(ErrorMessage) ? "is-healthy" : string.Empty)">
+                    <span class="header-status-dot"></span>
+                    <span>@(string.IsNullOrWhiteSpace(ErrorMessage) ? "System healthy" : "Attention required")</span>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    @if (!string.IsNullOrEmpty(ErrorMessage))
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
     {
         <div class="error-message">
-            ⚠️ @ErrorMessage
+            <RadzenIcon Icon="error_outline" />
+            <span>@ErrorMessage</span>
         </div>
     }
 
-    <!-- KPI -->
     @if (IsLoading)
     {
-        <div class="loading-spinner">
+        <div class="loading-container">
             <div class="spinner"></div>
-            <span>Loading dashboard...</span>
+            <span>Loading dashboard data...</span>
         </div>
     }
     else
     {
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div>Total Matériel</div>
-                <div class="stat-value">@DashboardStats?.TotalMaterials</div>
-                <div class="stat-change positive">Live Data</div>
+        <div class="dashboard-content">
+            <div class="stats-grid">
+                <StatCard
+                    Title="Total Materials"
+                    Value="@(DashboardStats?.TotalMaterials.ToString() ?? "0")"
+                    Icon="inventory_2"
+                    TrendText="@MaterialsTrendText"
+                    TrendClass="@MaterialsTrendClass"
+                    ToneClass="tone-indigo"
+                    Compact="true" />
+
+                <StatCard
+                    Title="Active Assignments"
+                    Value="@(DashboardStats?.TotalAssignments.ToString() ?? "0")"
+                    Icon="assignment_turned_in"
+                    TrendText="@AssignmentsTrendText"
+                    TrendClass="@AssignmentsTrendClass"
+                    ToneClass="tone-cyan"
+                    Compact="true" />
+
+                <StatCard
+                    Title="Pending Requests"
+                    Value="@(DashboardStats?.PendingRequests.ToString() ?? "0")"
+                    Icon="pending_actions"
+                    TrendText="Based on open assignments"
+                    TrendClass="warning"
+                    ToneClass="tone-amber"
+                    Compact="true" />
+
+                <StatCard
+                    Title="Critical Stock Items"
+                    Value="@CriticalStockCount.ToString()"
+                    Icon="warning"
+                    TrendText="@CriticalStockTrendText"
+                    TrendClass="@CriticalStockTrendClass"
+                    ToneClass="tone-rose"
+                    Compact="true" />
             </div>
 
-            <div class="stat-card">
-                <div>Assignments</div>
-                <div class="stat-value">@DashboardStats?.TotalAssignments</div>
-                <div class="stat-change warning">Active</div>
-            </div>
-
-            <div class="stat-card">
-                <div>Pending Requests</div>
-                <div class="stat-value">@DashboardStats?.PendingRequests</div>
-                <div class="stat-change @(DashboardStats?.PendingRequests > 5 ? "danger" : "positive")">@(DashboardStats?.PendingRequests > 5 ? "Attention" : "OK")</div>
-            </div>
-        </div>
-
-        <!-- TOP 3 -->
-        <div class="dashboard-section">
-            <h3>🏆 Top 3 Matériels</h3>
-
-            @if (TopMaterials?.Count == 0)
-            {
-                <p>No materials found.</p>
-            }
-            else
-            {
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Nom</th>
-                            <th>Type</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in TopMaterials?.Select((m, i) => new { Material = m, Index = i }) ?? Enumerable.Empty<dynamic>())
+            <div class="charts-grid">
+                <ChartCard
+                    Title="Inventory by Category"
+                    Subtitle="Current total units by material type"
+                    Icon="donut_small"
+                    IconClass="is-accent"
+                    ToneClass="tone-cyan"
+                    SectionClass="card-elevated card-chart">
+                    <HeaderActions>
+                        <span class="card-kpi">Total units: @TotalInventoryUnits.ToString("N0")</span>
+                    </HeaderActions>
+                    <ChildContent>
+                        @if (InventoryByType.Count == 0)
                         {
-                            <tr>
-                                <td><span class="rank">@(item.Index + 1)</span></td>
-                                <td>@item.Material.MaterielName</td>
-                                <td>@item.Material.Type</td>
-                                <td>@item.Material.Total</td>
-                                <td>
-                                    <span class="badge @item.Material.StatusBadge.ToLower()">@item.Material.StatusBadge</span>
-                                </td>
-                            </tr>
+                            <div class="chart-empty">No inventory data available.</div>
                         }
-                    </tbody>
-                </table>
-            }
-        </div>
-
-        <!-- INVENTAIRE -->
-        <div class="dashboard-section">
-            <h3>📦 Inventaire complet</h3>
-
-            @if (Inventory?.Count == 0)
-            {
-                <p>No inventory found.</p>
-            }
-            else
-            {
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Matériel</th>
-                            <th>Type</th>
-                            <th>IT</th>
-                            <th>PDR</th>
-                            <th>Total</th>
-                            <th>État</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var m in Inventory ?? new List<DashboardMaterialItemDto>())
+                        else
                         {
-                            <tr>
-                                <td>@m.MaterielName</td>
-                                <td>@m.Type</td>
-                                <td>@m.QuantityITStock</td>
-                                <td>@m.QuantityPDRStock</td>
-                                <td><b>@m.Total</b></td>
-                                <td>
-                                    <span class="badge @m.StatusBadge.ToLower()">@m.StatusBadge</span>
-                                </td>
-                            </tr>
+                            <div class="split-chart-layout inventory-layout">
+                                <div class="chart-shell category-chart-shell">
+                                    <div class="category-chart-wrap">
+                                        <RadzenChart>
+                                            <RadzenDonutSeries Data="@InventoryByType" CategoryProperty="Category" ValueProperty="Value" Title="Units">
+                                                <RadzenSeriesDataLabels Visible="false" />
+                                            </RadzenDonutSeries>
+                                        </RadzenChart>
+                                        <div class="chart-center-kpi">
+                                            <span>Total</span>
+                                            <strong>@TotalInventoryUnits.ToString("N0")</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="legend-panel">
+                                    <h3>Category Share</h3>
+                                    <div class="legend-list">
+                                        @foreach (var item in CategoryBreakdown)
+                                        {
+                                            <div class="legend-item">
+                                                <span class="legend-dot" style="@($"background:{item.Color};")"></span>
+                                                <span class="legend-label">@item.Category</span>
+                                                <span class="legend-value">@item.Value.ToString("N0")</span>
+                                                <span class="legend-percent">@item.Percentage.ToString("0.#")%</span>
+                                                <div class="legend-meter">
+                                                    <span style="@($"width:{item.Percentage.ToString("0.#", CultureInfo.InvariantCulture)}%; background:{item.Color};")"></span>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
                         }
-                    </tbody>
-                </table>
-            }
-        </div>
+                    </ChildContent>
+                </ChartCard>
 
-        <!-- CHART SIMPLE -->
-        <div class="dashboard-section">
-            <h3>📊 Assignments mensuels</h3>
+                <ChartCard
+                    Title="Monthly Assignments"
+                    Subtitle="Rolling 12-month assignment volume"
+                    Icon="insert_chart"
+                    IconClass="is-success"
+                    ToneClass="tone-emerald"
+                    SectionClass="card-elevated card-chart">
+                    <HeaderActions>
+                        <span class="card-kpi">Current month: @CurrentMonthAssignments</span>
+                    </HeaderActions>
+                    <ChildContent>
+                        @if (MonthlyTrendPoints.Count == 0)
+                        {
+                            <div class="chart-empty">No assignment history available.</div>
+                        }
+                        else
+                        {
+                            <div class="chart-shell assignments-chart-shell">
+                                <RadzenChart>
+                                    <RadzenColumnSeries Data="@MonthlyTrendPoints" CategoryProperty="Month" ValueProperty="Assignments" Title="Assignments">
+                                        <RadzenSeriesDataLabels Visible="false" />
+                                    </RadzenColumnSeries>
+                                    <RadzenLineSeries Data="@MonthlyTrendPoints" CategoryProperty="Month" ValueProperty="Trend" Title="Trend" />
+                                    <RadzenColumnOptions Radius="8" />
+                                    <RadzenValueAxis>
+                                        <RadzenGridLines Visible="true" />
+                                    </RadzenValueAxis>
+                                    <RadzenCategoryAxis>
+                                        <RadzenGridLines Visible="false" />
+                                    </RadzenCategoryAxis>
+                                </RadzenChart>
+                            </div>
+                        }
+                    </ChildContent>
+                    <FooterContent>
+                        <div class="chart-metrics">
+                            <div class="metric-pill">
+                                <span class="metric-label">Peak</span>
+                                <strong>@PeakMonthAssignments (@PeakMonthLabel)</strong>
+                            </div>
+                            <div class="metric-pill">
+                                <span class="metric-label">Average</span>
+                                <strong>@AverageMonthlyAssignments.ToString("0.0", CultureInfo.InvariantCulture)/mo</strong>
+                            </div>
+                        </div>
+                    </FooterContent>
+                </ChartCard>
+            </div>
 
-            <div class="grid-2">
-                <div>
-                    @foreach (var m in MonthlyData ?? new List<MonthlyAssignmentDto>())
+            <div class="details-grid">
+                <ChartCard
+                    Title="Top Materials"
+                    Subtitle="Highest stocked items by total units"
+                    Icon="trending_up"
+                    IconClass="is-warning"
+                    ToneClass="tone-amber"
+                    SectionClass="card-elevated">
+                    @if (TopInventory.Count == 0)
                     {
-                        <div style="margin-bottom:8px;">
-                            <b>@m.Month</b>
-                            <div style="background:#eee;height:10px;border-radius:5px;">
-                                <div style="width:@(m.Value * 5)px ;background:#2563eb;height:10px;border-radius:5px;"></div>
+                        <div class="chart-empty">No materials found.</div>
+                    }
+                    else
+                    {
+                        <div class="table-shell">
+                            <table class="dashboard-table">
+                                <thead>
+                                    <tr>
+                                        <th>Material</th>
+                                        <th>Type</th>
+                                        <th>Total</th>
+                                        <th>Share</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var material in TopInventory)
+                                    {
+                                        <tr>
+                                            <td>@material.MaterielName</td>
+                                            <td>@material.Type</td>
+                                            <td>@material.Total</td>
+                                            <td>
+                                                <div class="table-share">
+                                                    <span>@GetMaterialShare(material).ToString("0.#")%</span>
+                                                    <div class="share-bar">
+                                                        <span style="@GetMaterialShareStyle(material)"></span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="stock-badge @GetStatusClass(material.StatusBadge)">@material.StatusBadge</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </ChartCard>
+
+                <ChartCard
+                    Title="Stock Health"
+                    Subtitle="Distribution by inventory status"
+                    Icon="monitor_heart"
+                    IconClass="is-info"
+                    ToneClass="tone-indigo"
+                    SectionClass="card-elevated">
+                    @if (StockHealthBreakdown.Count == 0)
+                    {
+                        <div class="chart-empty">No stock health data available.</div>
+                    }
+                    else
+                    {
+                        <div class="split-chart-layout stock-health-layout">
+                            <div class="chart-shell stock-health-chart-shell">
+                                <RadzenChart>
+                                    <RadzenPieSeries Data="@StockHealthBreakdown" CategoryProperty="Category" ValueProperty="Value" Title="Items">
+                                        <RadzenSeriesDataLabels Visible="true" />
+                                    </RadzenPieSeries>
+                                </RadzenChart>
+                            </div>
+                            <div class="status-cards">
+                                <div class="status-card">
+                                    <span class="status-indicator"></span>
+                                    <RadzenIcon Icon="check_circle" class="status-card-icon" />
+                                    <div>
+                                        <strong>Healthy</strong>
+                                        <span class="status-text">@HealthyStockCount item(s)</span>
+                                        <span class="status-rate">@GetHealthPercentage(HealthyStockCount).ToString("0.#")%</span>
+                                        <div class="health-bar">
+                                            <span style="@GetHealthWidthStyle(HealthyStockCount)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="status-card">
+                                    <span class="status-indicator"></span>
+                                    <RadzenIcon Icon="priority_high" class="status-card-icon" />
+                                    <div>
+                                        <strong>Low</strong>
+                                        <span class="status-text">@LowStockCount item(s)</span>
+                                        <span class="status-rate">@GetHealthPercentage(LowStockCount).ToString("0.#")%</span>
+                                        <div class="health-bar">
+                                            <span style="@GetHealthWidthStyle(LowStockCount)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="status-card">
+                                    <span class="status-indicator"></span>
+                                    <RadzenIcon Icon="error" class="status-card-icon" />
+                                    <div>
+                                        <strong>Critical</strong>
+                                        <span class="status-text">@CriticalStockCount item(s)</span>
+                                        <span class="status-rate">@GetHealthPercentage(CriticalStockCount).ToString("0.#")%</span>
+                                        <div class="health-bar">
+                                            <span style="@GetHealthWidthStyle(CriticalStockCount)"></span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     }
-                </div>
-
-                <div>
-                    <h4>Total: @(MonthlyData?.Sum(x => x.Value) ?? 0)</h4>
-                    <p>📈 Analyse des tendances en direct</p>
-                </div>
+                </ChartCard>
             </div>
+
+            <ChartCard
+                Title="Quick Actions"
+                Subtitle="Common workflows by role"
+                Icon="bolt"
+                IconClass="is-accent"
+                ToneClass="tone-cyan"
+                SectionClass="card-elevated">
+                <div class="actions-grid">
+                    <a href="/materials-view-interface" class="action-card">
+                        <span class="action-icon"><RadzenIcon Icon="inventory" /></span>
+                        <h3>Materials View</h3>
+                        <p>Browse inventory availability and status.</p>
+                    </a>
+
+                    <a href="/assignments-interface" class="action-card">
+                        <span class="action-icon"><RadzenIcon Icon="assignment" /></span>
+                        <h3>Assignments</h3>
+                        <p>Manage assignment and restore workflow.</p>
+                    </a>
+
+                    @if (IsRole("Admin", "Purchasing", "PDR"))
+                    {
+                        <a href="/delivery-order-history" class="action-card">
+                            <span class="action-icon"><RadzenIcon Icon="history" /></span>
+                            <h3>Delivery History</h3>
+                            <p>Review completed and pending deliveries.</p>
+                        </a>
+                    }
+
+                    @if (IsRole("Admin", "Infrastructure", "IT"))
+                    {
+                        <a href="/infra-interface" class="action-card">
+                            <span class="action-icon"><RadzenIcon Icon="memory" /></span>
+                            <h3>Infrastructure</h3>
+                            <p>Track infrastructure requests and offers.</p>
+                        </a>
+                    }
+
+                    @if (IsRole("Admin", "Purchasing"))
+                    {
+                        <a href="/purchase-page" class="action-card">
+                            <span class="action-icon"><RadzenIcon Icon="shopping_cart" /></span>
+                            <h3>Purchase Requests</h3>
+                            <p>Create and monitor procurement requests.</p>
+                        </a>
+                    }
+                </div>
+            </ChartCard>
         </div>
     }
-
 </div>
 
 @code {
-
     private DashboardStatsDto? DashboardStats;
-    private List<DashboardMaterialItemDto>? TopMaterials;
     private List<DashboardMaterialItemDto>? Inventory;
     private List<MonthlyAssignmentDto>? MonthlyData;
 
+    private List<DashboardMaterialItemDto> TopInventory = [];
+    private List<ChartSlice> InventoryByType = [];
+    private List<ChartSlice> StockHealthBreakdown = [];
+    private List<CategoryBreakdownItem> CategoryBreakdown = [];
+    private List<MonthlyTrendPoint> MonthlyTrendPoints = [];
+
     private bool IsLoading = true;
     private string? ErrorMessage;
+    private string CurrentUserRole = "Employee";
+
+    private int HealthyStockCount;
+    private int LowStockCount;
+    private int CriticalStockCount;
+    private int TotalInventoryUnits;
+    private int CurrentMonthAssignments;
+    private int PeakMonthAssignments;
+    private string PeakMonthLabel = "N/A";
+    private double AverageMonthlyAssignments;
+
+    private string MaterialsTrendText = "Live inventory status";
+    private string MaterialsTrendClass = "positive";
+    private string AssignmentsTrendText = "Trend unavailable";
+    private string AssignmentsTrendClass = "warning";
+    private string CriticalStockTrendText = "No critical stock";
+    private string CriticalStockTrendClass = "positive";
 
     protected override async Task OnInitializedAsync()
     {
@@ -292,34 +402,63 @@
             IsLoading = true;
             ErrorMessage = null;
 
-            // Fetch all dashboard data in parallel
-            var statsTask = Http.GetFromJsonAsync<DashboardStatsDto>("/api/v1/dashboard/stats");
-            var topMaterialsTask = Http.GetFromJsonAsync<List<DashboardMaterialItemDto>>("/api/v1/dashboard/top-materials");
-            var inventoryTask = Http.GetFromJsonAsync<List<DashboardMaterialItemDto>>("/api/v1/dashboard/inventory");
-            var monthlyTask = Http.GetFromJsonAsync<List<MonthlyAssignmentDto>>("/api/v1/dashboard/assignments-monthly");
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            CurrentUserRole = authState.User.FindFirst(ClaimTypes.Role)?.Value ?? "Employee";
 
-            await Task.WhenAll(statsTask, topMaterialsTask, inventoryTask, monthlyTask);
+            var materialsQuery = await MaterielService.GetMateriels();
+            var assignmentsQuery = await AssignmentService.GetAssignments();
 
-            DashboardStats = await statsTask;
-            TopMaterials = await topMaterialsTask;
-            Inventory = await inventoryTask;
-            MonthlyData = await monthlyTask;
-        }
-        catch (HttpRequestException ex)
-        {
-            ErrorMessage = $"Network error: {ex.Message}. Please check your connection.";
-            NotificationService.Notify(new NotificationMessage()
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Dashboard Error",
-                Detail = ErrorMessage,
-                Duration = 5000
-            });
+            var inventory = materialsQuery
+                .Where(m => !m.IsDeleted)
+                .Select(m => new DashboardMaterialItemDto
+                {
+                    Id = m.Id,
+                    MaterielName = m.MaterielName ?? "N/A",
+                    Type = m.Type ?? "N/A",
+                    QuantityITStock = m.QuantityITStock,
+                    QuantityPDRStock = m.QuantityPDRStock
+                })
+                .ToList();
+
+            var assignments = assignmentsQuery
+                .Where(a => !a.IsDeleted)
+                .OrderBy(a => a.CreatedAt)
+                .ToList();
+
+            DashboardStats = new DashboardStatsDto(
+                TotalMaterials: inventory.Count,
+                TotalAssignments: assignments.Count,
+                PendingRequests: assignments.Count(a => a.RestoreDate == null));
+
+            Inventory = inventory;
+            TopInventory = inventory
+                .OrderByDescending(m => m.Total)
+                .Take(6)
+                .ToList();
+
+            var now = DateTime.UtcNow;
+            var startOfCurrentMonth = new DateTime(now.Year, now.Month, 1);
+            var last12Months = Enumerable.Range(0, 12)
+                .Select(i => startOfCurrentMonth.AddMonths(-i))
+                .OrderBy(d => d)
+                .ToList();
+
+            MonthlyData = last12Months
+                .Select(month => new MonthlyAssignmentDto
+                {
+                    Month = month.ToString("MMM"),
+                    Value = assignments.Count(a =>
+                        a.CreatedAt.Year == month.Year &&
+                        a.CreatedAt.Month == month.Month)
+                })
+                .ToList();
+
+            BuildDashboardShapes();
         }
         catch (Exception ex)
         {
             ErrorMessage = $"Failed to load dashboard data: {ex.Message}";
-            NotificationService.Notify(new NotificationMessage()
+            NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Error,
                 Summary = "Dashboard Error",
@@ -331,5 +470,162 @@
         {
             IsLoading = false;
         }
+    }
+
+    private void BuildDashboardShapes()
+    {
+        var inventory = Inventory ?? [];
+        TotalInventoryUnits = inventory.Sum(i => i.Total);
+
+        InventoryByType = inventory
+            .GroupBy(item => string.IsNullOrWhiteSpace(item.Type) ? "Unknown" : item.Type)
+            .Select(group => new ChartSlice
+            {
+                Category = group.Key,
+                Value = group.Sum(item => item.Total)
+            })
+            .OrderByDescending(item => item.Value)
+            .ToList();
+
+        HealthyStockCount = inventory.Count(i => string.Equals(i.StatusBadge, "OK", StringComparison.OrdinalIgnoreCase));
+        LowStockCount = inventory.Count(i => string.Equals(i.StatusBadge, "LOW", StringComparison.OrdinalIgnoreCase));
+        CriticalStockCount = inventory.Count(i => string.Equals(i.StatusBadge, "CRITICAL", StringComparison.OrdinalIgnoreCase));
+        StockHealthBreakdown = new List<ChartSlice>
+        {
+            new ChartSlice { Category = "Healthy", Value = HealthyStockCount },
+            new ChartSlice { Category = "Low", Value = LowStockCount },
+            new ChartSlice { Category = "Critical", Value = CriticalStockCount }
+        }
+            .Where(slice => slice.Value > 0)
+            .ToList();
+
+        var palette = new[] { "#6366f1", "#22d3ee", "#10b981", "#f59e0b", "#fb7185", "#8b5cf6", "#14b8a6", "#38bdf8" };
+        CategoryBreakdown = InventoryByType
+            .Take(6)
+            .Select((item, index) => new CategoryBreakdownItem
+            {
+                Category = item.Category,
+                Value = item.Value,
+                Percentage = TotalInventoryUnits == 0 ? 0 : (item.Value * 100d) / TotalInventoryUnits,
+                Color = palette[index % palette.Length]
+            })
+            .ToList();
+
+        CriticalStockTrendText = CriticalStockCount == 0
+            ? "No critical stock"
+            : $"{CriticalStockCount} item(s) require replenishment";
+        CriticalStockTrendClass = CriticalStockCount == 0 ? "positive" : "danger";
+
+        if (MonthlyData is not { Count: >= 2 })
+        {
+            AssignmentsTrendText = "Trend unavailable";
+            AssignmentsTrendClass = "warning";
+            CurrentMonthAssignments = 0;
+            PeakMonthAssignments = 0;
+            PeakMonthLabel = "N/A";
+            AverageMonthlyAssignments = 0;
+            MonthlyTrendPoints = [];
+            return;
+        }
+
+        var latestValue = MonthlyData[^1].Value;
+        var previousValue = MonthlyData[^2].Value;
+        MonthlyTrendPoints = MonthlyData
+            .Select((point, index) => new MonthlyTrendPoint
+            {
+                Month = point.Month,
+                Assignments = point.Value,
+                Trend = Math.Round(MonthDataWindowAverage(index), 1)
+            })
+            .ToList();
+
+        CurrentMonthAssignments = latestValue;
+        var peakMonth = MonthlyData.OrderByDescending(item => item.Value).First();
+        PeakMonthAssignments = peakMonth.Value;
+        PeakMonthLabel = peakMonth.Month;
+        AverageMonthlyAssignments = MonthlyData.Average(item => item.Value);
+
+        if (previousValue == 0)
+        {
+            AssignmentsTrendText = latestValue == 0 ? "No movement this month" : "New monthly activity";
+            AssignmentsTrendClass = latestValue == 0 ? "warning" : "positive";
+            return;
+        }
+
+        var deltaPercent = ((double)(latestValue - previousValue) / previousValue) * 100;
+        AssignmentsTrendText = $"{deltaPercent:+0.##;-0.##;0}% vs previous month";
+        AssignmentsTrendClass = deltaPercent >= 0 ? "positive" : "danger";
+    }
+
+    private double MonthDataWindowAverage(int index)
+    {
+        if (MonthlyData is null || MonthlyData.Count == 0)
+        {
+            return 0;
+        }
+
+        var start = Math.Max(0, index - 2);
+        var window = MonthlyData.Skip(start).Take(index - start + 1);
+        return window.Average(point => point.Value);
+    }
+
+    private static string GetStatusClass(string statusBadge)
+    {
+        return statusBadge.ToUpperInvariant() switch
+        {
+            "OK" => "status-ok",
+            "LOW" => "status-low",
+            "CRITICAL" => "status-critical",
+            _ => "status-neutral"
+        };
+    }
+
+    private bool IsRole(params string[] roles)
+    {
+        return roles.Any(role => string.Equals(role, CurrentUserRole, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private double GetMaterialShare(DashboardMaterialItemDto material)
+    {
+        return TotalInventoryUnits == 0 ? 0 : (material.Total * 100d) / TotalInventoryUnits;
+    }
+
+    private string GetMaterialShareStyle(DashboardMaterialItemDto material)
+    {
+        var width = GetMaterialShare(material).ToString("0.#", CultureInfo.InvariantCulture);
+        return $"width:{width}%";
+    }
+
+    private double GetHealthPercentage(int count)
+    {
+        var trackedTotal = HealthyStockCount + LowStockCount + CriticalStockCount;
+        return trackedTotal == 0 ? 0 : (count * 100d) / trackedTotal;
+    }
+
+    private string GetHealthWidthStyle(int count)
+    {
+        var width = GetHealthPercentage(count).ToString("0.#", CultureInfo.InvariantCulture);
+        return $"width:{width}%";
+    }
+
+    private sealed class ChartSlice
+    {
+        public string Category { get; set; } = string.Empty;
+        public int Value { get; set; }
+    }
+
+    private sealed class CategoryBreakdownItem
+    {
+        public string Category { get; set; } = string.Empty;
+        public int Value { get; set; }
+        public double Percentage { get; set; }
+        public string Color { get; set; } = "#6366f1";
+    }
+
+    private sealed class MonthlyTrendPoint
+    {
+        public string Month { get; set; } = string.Empty;
+        public int Assignments { get; set; }
+        public double Trend { get; set; }
     }
 }

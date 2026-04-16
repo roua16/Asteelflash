@@ -1,0 +1,39 @@
+<div class="stat-card @ToneClass @(Compact ? "is-compact" : string.Empty)">
+    <div class="stat-icon @IconClass">
+        <RadzenIcon Icon="@Icon" />
+    </div>
+    <div class="stat-body">
+        <div class="stat-label">@Title</div>
+        <div class="stat-value">@Value</div>
+        @if (!string.IsNullOrWhiteSpace(TrendText))
+        {
+            <div class="stat-change @TrendClass">@TrendText</div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Icon { get; set; } = string.Empty;
+
+    [Parameter]
+    public string IconClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? TrendText { get; set; }
+
+    [Parameter]
+    public string TrendClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ToneClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool Compact { get; set; }
+}
