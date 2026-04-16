@@ -80,7 +80,29 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
             ? $"{request.Scheme}://{request.Host}"
             : "http://localhost:8080";
         
-        var client = new HttpClient { BaseAddress = new Uri(baseAddress) };
+        var handler = new HttpClientHandler();
+        
+        // Enable cookie handling to preserve authentication
+        if (httpContextAccessor.HttpContext?.Request.Cookies != null)
+        {
+            handler.UseCookies = true;
+            // Create container and add cookies from current request
+            var cookieContainer = new System.Net.CookieContainer();
+            foreach (var cookie in httpContextAccessor.HttpContext.Request.Cookies)
+            {
+                try
+                {
+                    cookieContainer.Add(new Uri(baseAddress), new System.Net.Cookie(cookie.Key, cookie.Value));
+                }
+                catch
+                {
+                    // Skip invalid cookies
+                }
+            }
+            handler.CookieContainer = cookieContainer;
+        }
+        
+        var client = new HttpClient(handler) { BaseAddress = new Uri(baseAddress) };
         return client;
     });
 
