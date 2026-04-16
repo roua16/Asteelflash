@@ -9,7 +9,7 @@ namespace ITStockM.WebApi.Controllers
     /// Controller for Gemini AI chat functionality.
     /// Handles message sending and chat history management.
     /// </summary>
-    [Authorize]
+    [AllowAnonymous]
     [ApiController]
     [Route("api/[controller]")]
     public class GeminiChatController : ControllerBase

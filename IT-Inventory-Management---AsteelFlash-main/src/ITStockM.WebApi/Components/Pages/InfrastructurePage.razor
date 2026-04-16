@@ -1,5 +1,278 @@
-@page "/infra-interface"
-@using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "Admin,IT,Infrastructure")]
+﻿@page "/infra-interface"
+@using ITStockM.Domain.Entities
+@using ITStockM.Models.ViewModels
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject DialogService DialogService
+@inject NotificationService NotificationService
 
-<AssetPredictionsPage />
+<PageTitle>Infrastructure Management</PageTitle>
+
+<div class="container-fluid py-4 infra-page">
+    <RadzenCard class="mb-4 rz-shadow-2 infra-shell-card">
+        <div class="page-container">
+            <div class="page-title">
+                <RadzenText Text="Infrastructure Management" TextStyle="TextStyle.H3" TagName="TagName.H1" Class="page-heading" />
+            </div>
+
+            ```
+            <RadzenRow>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <div class="panel panel-form">
+                        <div class="panel-header">
+                            <div class="panel-icon icon-form">
+                                <RadzenIcon Icon="gavel" />
+                            </div>
+                            <h2 class="panel-title">New Infrastructure Request</h2>
+                        </div>
+
+                        <div class="panel-body">
+                            @if (errorVisible)
+                            {
+                                <div class="error-alert">
+                                    <span class="error-icon">⚠️</span>
+                                    <div>
+                                        <strong>Error:</strong> Cannot save request. Please check the form.
+                                    </div>
+                                </div>
+                            }
+
+                            <RadzenTemplateForm TItem="Request" Data="@request" Submit="@FormSubmit">
+                                <div class="form-field">
+                                    <label class="field-label">Title <span class="required-indicator">*</span></label>
+                                    <RadzenTextBox Name="Title" @bind-Value="request.Title" Class="field-input" />
+                                    <RadzenRequiredValidator Component="Title" Text="Title is required" />
+                                </div>
+
+                                <div class="form-field">
+                                    <label class="field-label">Description <span class="required-indicator">*</span></label>
+                                    <RadzenTextArea Name="Description" Rows="3" @bind-Value="request.Description" Class="field-input" />
+                                    <RadzenRequiredValidator Component="Description" Text="Description is required" />
+                                </div>
+
+                                <div class="form-field">
+                                    <label class="field-label">Project Name <span class="required-indicator">*</span></label>
+                                    <RadzenDropDown Name="ProjectName" Data="@projectNames" @bind-Value="request.ProjectName" Placeholder="Select project" Class="field-input" />
+                                    <RadzenRequiredValidator Component="ProjectName" Text="Project Name is required" />
+                                </div>
+
+                                <div class="form-field">
+                                    <label class="field-label">Material Type <span class="required-indicator">*</span></label>
+                                    <RadzenDropDown TValue="string" Name="MaterialType" Data="@materialTypes" @bind-Value="request.MaterialType" Placeholder="Select material type" Class="field-input" />
+                                    <RadzenRequiredValidator Component="MaterialType" Text="Material Type is required" />
+                                </div>
+
+                                <div class="form-field">
+                                    <label class="field-label">Status <span class="required-indicator">*</span></label>
+                                    <RadzenDropDown TValue="string" Name="Status" Data="@statuses" @bind-Value="request.Status" Placeholder="Select status" Class="field-input" />
+                                    <RadzenRequiredValidator Component="Status" Text="Status is required" />
+                                </div>
+
+                                <div class="form-field">
+                                    <label class="field-label">Supporting Documents</label>
+                                    <RadzenUpload ChooseText="Upload File" Change="@OnFileUpload" Class="upload-full" />
+                                </div>
+
+                                <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" JustifyContent="JustifyContent.Center" Class="form-actions">
+                                    <RadzenButton Text="Save" Icon="save" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Info" />
+                                    <RadzenButton Text="Reset" Icon="highlight_off" Click="@ResetForm" ButtonStyle="ButtonStyle.Danger" />
+                                </RadzenStack>
+                            </RadzenTemplateForm>
+                        </div>
+                    </div>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <div class="panel panel-queue">
+                        <div class="panel-header">
+                            <div class="panel-icon icon-queue">
+                                <RadzenIcon Icon="alarm" />
+                            </div>
+                            <h2 class="panel-title">Requests Queue</h2>
+                        </div>
+
+                        <div class="panel-body">
+                            <RadzenDataGrid Data="@requests" TItem="Request" AllowFiltering="true" AllowPaging="true" AllowSorting="true" PageSize="10" RowDoubleClick="@EditRow">
+                                <Columns>
+                                    <RadzenDataGridColumn TItem="Request" Property="Title" Title="Title" />
+
+                                    <RadzenDataGridColumn TItem="Request" Property="Status" Title="Status">
+                                        <Template Context="item">
+                                            <RadzenBadge Text="@item.Status" BadgeStyle="@GetStatusStyle(item.Status)" />
+                                        </Template>
+                                    </RadzenDataGridColumn>
+
+                                    <RadzenDataGridColumn TItem="Request" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
+                                        <Template Context="item">
+                                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(args => DeleteRequest(item.Id))" />
+                                        </Template>
+                                    </RadzenDataGridColumn>
+                                </Columns>
+                            </RadzenDataGrid>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-offers mt-4">
+                        <div class="panel-header">
+                            <div class="panel-icon icon-offers">
+                                <RadzenIcon Icon="book" />
+                            </div>
+                            <h2 class="panel-title">Available Offers</h2>
+                        </div>
+
+                        <div class="panel-body">
+                            <RadzenDataGrid Data="@groupedOffers" TItem="InfraViewModel" AllowFiltering="true" AllowPaging="true" AllowSorting="true" PageSize="10">
+                                <Columns>
+                                    <RadzenDataGridColumn TItem="InfraViewModel" Property="RequestTitle" Title="Request" />
+                                    <RadzenDataGridColumn TItem="InfraViewModel" Property="OffersAvai" Title="Available Offers" />
+                                </Columns>
+                            </RadzenDataGrid>
+                        </div>
+                    </div>
+                </RadzenColumn>
+            </RadzenRow>
+        </div>
+    </RadzenCard>
+    
+
+</div>
+
+@code {
+    private List<Request> requests = new();
+    private Request request = new();
+    private List<InfraViewModel> groupedOffers = new();
+
+
+private bool errorVisible;
+
+    private List<string> projectNames = new() { "Project A", "Project B", "Project C" };
+    private List<string> materialTypes = new() { "Hardware", "Software", "Network", "Security" };
+    private List<string> statuses = new() { "Pending", "In Progress", "Approved", "Rejected", "Done" };
+
+    private readonly string apiBase = "http://localhost:8080/api/Infrastructure";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRequests();
+        await LoadOffers();
+    }
+
+    private async Task LoadRequests()
+    {
+        try
+        {
+            requests = await Http.GetFromJsonAsync<List<Request>>($"{apiBase}/requests") ?? new();
+        }
+        catch
+        {
+            requests = new();
+        }
+    }
+
+    private async Task LoadOffers()
+    {
+        try
+        {
+            groupedOffers = await Http.GetFromJsonAsync<List<InfraViewModel>>($"{apiBase}/offers") ?? new();
+        }
+        catch
+        {
+            groupedOffers = new();
+        }
+    }
+
+    private async Task FormSubmit()
+    {
+        errorVisible = false;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync($"{apiBase}/request", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Success",
+                    Detail = "Request saved successfully",
+                    Duration = 4000
+                });
+
+                request = new Request();
+                await LoadRequests();
+                await LoadOffers();
+            }
+            else
+            {
+                errorVisible = true;
+            }
+        }
+        catch
+        {
+            errorVisible = true;
+        }
+    }
+
+    private void ResetForm()
+    {
+        request = new Request();
+        errorVisible = false;
+    }
+
+    private async Task EditRow(DataGridRowMouseEventArgs<Request> args)
+    {
+        if (args.Data != null)
+        {
+            await DialogService.Alert($"Request: {args.Data.Title}", "Request Details");
+        }
+    }
+
+    private async Task DeleteRequest(int id)
+    {
+        var confirm = await DialogService.Confirm("Are you sure you want to delete this request?", "Delete Request");
+
+        if (confirm == true)
+        {
+            var response = await Http.DeleteAsync($"{apiBase}/request/{id}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadRequests();
+
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Deleted",
+                    Detail = "Request deleted successfully",
+                    Duration = 4000
+                });
+            }
+        }
+    }
+
+    private async Task OnFileUpload(UploadChangeEventArgs args)
+    {
+        foreach (var file in args.Files)
+        {
+            Console.WriteLine(file.Name);
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private BadgeStyle GetStatusStyle(string? status)
+    {
+        return status switch
+        {
+            "Pending" => BadgeStyle.Warning,
+            "In Progress" => BadgeStyle.Info,
+            "Approved" => BadgeStyle.Success,
+            "Rejected" => BadgeStyle.Danger,
+            "Done" => BadgeStyle.Primary,
+            _ => BadgeStyle.Secondary
+        };
+    }
+
+
+}

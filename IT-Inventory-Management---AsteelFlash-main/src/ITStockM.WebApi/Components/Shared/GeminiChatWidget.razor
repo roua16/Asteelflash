@@ -1,6 +1,5 @@
 @using ITStockM.WebApi.Services
 @using System.Text.Json
-@inject GeminiChatStateService ChatStateService
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject NotificationService NotificationService
@@ -21,14 +20,14 @@
         </div>
 
         <div class="chat-messages" @ref="messagesContainer">
-            @if (ChatStateService.MessageCount == 0)
+            @if (localMessages.Count == 0)
             {
                 <div class="chat-empty-state">
                     <p>Start a conversation with Gemini AI</p>
                 </div>
             }
 
-            @foreach (var msg in ChatStateService.Messages)
+            @foreach (var msg in localMessages)
             {
                 <div class="chat-message @(msg.Sender == "user" ? "chat-message-user" : "chat-message-assistant")">
                     <div class="message-content">@msg.Content</div>
@@ -60,6 +59,7 @@
                    class="chat-input"
                    placeholder="Type a message..."
                    @bind="messageInput"
+                   @bind:event="oninput"
                    @onkeypress="OnKeyPressAsync"
                    disabled="@isLoading"
                    maxlength="500" />
@@ -91,6 +91,9 @@
     private bool isLoading = false;
     private ElementReference messagesContainer;
 
+    // Local message list for UI - THIS IS THE KEY FIX
+    private List<ChatMessage> localMessages = new();
+
     private async Task ToggleChatAsync()
     {
         showChatModal = !showChatModal;
@@ -116,21 +119,30 @@
         chatError = null;
         isLoading = true;
         var userMessage = messageInput;
+
+        // Add user message to local UI immediately
+        localMessages.Add(new ChatMessage
+        {
+            Sender = "user",
+            Content = userMessage,
+            Timestamp = DateTime.Now
+        });
+
         messageInput = string.Empty;
+        await ScrollToBottomAsync();
+        StateHasChanged();
 
         try
         {
             var request = new { message = userMessage };
-
-            // Use absolute URL based on current navigation URI
             var baseUri = NavigationManager.BaseUri.TrimEnd('/');
-            var uri = $"{baseUri}/api/gemini-chat/send";
+            var uri = $"{baseUri}/api/GeminiChat/send";
             var response = await Http.PostAsJsonAsync(uri, request);
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                chatError = "Failed to get response. Please try again.";
+                chatError = $"Error {response.StatusCode}: {response.ReasonPhrase}";
                 NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Error,
@@ -138,22 +150,50 @@
                     Detail = chatError,
                     Duration = 4000
                 });
+
+                // Remove the user message if API failed
+                localMessages.RemoveAt(localMessages.Count - 1);
                 return;
             }
 
             var jsonContent = await response.Content.ReadAsStringAsync();
-            var result = System.Text.Json.JsonSerializer.Deserialize<ChatResponseModel>(jsonContent);
-            if (result != null && !result.Success)
+            var result = JsonSerializer.Deserialize<ChatResponseModel>(
+                jsonContent,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            // Add AI response to local UI
+            if (result != null && result.Success && !string.IsNullOrWhiteSpace(result.Message))
+            {
+                localMessages.Add(new ChatMessage
+                {
+                    Sender = "assistant",
+                    Content = result.Message,
+                    Timestamp = DateTime.Now
+                });
+                await ScrollToBottomAsync();
+            }
+            else if (result != null && !result.Success)
             {
                 chatError = result.Error ?? "Unknown error occurred";
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Chat Error",
+                    Detail = chatError,
+                    Duration = 4000
+                });
             }
-
-            await ScrollToBottomAsync();
-            StateHasChanged();
+            else
+            {
+                chatError = "Invalid response from server";
+            }
         }
         catch (Exception ex)
         {
-            chatError = "Network error. Please check your connection.";
+            chatError = $"Connection error: {ex.Message}";
             NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Error,
@@ -161,10 +201,18 @@
                 Detail = ex.Message,
                 Duration = 4000
             });
+
+            // Remove the user message if API failed
+            if (localMessages.Count > 0 && localMessages.Last().Sender == "user")
+            {
+                localMessages.RemoveAt(localMessages.Count - 1);
+            }
         }
         finally
         {
             isLoading = false;
+            StateHasChanged();
+            await ScrollToBottomAsync();
         }
     }
 
@@ -190,6 +238,14 @@
         {
             // Ignore scroll errors
         }
+    }
+
+    // ChatMessage class for local use
+    private class ChatMessage
+    {
+        public string Sender { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; } = DateTime.Now;
     }
 
     private class ChatResponseModel

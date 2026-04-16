@@ -1,0 +1,123 @@
+< DateTime.Today.AddMonths(-6) &&
+                                        assm.Assignment.Date > DateTime.Today.AddMonths(-12) &&
+                                      assm.Assignment.OnMission == false &&
+                                         assm.Assignment.AssignedTo != 6).Sum(assm => assm.Qte);
+
+                if (oldAssignemnts != 0)
+                {
+                    growthAssignment = (monthlyAssignments.Select(massm => massm.Count).Sum() / oldAssignemnts) * 100;
+                }
+                else
+                {
+                    growthAssignment = 100;
+                }
+            }
+            else
+            {
+                // Filter by material type
+                int currentMonth = DateTime.Today.Month - 5;
+                for (int j = 0; j < 5; j++)
+                {
+                    int monthIndex = (currentMonth + j + 12) % 12;
+                    int actualMonth = monthIndex + 1;
+                    string monthName = months[monthIndex];
+                    monthlyAssignments.Add(new MonthlyData
+                    {
+                        Month = monthName,
+                        Count = AssignmentMateriel
+                            .Where(assm => assm.Materiel.Type == selectedMaterialType &&
+                                         assm.Assignment.Date.Month == actualMonth &&
+                                         assm.Assignment.Date > DateTime.Today.AddMonths(-6) &&
+                                         assm.Assignment.OnMission == false &&
+                                         assm.Assignment.AssignedTo != 6).Sum (assm => assm.Qte)
+                    });
+                    totalAssignmentsChart = monthlyAssignments.Select(massm => massm.Count).Sum();
+                    int oldAssignemnts = AssignmentMateriel
+                        .Where(assm => assm.Assignment.Date < DateTime.Today.AddMonths(-6) &&
+                                        assm.Assignment.Date > DateTime.Today.AddMonths(-12) &&
+                                      assm.Assignment.OnMission == false &&
+                                         assm.Assignment.AssignedTo != 6).Sum(assm => assm.Qte);
+
+                    if (oldAssignemnts != 0)
+                    {
+                        growthAssignment = (monthlyAssignments.Select(massm => massm.Count).Sum() / oldAssignemnts) * 100;
+                    }
+                    else
+                    {
+                        growthAssignment = 100;
+                    }
+                }
+            }
+
+            
+
+         
+            StateHasChanged();
+        }
+
+      
+
+        protected string assignmentText(Assignment assm)
+        {
+
+            string materialmessage = "";
+
+            var materialsview = assm.AssignmentMateriels.Select(assmm => new { MatName = assmm.Materiel.MaterielName, Qte = assmm.Qte });
+
+            foreach (var matv in materialsview)
+            {
+                
+                materialmessage = materialmessage + matv.Qte + " " + matv.MatName + ", ";
+            }
+
+            return materialmessage.Substring(0, materialmessage.Length - 2);
+
+
+        }
+
+        protected string deliveryOrderToText (DeliveryOrder deliveryOrder) // will be fixed
+        {
+
+            string materialmessage = "";
+
+            var deliveryOrderView = deliveryOrder.DeliveryOrderMateriels.Select(delOrd => new { MatName = delOrd.Materiel.MaterielName, Qte = delOrd.Qte });
+
+            foreach (var delOrd in deliveryOrderView)
+            {
+                materialmessage = materialmessage + delOrd.Qte + " " + delOrd.MatName + ", ";
+            }
+           
+           
+            return materialmessage;
+
+        }
+
+    
+
+        
+        private string GetStatusBadgeClass(string status)
+        {
+            return status switch
+            {
+                "Urgent" => "badge-warning",
+                "Normal" => "badge-success",
+                "Critical" => "badge-danger",
+                _ => "badge-secondary"
+            };
+        }
+
+    }
+    public class ChartDataItem
+    {
+        public string Category { get; set; }
+        public double Value { get; set; }
+    }
+
+    public class MonthlyData
+    {
+        public string Month { get; set; }
+        public int Count { get; set; }
+    }
+
+
+}
