@@ -45,7 +45,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
       ASPNETCORE_URLS: "http://+:8080"
-      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      # Required Gemini API key (set in shell/.env, do not hardcode secrets here)
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-AQ.Ab8RN6InJW7kBI6E4MBapdPZzL2kNWXfWiVe13jKmB06XvEwmA}"
       
       # SQL Server 2022
       ConnectionStrings__ITStockManagmentConnection: "Server=sqlserver,1433;Database=ITStockM;User Id=sa;Password=${MSSQL_SA_PASSWORD:-AsteelFlash@2026};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True"
