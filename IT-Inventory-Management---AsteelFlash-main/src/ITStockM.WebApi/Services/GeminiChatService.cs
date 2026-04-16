@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,10 +11,9 @@ namespace ITStockM.WebApi.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<GeminiChatService> _logger;
-        private readonly string _apiKey;
-
-        // Safer model name
-        private const string Model = "models/gemini-2.5-flash-lite";
+        private readonly string? _apiKey;
+        private readonly string _model;
+        private readonly string _baseUrl;
 
         public GeminiChatService(
             HttpClient httpClient,
@@ -23,12 +23,15 @@ namespace ITStockM.WebApi.Services
             _httpClient = httpClient;
             _logger = logger;
 
-            // Read API key from appsettings or environment variable
-            _apiKey =
-                configuration["GeminiApi:ApiKey"] ??
-                Environment.GetEnvironmentVariable("GEMINI_API_KEY") ??
-                throw new InvalidOperationException(
-                    "Gemini API key not found. Configure GeminiApi:ApiKey or GEMINI_API_KEY.");
+            // Environment variable must override appsettings for safe key rotation.
+            _apiKey = FirstNonEmpty(
+                Environment.GetEnvironmentVariable("GEMINI_API_KEY"),
+                configuration["GeminiApi:ApiKey"]);
+
+            _model = FirstNonEmpty(configuration["GeminiApi:Model"], "gemini-1.5-flash")!;
+            _baseUrl = FirstNonEmpty(
+                configuration["GeminiApi:BaseUrl"],
+                "https://generativelanguage.googleapis.com/v1beta/models")!;
         }
 
         public async Task<string> SendMessageAsync(
@@ -39,8 +42,12 @@ namespace ITStockM.WebApi.Services
                 throw new ArgumentException("Message cannot be empty.");
 
             var request = BuildRequest(userMessage, conversationHistory);
+            var apiKey = GetApiKeyOrThrow();
+            var modelPath = _model.StartsWith("models/", StringComparison.OrdinalIgnoreCase)
+                ? _model["models/".Length..]
+                : _model;
 
-            var url = $"https://generativelanguage.googleapis.com/v1beta/{Model}:generateContent?key={_apiKey}";
+            var url = $"{_baseUrl.TrimEnd('/')}/{modelPath}:generateContent?key={Uri.EscapeDataString(apiKey)}";
             try
             {
                 var response = await _httpClient.PostAsJsonAsync(url, request);
@@ -54,8 +61,9 @@ namespace ITStockM.WebApi.Services
                         (int)response.StatusCode,
                         responseContent);
 
-                    throw new Exception(
-                        $"Gemini API error {(int)response.StatusCode}: {responseContent}");
+                    throw new GeminiApiException(
+                        response.StatusCode,
+                        $"Gemini API error {(int)response.StatusCode}: {ExtractApiError(responseContent)}");
                 }
 
                 var result = JsonSerializer.Deserialize<GeminiResponse>(
@@ -86,6 +94,63 @@ namespace ITStockM.WebApi.Services
                 _logger.LogError(ex, "Error while calling Gemini API");
                 throw;
             }
+        }
+
+        private string GetApiKeyOrThrow()
+        {
+            if (!string.IsNullOrWhiteSpace(_apiKey))
+            {
+                return _apiKey;
+            }
+
+            throw new InvalidOperationException(
+                "Gemini API key not configured. Set GEMINI_API_KEY or GeminiApi:ApiKey.");
+        }
+
+        private static string? FirstNonEmpty(params string?[] values)
+        {
+            return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
+        }
+
+        private static string ExtractApiError(string responseContent)
+        {
+            if (string.IsNullOrWhiteSpace(responseContent))
+            {
+                return "No error payload received.";
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(responseContent);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("error", out var errorNode))
+                {
+                    if (errorNode.ValueKind == JsonValueKind.Object &&
+                        errorNode.TryGetProperty("message", out var messageNode) &&
+                        messageNode.GetString() is { Length: > 0 } message)
+                    {
+                        return message;
+                    }
+
+                    if (errorNode.ValueKind == JsonValueKind.String &&
+                        errorNode.GetString() is { Length: > 0 } errorText)
+                    {
+                        return errorText;
+                    }
+                }
+
+                if (root.TryGetProperty("message", out var topMessage) &&
+                    topMessage.GetString() is { Length: > 0 } fallbackMessage)
+                {
+                    return fallbackMessage;
+                }
+            }
+            catch
+            {
+                // Ignore parser errors and return raw content.
+            }
+
+            return responseContent;
         }
 
         private static GeminiRequest BuildRequest(
@@ -167,5 +232,16 @@ namespace ITStockM.WebApi.Services
     {
         [JsonPropertyName("content")]
         public GeminiContent? Content { get; set; }
+    }
+
+    public sealed class GeminiApiException : Exception
+    {
+        public GeminiApiException(HttpStatusCode statusCode, string message)
+            : base(message)
+        {
+            StatusCode = statusCode;
+        }
+
+        public HttpStatusCode StatusCode { get; }
     }
 }

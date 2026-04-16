@@ -142,7 +142,7 @@
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                chatError = $"Error {response.StatusCode}: {response.ReasonPhrase}";
+                chatError = ExtractErrorMessageFromApiResponse(response.StatusCode.ToString(), errorContent);
                 NotificationService.Notify(new NotificationMessage
                 {
                     Severity = NotificationSeverity.Error,
@@ -238,6 +238,44 @@
         {
             // Ignore scroll errors
         }
+    }
+
+    private static string ExtractErrorMessageFromApiResponse(string status, string? payload)
+    {
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            return $"Error {status}";
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("error", out var errorNode) &&
+                errorNode.GetString() is { Length: > 0 } error)
+            {
+                return error;
+            }
+
+            if (root.TryGetProperty("details", out var detailsNode) &&
+                detailsNode.GetString() is { Length: > 0 } details)
+            {
+                return details;
+            }
+
+            if (root.TryGetProperty("message", out var messageNode) &&
+                messageNode.GetString() is { Length: > 0 } message)
+            {
+                return message;
+            }
+        }
+        catch
+        {
+            // Ignore parsing errors and fallback to plain payload.
+        }
+
+        return payload;
     }
 
     // ChatMessage class for local use

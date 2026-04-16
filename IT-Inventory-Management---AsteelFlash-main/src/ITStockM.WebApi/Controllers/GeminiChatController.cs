@@ -1,6 +1,7 @@
 using ITStockM.WebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 using System.Text.Json.Serialization;
 
 namespace ITStockM.WebApi.Controllers
@@ -84,9 +85,36 @@ namespace ITStockM.WebApi.Controllers
             catch (InvalidOperationException ex)
             {
                 _logger.LogError(ex, "Configuration error in Gemini chat");
-                return StatusCode(500, new
+                return StatusCode(503, new
                 {
-                    error = "Service is not properly configured.",
+                    error = "Gemini service is not configured.",
+                    details = ex.Message
+                });
+            }
+            catch (GeminiApiException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+            {
+                _logger.LogWarning(ex, "Gemini API rejected credentials");
+                return StatusCode((int)ex.StatusCode, new
+                {
+                    error = "Gemini API key is invalid or blocked. Configure a valid key.",
+                    details = ex.Message
+                });
+            }
+            catch (GeminiApiException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                _logger.LogWarning(ex, "Gemini API rate limit reached");
+                return StatusCode((int)ex.StatusCode, new
+                {
+                    error = "Gemini API rate limit reached. Please try again shortly.",
+                    details = ex.Message
+                });
+            }
+            catch (GeminiApiException ex)
+            {
+                _logger.LogError(ex, "Gemini API returned a non-success status");
+                return StatusCode((int)ex.StatusCode, new
+                {
+                    error = "Gemini API request failed.",
                     details = ex.Message
                 });
             }
