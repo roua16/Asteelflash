@@ -15,7 +15,6 @@
                 <RadzenText Text="Infrastructure Management" TextStyle="TextStyle.H3" TagName="TagName.H1" Class="page-heading" />
             </div>
 
-            ```
             <RadzenRow>
                 <RadzenColumn Size="12" SizeMD="6">
                     <div class="panel panel-form">
@@ -149,7 +148,7 @@ private bool errorVisible;
     private List<string> materialTypes = new() { "Hardware", "Software", "Network", "Security" };
     private List<string> statuses = new() { "Pending", "In Progress", "Approved", "Rejected", "Done" };
 
-    private readonly string apiBase = "http://localhost:8080/api/Infrastructure";
+    private readonly string apiBase = "api/v1/infrastructure";
 
     protected override async Task OnInitializedAsync()
     {
