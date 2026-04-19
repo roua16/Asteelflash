@@ -3,6 +3,9 @@
     --app-font: "Manrope", "Segoe UI", "Helvetica Neue", sans-serif;
     --app-bg: #0f172a;
     --app-bg-soft: #111d30;
+    --app-shell-bg-start: #0f1420;
+    --app-shell-bg-mid: #172135;
+    --app-shell-bg-end: #101d2f;
     --app-surface: #1e2937;
     --app-surface-soft: #263548;
     --app-border: #334155;
@@ -38,10 +41,7 @@ body {
     overflow-x: hidden;
     overflow-y: auto;
     scrollbar-gutter: stable;
-    background:
-        radial-gradient(circle at 12% 14%, rgba(99, 102, 241, 0.26), transparent 34%),
-        radial-gradient(circle at 88% 6%, rgba(34, 211, 238, 0.18), transparent 30%),
-        linear-gradient(180deg, var(--app-bg) 0%, var(--app-bg-soft) 100%);
+    background: linear-gradient(160deg, var(--app-shell-bg-start) 0%, var(--app-shell-bg-mid) 46%, var(--app-shell-bg-end) 100%);
     background-attachment: fixed;
 }
 
@@ -57,6 +57,9 @@ body.theme-light {
     color-scheme: light;
     --app-bg: #f8fafc;
     --app-bg-soft: #f1f5f9;
+    --app-shell-bg-start: #f8fafc;
+    --app-shell-bg-mid: #f1f5f9;
+    --app-shell-bg-end: #eef2ff;
     --app-surface: #ffffff;
     --app-surface-soft: #ffffff;
     --app-border: #e2e8f0;
@@ -71,10 +74,7 @@ body.theme-light {
     --app-shadow-lg: 0 26px 52px rgba(15, 23, 42, 0.14);
     --app-gradient-primary: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #22d3ee 100%);
     --app-gradient-accent: linear-gradient(135deg, #0ea5e9 0%, #22d3ee 100%);
-    background:
-        radial-gradient(circle at 12% 14%, rgba(79, 70, 229, 0.08), transparent 34%),
-        radial-gradient(circle at 88% 6%, rgba(6, 182, 212, 0.08), transparent 30%),
-        linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    background: linear-gradient(160deg, var(--app-shell-bg-start) 0%, var(--app-shell-bg-mid) 46%, var(--app-shell-bg-end) 100%);
 }
 
 body.theme-animate,
@@ -98,7 +98,7 @@ body.theme-animate :is(
 }
 
 body::before {
-    content: "";
+    content: none;
     position: fixed;
     inset: 0;
     pointer-events: none;
@@ -110,9 +110,7 @@ body::before {
 }
 
 body.theme-light::before {
-    background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
-    opacity: 0.14;
+    content: none;
 }
 
 ::selection {
@@ -891,10 +889,7 @@ html,
 body {
     font-family: var(--ui-font-base);
     color: var(--ui-color-text);
-    background:
-        radial-gradient(1200px 600px at 0% 0%, rgba(79, 70, 229, 0.2), transparent 58%),
-        radial-gradient(940px 520px at 100% 0%, rgba(34, 211, 238, 0.14), transparent 58%),
-        linear-gradient(180deg, var(--ui-color-bg) 0%, var(--ui-color-bg-soft) 100%);
+    background: linear-gradient(160deg, var(--app-shell-bg-start, var(--ui-color-bg)) 0%, var(--app-shell-bg-mid, var(--ui-color-bg-soft)) 46%, var(--app-shell-bg-end, var(--ui-color-bg-soft)) 100%);
 }
 
 body.theme-dark {
@@ -920,10 +915,7 @@ body.theme-light {
     --ui-control-border: rgba(148, 163, 184, 0.42);
     --ui-control-placeholder: rgba(71, 85, 105, 0.64);
     --ui-popup-mask: rgba(15, 23, 42, 0.2);
-    background:
-        radial-gradient(1200px 600px at 0% 0%, rgba(79, 70, 229, 0.08), transparent 58%),
-        radial-gradient(940px 520px at 100% 0%, rgba(6, 182, 212, 0.08), transparent 58%),
-        linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+    background: linear-gradient(160deg, var(--app-shell-bg-start, #f8fafc) 0%, var(--app-shell-bg-mid, #f1f5f9) 46%, var(--app-shell-bg-end, #eef2ff) 100%);
 }
 
 .app-shell,
