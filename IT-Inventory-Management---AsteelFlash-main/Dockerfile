@@ -3,6 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy csproj and restore as distinct layers
+COPY Directory.Packages.props ./
 COPY src/ITStockM.WebApi/ITStockM.WebApi.csproj src/ITStockM.WebApi/
 COPY src/ITStockM.Application/ITStockM.Application.csproj src/ITStockM.Application/
 COPY src/ITStockM.Infrastructure/ITStockM.Infrastructure.csproj src/ITStockM.Infrastructure/
