@@ -1,0 +1,817 @@
+@page "/pending-deliveries"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.DeliveryOrderMateriels
+@using ITStockM.Services.DeliveryOrders
+@using ITStockM.Services.Employees
+@using ITStockM.Services.Suppliers
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,Purchasing,PDR")]
+@inject IDeliveryOrderService DeliveryOrderService
+@inject IDeliveryOrderMaterielService DeliveryOrderMaterielService
+@inject IEmployeeService EmployeeService
+@inject ISupplierService SupplierService
+@inject NotificationService NotificationService
+
+<PageTitle>@($"{PageHeaderText} - IT Stock Management")</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>@PageHeaderText</h1>
+                <p class="page-subtitle">@PageSubtitle</p>
+            </div>
+            <div class="toolbar-group toolbar-group-end">
+                @if (ShowCreateOrderTools)
+                {
+                    <RadzenButton Icon="add_circle"
+                                  Text="Add Delivery"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter"
+                                  Click="@OpenCreateModal" />
+                }
+                <RadzenButton Icon="refresh"
+                              Text="Refresh"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@ReloadAsync" />
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Visible Orders</span>
+            <span class="metric-value">@filteredOrders.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Delayed Orders</span>
+            <span class="metric-value text-danger">@filteredOrders.Count(o => o.Order.HasDelayedM)</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Overdue (&gt; 7 days)</span>
+            <span class="metric-value text-warning">@filteredOrders.Count(o => IsOverdue(o.Order))</span>
+        </div>
+    </div>
+
+    <div class="page-content">
+        <div class="content-section">
+            <div class="page-toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Search</span>
+                    <div class="search-box">
+                        <input type="text"
+                               placeholder="Delivery #, order #, supplier..."
+                               value="@searchText"
+                               @oninput="OnSearchChanged" />
+                    </div>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Filter</span>
+                    <select class="filter-select" value="@statusFilter" @onchange="OnStatusChanged">
+                        <option value="all">@AllFilterLabel</option>
+                        <option value="delayed">Delayed</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="received">Received</option>
+                    </select>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(loadError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@loadError" />
+            }
+
+            @if (isLoading)
+            {
+                <div class="content-placeholder loading">
+                    <RadzenIcon Icon="local_shipping" Style="font-size: 42px;" />
+                    <h2>Loading delivery orders...</h2>
+                </div>
+            }
+            else if (filteredOrders.Count == 0)
+            {
+                <div class="content-placeholder">
+                    <RadzenIcon Icon="check_circle" Style="font-size: 42px;" />
+                    <h2>No matching delivery orders</h2>
+                    <p>Adjust filters or create a delivery order.</p>
+                </div>
+            }
+            else
+            {
+                <RadzenDataGrid Data="@filteredOrders"
+                                TItem="PendingDeliveryRow"
+                                AllowPaging="true"
+                                AllowSorting="true"
+                                PageSize="10"
+                                Responsive="true"
+                                Class="inventory-grid">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="PendingDeliveryRow" Title="Delivery #">
+                            <Template Context="row"><strong>@row.Order.DeliveryOrderNumber</strong></Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PendingDeliveryRow" Title="Order #">
+                            <Template Context="row">@row.Order.OrderNumber</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PendingDeliveryRow" Title="Supplier">
+                            <Template Context="row">@row.Order.SupplierName</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PendingDeliveryRow" Title="Created">
+                            <Template Context="row">@row.Order.Date.ToString("yyyy-MM-dd")</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PendingDeliveryRow" Title="ETA / Delivery">
+                            <Template Context="row">@DisplayDate(row.Order.DeliveryDate)</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PendingDeliveryRow" Title="Materials">
+                            <Template Context="row">@row.MaterialLines line(s) / @row.MaterialQuantity unit(s)</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PendingDeliveryRow" Title="State">
+                            <Template Context="row">
+                                <span class="badge @StateBadge(row.Order)">
+                                    @StateText(row.Order)
+                                </span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="PendingDeliveryRow" Title="Actions" Filterable="false" Sortable="false" Width="300px">
+                            <Template Context="row">
+                                <div class="table-actions">
+                                    <RadzenButton Icon="inventory_2"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => OpenMaterialsModal(row))" />
+                                    <RadzenButton Icon="event"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Primary"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => OpenEtaModal(row.Order))" />
+                                    @if (!isHistoryScope)
+                                    {
+                                        <RadzenButton Icon="schedule"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Warning"
+                                                      Shade="Shade.Lighter"
+                                                      Click="@(() => ToggleDelayedAsync(row.Order))" />
+                                        <RadzenButton Icon="check_circle"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Success"
+                                                      Shade="Shade.Lighter"
+                                                      Click="@(() => MarkReceivedAsync(row.Order))" />
+                                    }
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            }
+        </div>
+    </div>
+</div>
+
+@if (showCreateModal)
+{
+    <div class="modal-overlay" @onclick="CloseCreateModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Create Delivery Order</h2>
+                <button type="button" class="modal-close" @onclick="CloseCreateModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(createError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@createError" />
+            }
+
+            <EditForm Model="@createModel" OnValidSubmit="@CreateOrderAsync" class="modal-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="create-delivery-number">Delivery Order Number</label>
+                        <InputText id="create-delivery-number" @bind-Value="createModel.DeliveryOrderNumber" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="create-order-number">Order Number</label>
+                        <InputText id="create-order-number" @bind-Value="createModel.OrderNumber" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="create-supplier">Supplier</label>
+                        @if (suppliers.Count > 0)
+                        {
+                            <select id="create-supplier" class="filter-select" @bind="createModel.SupplierName">
+                                @foreach (var supplier in suppliers)
+                                {
+                                    <option value="@supplier.SupplierName">@supplier.SupplierName</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            <InputText id="create-supplier" @bind-Value="createModel.SupplierName" />
+                        }
+                    </div>
+
+                    <div class="form-group">
+                        <label for="create-employee">Employee</label>
+                        <select id="create-employee" class="filter-select" @bind="createModel.EmployeeId">
+                            @foreach (var employee in employees)
+                            {
+                                <option value="@employee.Id">@employee.FullName (@employee.Service)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="create-date">Order Date</label>
+                        <InputDate id="create-date" @bind-Value="createModel.Date" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="create-delivery-date">Delivery ETA (optional)</label>
+                        <InputDate id="create-delivery-date" @bind-Value="createModel.DeliveryDate" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="create-description">Description</label>
+                    <InputTextArea id="create-description" @bind-Value="createModel.Description" />
+                </div>
+
+                <div class="form-check">
+                    <InputCheckbox id="create-delayed" @bind-Value="createModel.HasDelayedM" />
+                    <label for="create-delayed">Mark as delayed</label>
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton Icon="save"
+                                  Text="Create"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter"
+                                  ButtonType="ButtonType.Submit" />
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@(_ => CloseCreateModal())" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (showMaterialsModal && selectedRow is not null)
+{
+    <div class="modal-overlay" @onclick="CloseMaterialsModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Delivery Materials</h2>
+                <button type="button" class="modal-close" @onclick="CloseMaterialsModal">×</button>
+            </div>
+
+            <div class="info-box">
+                <strong>@selectedRow.Order.DeliveryOrderNumber</strong> - @selectedRow.Order.SupplierName<br />
+                <span class="text-muted">@selectedRow.Order.Descriptoin</span>
+            </div>
+
+            @if (selectedRowLinks.Count == 0)
+            {
+                <div class="content-placeholder">
+                    <RadzenIcon Icon="inventory_2" Style="font-size: 38px;" />
+                    <h2>No material lines</h2>
+                </div>
+            }
+            else
+            {
+                <table class="data-grid assignment-links-table">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var link in selectedRowLinks)
+                        {
+                            <tr>
+                                <td>@(link.Materiel?.MaterielName ?? $"Material #{link.MaterielId}")</td>
+                                <td>@(link.Materiel?.Type ?? "-")</td>
+                                <td>@link.Qte</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+}
+
+@if (showEtaModal && etaTarget is not null)
+{
+    <div class="modal-overlay" @onclick="CloseEtaModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Set Delivery ETA</h2>
+                <button type="button" class="modal-close" @onclick="CloseEtaModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(etaError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@etaError" />
+            }
+
+            <div class="form-group">
+                <label for="eta-date">Delivery Date</label>
+                <InputDate id="eta-date" @bind-Value="etaDate" />
+            </div>
+
+            <div class="form-actions">
+                <RadzenButton Icon="save"
+                              Text="Save ETA"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Shade="Shade.Lighter"
+                              Click="@SaveEtaAsync" />
+                <RadzenButton Icon="cancel"
+                              Text="Cancel"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@(_ => CloseEtaModal())" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Scope { get; set; } = "pending";
+    [Parameter] public bool ShowCreateOrderTools { get; set; }
+
+    private readonly List<DeliveryOrder> scopedOrders = [];
+    private List<DeliveryOrderMateriel> allLinks = [];
+    private readonly List<Employee> employees = [];
+    private readonly List<Supplier> suppliers = [];
+    private List<PendingDeliveryRow> filteredOrders = [];
+    private List<DeliveryOrderMateriel> selectedRowLinks = [];
+
+    private bool isLoading = true;
+    private bool showCreateModal;
+    private bool showMaterialsModal;
+    private bool showEtaModal;
+
+    private string normalizedScope = "pending";
+    private string searchText = string.Empty;
+    private string statusFilter = "all";
+    private string? loadError;
+    private string? createError;
+    private string? etaError;
+
+    private CreateDeliveryOrderModel createModel = new();
+    private PendingDeliveryRow? selectedRow;
+    private DeliveryOrder? etaTarget;
+    private DateTime? etaDate;
+
+    private bool isHistoryScope => string.Equals(normalizedScope, "history", StringComparison.OrdinalIgnoreCase);
+
+    private string PageHeaderText => normalizedScope switch
+    {
+        "all" => "Delivery Orders",
+        "history" => "Delivery Order History",
+        _ => "Pending Deliveries"
+    };
+
+    private string PageSubtitle => normalizedScope switch
+    {
+        "all" => "Manage all delivery orders, delays, ETAs, and receiving operations.",
+        "history" => "Review completed and historical delivery order records.",
+        _ => "Track pending orders, delays, ETAs, and receive confirmations."
+    };
+
+    private string AllFilterLabel => normalizedScope switch
+    {
+        "all" => "All orders",
+        "history" => "All history",
+        _ => "All pending"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        NormalizeScope();
+        await ReloadAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        NormalizeScope();
+    }
+
+    private void NormalizeScope()
+    {
+        normalizedScope = Scope?.Trim().ToLowerInvariant() switch
+        {
+            "all" => "all",
+            "history" => "history",
+            _ => "pending"
+        };
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var orderList = await DeliveryOrderService.GetDeliveryOrdersList();
+            var linksQuery = await DeliveryOrderMaterielService.GetDeliveryOrderMateriels();
+            var employeeList = await EmployeeService.GetEmployeesList();
+            var supplierList = await SupplierService.GetSuppliersList();
+
+            allLinks = linksQuery.ToList();
+            employees.Clear();
+            employees.AddRange(employeeList.OrderBy(e => e.FullName));
+            suppliers.Clear();
+            suppliers.AddRange(supplierList.OrderBy(s => s.SupplierName));
+
+            scopedOrders.Clear();
+            scopedOrders.AddRange(orderList.Where(OrderMatchesScope));
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load delivery orders: {ex.Message}";
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Delivery load failed",
+                Detail = loadError,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private bool OrderMatchesScope(DeliveryOrder order) =>
+        normalizedScope switch
+        {
+            "all" => true,
+            "history" => IsReceived(order),
+            _ => !IsReceived(order) || order.HasDelayedM
+        };
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnStatusChanged(ChangeEventArgs args)
+    {
+        statusFilter = args.Value?.ToString() ?? "all";
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var linksByOrder = allLinks
+            .GroupBy(l => l.DeliveryOrderNumber ?? string.Empty)
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    Lines = g.Count(),
+                    Quantity = g.Sum(x => x.Qte)
+                });
+
+        IEnumerable<PendingDeliveryRow> query = scopedOrders.Select(order =>
+        {
+            linksByOrder.TryGetValue(order.DeliveryOrderNumber, out var links);
+            return new PendingDeliveryRow(order, links?.Lines ?? 0, links?.Quantity ?? 0);
+        });
+
+        var term = searchText.Trim();
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(r =>
+                Contains(r.Order.DeliveryOrderNumber, term) ||
+                Contains(r.Order.OrderNumber, term) ||
+                Contains(r.Order.SupplierName, term) ||
+                Contains(r.Order.Descriptoin, term));
+        }
+
+        query = statusFilter switch
+        {
+            "delayed" => query.Where(r => r.Order.HasDelayedM),
+            "overdue" => query.Where(r => IsOverdue(r.Order)),
+            "scheduled" => query.Where(r => !r.Order.HasDelayedM && !IsOverdue(r.Order) && !IsReceived(r.Order)),
+            "received" => query.Where(r => IsReceived(r.Order)),
+            _ => query
+        };
+
+        filteredOrders = query
+            .OrderByDescending(r => r.Order.HasDelayedM)
+            .ThenBy(r => r.Order.Date)
+            .ToList();
+    }
+
+    private void OpenCreateModal()
+    {
+        createError = null;
+        createModel = new CreateDeliveryOrderModel
+        {
+            DeliveryOrderNumber = string.Empty,
+            OrderNumber = string.Empty,
+            Description = string.Empty,
+            SupplierName = suppliers.FirstOrDefault()?.SupplierName ?? string.Empty,
+            Date = DateTime.UtcNow.Date,
+            DeliveryDate = null,
+            EmployeeId = employees.FirstOrDefault()?.Id ?? 0,
+            HasDelayedM = false
+        };
+        showCreateModal = true;
+    }
+
+    private async Task CreateOrderAsync()
+    {
+        createError = ValidateCreateModel();
+        if (!string.IsNullOrWhiteSpace(createError))
+        {
+            return;
+        }
+
+        var payload = new DeliveryOrder
+        {
+            DeliveryOrderNumber = createModel.DeliveryOrderNumber.Trim(),
+            OrderNumber = string.IsNullOrWhiteSpace(createModel.OrderNumber) ? null : createModel.OrderNumber.Trim(),
+            Descriptoin = createModel.Description.Trim(),
+            SupplierName = createModel.SupplierName.Trim(),
+            Date = createModel.Date,
+            DeliveryDate = createModel.DeliveryDate,
+            EmployeeId = createModel.EmployeeId,
+            HasDelayedM = createModel.HasDelayedM
+        };
+
+        try
+        {
+            await DeliveryOrderService.CreateDeliveryOrder(payload);
+            NotifySuccess("Delivery created", $"Delivery {payload.DeliveryOrderNumber} created.");
+            CloseCreateModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            createError = ex.Message;
+        }
+    }
+
+    private string? ValidateCreateModel()
+    {
+        if (string.IsNullOrWhiteSpace(createModel.DeliveryOrderNumber))
+        {
+            return "Delivery order number is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(createModel.Description))
+        {
+            return "Description is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(createModel.SupplierName))
+        {
+            return "Supplier is required.";
+        }
+
+        if (createModel.EmployeeId <= 0)
+        {
+            return "Please select an employee.";
+        }
+
+        return null;
+    }
+
+    private void CloseCreateModal()
+    {
+        showCreateModal = false;
+        createError = null;
+    }
+
+    private void OpenMaterialsModal(PendingDeliveryRow row)
+    {
+        selectedRow = row;
+        selectedRowLinks = allLinks
+            .Where(l => string.Equals(l.DeliveryOrderNumber, row.Order.DeliveryOrderNumber, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(l => l.Materiel?.MaterielName)
+            .ToList();
+        showMaterialsModal = true;
+    }
+
+    private void CloseMaterialsModal()
+    {
+        showMaterialsModal = false;
+        selectedRow = null;
+        selectedRowLinks = [];
+    }
+
+    private void OpenEtaModal(DeliveryOrder order)
+    {
+        etaError = null;
+        etaTarget = CloneOrder(order);
+        etaDate = etaTarget.DeliveryDate?.Date ?? DateTime.UtcNow.Date.AddDays(7);
+        showEtaModal = true;
+    }
+
+    private async Task SaveEtaAsync()
+    {
+        if (etaTarget is null || !etaDate.HasValue)
+        {
+            etaError = "Please choose a delivery date.";
+            return;
+        }
+
+        etaError = null;
+        etaTarget.DeliveryDate = etaDate.Value.Date;
+
+        try
+        {
+            await DeliveryOrderService.UpdateDeliveryOrder(etaTarget.DeliveryOrderNumber, etaTarget);
+            NotifySuccess("ETA updated", $"Delivery {etaTarget.DeliveryOrderNumber} ETA set to {etaTarget.DeliveryDate:yyyy-MM-dd}.");
+            CloseEtaModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            etaError = $"Failed to update ETA: {ex.Message}";
+        }
+    }
+
+    private void CloseEtaModal()
+    {
+        showEtaModal = false;
+        etaTarget = null;
+        etaDate = null;
+        etaError = null;
+    }
+
+    private async Task ToggleDelayedAsync(DeliveryOrder order)
+    {
+        if (isHistoryScope)
+        {
+            return;
+        }
+
+        var updated = CloneOrder(order);
+        updated.HasDelayedM = !updated.HasDelayedM;
+
+        try
+        {
+            await DeliveryOrderService.UpdateDeliveryOrder(updated.DeliveryOrderNumber, updated);
+            NotifySuccess(updated.HasDelayedM ? "Marked delayed" : "Delay cleared", $"Delivery {updated.DeliveryOrderNumber} updated.");
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Update failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private async Task MarkReceivedAsync(DeliveryOrder order)
+    {
+        if (isHistoryScope)
+        {
+            return;
+        }
+
+        var updated = CloneOrder(order);
+        updated.DeliveryDate = DateTime.UtcNow;
+        updated.HasDelayedM = false;
+
+        try
+        {
+            await DeliveryOrderService.UpdateDeliveryOrder(updated.DeliveryOrderNumber, updated);
+            NotifySuccess("Delivery received", $"Delivery {updated.DeliveryOrderNumber} marked as received.");
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Receive failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private void NotifySuccess(string summary, string detail)
+    {
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = summary,
+            Detail = detail,
+            Duration = 2500
+        });
+    }
+
+    private static bool IsReceived(DeliveryOrder order) =>
+        order.DeliveryDate.HasValue && !order.HasDelayedM;
+
+    private static bool IsOverdue(DeliveryOrder order) =>
+        !order.DeliveryDate.HasValue && order.Date.Date < DateTime.UtcNow.Date.AddDays(-7);
+
+    private static string StateText(DeliveryOrder order)
+    {
+        if (IsReceived(order))
+        {
+            return "Received";
+        }
+
+        if (order.HasDelayedM)
+        {
+            return "Delayed";
+        }
+
+        if (IsOverdue(order))
+        {
+            return "Overdue";
+        }
+
+        return "Pending";
+    }
+
+    private static string StateBadge(DeliveryOrder order)
+    {
+        if (IsReceived(order))
+        {
+            return "badge-success";
+        }
+
+        if (order.HasDelayedM)
+        {
+            return "badge-danger";
+        }
+
+        if (IsOverdue(order))
+        {
+            return "badge-warning";
+        }
+
+        return "badge-primary";
+    }
+
+    private static string DisplayDate(DateTime? value) => value?.ToString("yyyy-MM-dd") ?? "Not set";
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static DeliveryOrder CloneOrder(DeliveryOrder source) =>
+        new()
+        {
+            Id = source.Id,
+            DeliveryOrderNumber = source.DeliveryOrderNumber,
+            OrderNumber = source.OrderNumber,
+            Descriptoin = source.Descriptoin,
+            SupplierName = source.SupplierName,
+            Date = source.Date,
+            DeliveryDate = source.DeliveryDate,
+            EmployeeId = source.EmployeeId,
+            HasDelayedM = source.HasDelayedM
+        };
+
+    private sealed record PendingDeliveryRow(DeliveryOrder Order, int MaterialLines, int MaterialQuantity);
+
+    private sealed class CreateDeliveryOrderModel
+    {
+        public string DeliveryOrderNumber { get; set; } = string.Empty;
+        public string OrderNumber { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string SupplierName { get; set; } = string.Empty;
+        public DateTime Date { get; set; } = DateTime.UtcNow.Date;
+        public DateTime? DeliveryDate { get; set; }
+        public int EmployeeId { get; set; }
+        public bool HasDelayedM { get; set; }
+    }
+}

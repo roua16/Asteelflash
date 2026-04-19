@@ -1,0 +1,1304 @@
+@page "/"
+@page "/dashboard"
+
+@using System.Globalization
+@using System.Security.Claims
+@using ITStockM.Application.Features.Dashboard.DTOs
+@using ITStockM.Services.Assignments
+@using ITStockM.Services.Materiels
+@attribute [Authorize(Roles = "Admin,PDR,Purchasing,IT,Infrastructure,Employee")]
+@inject IMaterielService MaterielService
+@inject IAssignmentService AssignmentService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NotificationService NotificationService
+
+<div class="dashboard-container">
+    <section class="dashboard-header">
+        <div class="header-content">
+            <div class="header-copy">
+                <h1>It Inventory Management </h1>
+                <p class="header-subtitle">
+                    Unified operations view for stock health, assignment flow, and inventory trends.
+                </p>
+            </div>
+            <div class="header-meta">
+                <span class="meta-pill">
+                    <RadzenIcon Icon="calendar_today" />
+                    @DateTime.Now.ToString("ddd, MMM d")
+                </span>
+                <span class="meta-pill">
+                    <RadzenIcon Icon="person" />
+                    @CurrentUserRole
+                </span>
+                <div class="header-status @(string.IsNullOrWhiteSpace(ErrorMessage) ? "is-healthy" : string.Empty)">
+                    <span class="header-status-dot"></span>
+                    <span>@(string.IsNullOrWhiteSpace(ErrorMessage) ? "System healthy" : "Attention required")</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="error-message">
+            <RadzenIcon Icon="error_outline" />
+            <span>@ErrorMessage</span>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <span>Loading dashboard data...</span>
+        </div>
+    }
+    else
+    {
+        <div class="dashboard-content">
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card tone-indigo">
+                    <div class="stat-header">
+                        <span class="stat-icon"><RadzenIcon Icon="inventory_2" /></span>
+                        <span class="stat-title">Total Materials</span>
+                        
+                    </div>
+                    <div class="stat-value">@(DashboardStats?.TotalMaterials.ToString() ?? "0")</div>
+                    <div class="stat-trend @MaterialsTrendClass">@MaterialsTrendText</div>
+                </div>
+
+                <div class="stat-card tone-cyan">
+                    <div class="stat-header">
+                        <span class="stat-icon"><RadzenIcon Icon="assignment_turned_in" /></span>
+                        <span class="stat-title">Active Assignments</span>
+                       
+                    </div>
+                    <div class="stat-value">@(DashboardStats?.TotalAssignments.ToString() ?? "0")</div>
+                    <div class="stat-trend @AssignmentsTrendClass">@AssignmentsTrendText</div>
+                </div>
+
+                <div class="stat-card tone-amber">
+                    <div class="stat-header">
+                        <span class="stat-icon"><RadzenIcon Icon="pending_actions" /></span>
+                        <span class="stat-title">Pending Requests</span>
+                    
+                    </div>
+                    <div class="stat-value">@(DashboardStats?.PendingRequests.ToString() ?? "0")</div>
+                    <div class="stat-trend warning">Based on open assignments</div>
+                </div>
+
+                <div class="stat-card tone-rose">
+                    <div class="stat-header">
+                        <span class="stat-icon"><RadzenIcon Icon="warning" /></span>
+                        <span class="stat-title">Critical Stock Items</span>
+                        
+                    </div>
+                    <div class="stat-value">@CriticalStockCount.ToString()</div>
+                    <div class="stat-trend @CriticalStockTrendClass">@CriticalStockTrendText</div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <!-- Inventory by Category Card -->
+                <div class="card-elevated">
+                    <div class="card-header">
+                        <h3><RadzenIcon Icon="donut_small" class="card-icon" /> Inventory by Category <span class="card-subtitle">Current total units by material type</span></h3>
+                        <span class="card-kpi">Total units: @TotalInventoryUnits.ToString("N0")</span>
+                    </div>
+                    @if (InventoryByType.Count == 0)
+                    {
+                        <div class="chart-empty">No inventory data available.</div>
+                    }
+                    else
+                    {
+                        <div class="split-chart-layout inventory-layout">
+                            <div class="chart-shell category-chart-shell">
+                                <div class="category-chart-wrap">
+                                    <RadzenChart>
+                                        <RadzenDonutSeries Data="@InventoryByType" CategoryProperty="Category" ValueProperty="Value" Title="Units">
+                                            <RadzenSeriesDataLabels Visible="false" />
+                                        </RadzenDonutSeries>
+                                    </RadzenChart>
+                                    <div class="chart-center-kpi">
+                                        <span>Total</span>
+                                        <strong>@TotalInventoryUnits.ToString("N0")</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="legend-panel">
+                                <h3>Category Share</h3>
+                                <div class="legend-list">
+                                    @foreach (var item in CategoryBreakdown)
+                                    {
+                                        <div class="legend-item">
+                                            <span class="legend-dot" style="@($"background:{item.Color};")"></span>
+                                            <span class="legend-label">@item.Category</span>
+                                            <span class="legend-value">@item.Value.ToString("N0")</span>
+                                            <span class="legend-percent">@item.Percentage.ToString("0.#")%</span>
+                                            <div class="legend-meter">
+                                                <span style="@($"width:{item.Percentage.ToString("0.#", CultureInfo.InvariantCulture)}%; background:{item.Color};")"></span>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Monthly Assignments Card -->
+                <div class="card-elevated">
+                    <div class="card-header">
+                        <h3><RadzenIcon Icon="insert_chart" class="card-icon" /> Monthly Assignments <span class="card-subtitle">Rolling 12-month assignment volume</span></h3>
+                        <span class="card-kpi">Current month: @CurrentMonthAssignments</span>
+                    </div>
+                    @if (MonthlyTrendPoints.Count == 0)
+                    {
+                        <div class="chart-empty">No assignment history available.</div>
+                    }
+                    else
+                    {
+                        <div class="chart-shell assignments-chart-shell">
+                            <RadzenChart>
+                                <RadzenColumnSeries Data="@MonthlyTrendPoints" CategoryProperty="Month" ValueProperty="Assignments" Title="Assignments">
+                                    <RadzenSeriesDataLabels Visible="false" />
+                                </RadzenColumnSeries>
+                                <RadzenLineSeries Data="@MonthlyTrendPoints" CategoryProperty="Month" ValueProperty="Trend" Title="Trend" />
+                                <RadzenColumnOptions Radius="8" />
+                                <RadzenValueAxis>
+                                    <RadzenGridLines Visible="true" />
+                                </RadzenValueAxis>
+                                <RadzenCategoryAxis>
+                                    <RadzenGridLines Visible="false" />
+                                </RadzenCategoryAxis>
+                            </RadzenChart>
+                        </div>
+                        <div class="chart-metrics">
+                            <div class="metric-pill">
+                                <span class="metric-label">Peak</span>
+                                <strong>@PeakMonthAssignments (@PeakMonthLabel)</strong>
+                            </div>
+                            <div class="metric-pill">
+                                <span class="metric-label">Average</span>
+                                <strong>@AverageMonthlyAssignments.ToString("0.0", CultureInfo.InvariantCulture)/mo</strong>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Details Grid -->
+            <div class="details-grid">
+                <!-- Top Materials Card -->
+                <div class="card-elevated">
+                    <div class="card-header">
+                        <h3><RadzenIcon Icon="trending_up" class="card-icon" /> Top Materials <span class="card-subtitle">Highest stocked items by total units</span></h3>
+                    </div>
+                    @if (TopInventory.Count == 0)
+                    {
+                        <div class="chart-empty">No materials found.</div>
+                    }
+                    else
+                    {
+                        <div class="table-shell">
+                            <table class="dashboard-table">
+                                <thead>
+                                    <tr>
+                                        <th>Material</th>
+                                        <th>Type</th>
+                                        <th>Total</th>
+                                        <th>Share</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var material in TopInventory)
+                                    {
+                                        <tr>
+                                            <td>@material.MaterielName</td>
+                                            <td>@material.Type</td>
+                                            <td>@material.Total</td>
+                                            <td>
+                                                <div class="table-share">
+                                                    <span>@GetMaterialShare(material).ToString("0.#")%</span>
+                                                    <div class="share-bar">
+                                                        <span style="@GetMaterialShareStyle(material)"></span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="stock-badge @GetStatusClass(material.StatusBadge)">@material.StatusBadge</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+
+                <!-- Stock Health Card -->
+                <div class="card-elevated">
+                    <div class="card-header">
+                        <h3><RadzenIcon Icon="monitor_heart" class="card-icon" /> Stock Health <span class="card-subtitle">Distribution by inventory status</span></h3>
+                    </div>
+                    @if (StockHealthBreakdown.Count == 0)
+                    {
+                        <div class="chart-empty">No stock health data available.</div>
+                    }
+                    else
+                    {
+                        <div class="split-chart-layout stock-health-layout">
+                            <div class="chart-shell stock-health-chart-shell">
+                                <RadzenChart>
+                                    <RadzenPieSeries Data="@StockHealthBreakdown" CategoryProperty="Category" ValueProperty="Value" Title="Items">
+                                        <RadzenSeriesDataLabels Visible="true" />
+                                    </RadzenPieSeries>
+                                </RadzenChart>
+                            </div>
+                            <div class="status-cards">
+                                <div class="status-card">
+                                    <RadzenIcon Icon="check_circle" class="status-card-icon" />
+                                    <div>
+                                        <strong>Healthy</strong>
+                                        <span class="status-text">@HealthyStockCount item(s)</span>
+                                        <span class="status-rate">@GetHealthPercentage(HealthyStockCount).ToString("0.#")%</span>
+                                        <div class="health-bar">
+                                            <span style="@GetHealthWidthStyle(HealthyStockCount)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="status-card">
+                                    <RadzenIcon Icon="priority_high" class="status-card-icon" />
+                                    <div>
+                                        <strong>Low</strong>
+                                        <span class="status-text">@LowStockCount item(s)</span>
+                                        <span class="status-rate">@GetHealthPercentage(LowStockCount).ToString("0.#")%</span>
+                                        <div class="health-bar">
+                                            <span style="@GetHealthWidthStyle(LowStockCount)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="status-card">
+                                    <RadzenIcon Icon="error" class="status-card-icon" />
+                                    <div>
+                                        <strong>Critical</strong>
+                                        <span class="status-text">@CriticalStockCount item(s)</span>
+                                        <span class="status-rate">@GetHealthPercentage(CriticalStockCount).ToString("0.#")%</span>
+                                        <div class="health-bar">
+                                            <span style="@GetHealthWidthStyle(CriticalStockCount)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="card-elevated quick-actions-card">
+                <div class="card-header">
+                    <h3><RadzenIcon Icon="bolt" class="card-icon" /> Quick Actions <span class="card-subtitle">Common workflows by role</span></h3>
+                </div>
+                <div class="actions-grid">
+                    <a href="/materials-view-interface" class="action-card">
+                        <span class="action-icon"><RadzenIcon Icon="inventory" /></span>
+                        <h3>Materials View</h3>
+                        <p>Browse inventory availability and status.</p>
+                    </a>
+                    <a href="/assignments-interface" class="action-card">
+                        <span class="action-icon"><RadzenIcon Icon="assignment" /></span>
+                        <h3>Assignments</h3>
+                        <p>Manage assignment and restore workflow.</p>
+                    </a>
+                    @if (IsRole("Admin", "Purchasing", "PDR"))
+                    {
+                        <a href="/delivery-order-history" class="action-card">
+                            <span class="action-icon"><RadzenIcon Icon="history" /></span>
+                            <h3>Delivery History</h3>
+                            <p>Review completed and pending deliveries.</p>
+                        </a>
+                    }
+                    @if (IsRole("Admin", "Infrastructure", "IT"))
+                    {
+                        <a href="/infra-interface" class="action-card">
+                            <span class="action-icon"><RadzenIcon Icon="memory" /></span>
+                            <h3>Infrastructure</h3>
+                            <p>Track infrastructure requests and offers.</p>
+                        </a>
+                    }
+                    @if (IsRole("Admin", "Purchasing"))
+                    {
+                        <a href="/purchase-page" class="action-card">
+                            <span class="action-icon"><RadzenIcon Icon="shopping_cart" /></span>
+                            <h3>Purchase Requests</h3>
+                            <p>Create and monitor procurement requests.</p>
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    /* ---------- GLOBAL RESET & BASE ---------- */
+    .dashboard-container {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 2rem 2rem 3rem;
+        background: #0f172a;
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        color: #0f172a;
+    }
+
+    /* ---------- HEADER ---------- */
+    .dashboard-header {
+        margin-bottom: 2rem;
+    }
+
+    .header-content {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .header-copy h1 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.5rem;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+    }
+
+    .header-subtitle {
+        margin: 0;
+        color: #475569;
+        font-size: 1rem;
+        max-width: 600px;
+    }
+
+    .header-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .meta-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: white;
+        padding: 0.4rem 1rem;
+        border-radius: 100px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #1e293b;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 1px 1px rgba(0,0,0,0.02);
+        border: 1px solid #e2e8f0;
+    }
+
+    .header-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #fef2f2;
+        color: #b91c1c;
+        padding: 0.4rem 1rem;
+        border-radius: 100px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border: 1px solid #fee2e2;
+    }
+
+        .header-status.is-healthy {
+            background: #ecfdf5;
+            color: #065f46;
+            border-color: #d1fae5;
+        }
+
+    .header-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: currentColor;
+    }
+
+    #jPRxlUJJGE > main > div > div > div > div.stats-grid > div.stat-card.tone-amber {
+        display:flex !important;
+        flex-direction:column;
+    }
+
+
+
+
+    /* ---------- ERROR & LOADING ---------- */
+    .error-message {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: #fef2f2;
+        color: #b91c1c;
+        padding: 1rem 1.5rem;
+        border-radius: 16px;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #ef4444;
+        font-weight: 500;
+    }
+
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 5rem 0;
+        color: #64748b;
+        gap: 1rem;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e2e8f0;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @@keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* ---------- STATS GRID (NEW CLEAN LOOK) ---------- */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        display:flex;
+        flex-direction:column;
+        background: white;
+        border-radius: 20px;
+        padding: 1.5rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+        border: 1px solid #eef2ff;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.05);
+            border-color: #cbd5e1;
+        }
+
+    .stat-header {
+        display: flex;
+        gap:16px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .stat-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+    }
+
+    .stat-icon {
+        font-size: 1.6rem;
+        color: #94a3b8;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 0.5rem;
+        color: #0f172a;
+    }
+
+    .stat-trend {
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+        .stat-trend.positive {
+            color: #10b981;
+        }
+
+        .stat-trend.danger {
+            color: #ef4444;
+        }
+
+        .stat-trend.warning {
+            color: #f59e0b;
+        }
+
+    /* ---------- CARDS (ELEVATED) ---------- */
+    .card-elevated {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 38%), linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-soft) 100%);
+        border-radius: 24px;
+        box-shadow: 0 4px 6px -2px rgba(0,0,0,0.03), 0 12px 16px -4px rgba(0,0,0,0.05);
+        border: 1px solid #eef2ff;
+        padding: 1.5rem;
+        transition: box-shadow 0.2s;
+        height: fit-content;
+    }
+
+        .card-elevated:hover {
+            box-shadow: 0 20px 25px -8px rgba(0,0,0,0.06), 0 8px 10px -6px rgba(0,0,0,0.02);
+        }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+        .card-header h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #64748b;
+
+            .card-icon {
+        font-size: 1.4rem;
+                color: #64748b;
+    }
+
+            .card-subtitle {
+                color:  #64748b;
+            }
+
+    .card-kpi {
+        background: #f1f5f9;
+        padding: 0.25rem 0.75rem;
+        border-radius: 30px;
+        font-size: 0.75rem;
+        font-weight: 600;
+                color: #64748b;
+    }
+
+    /* ---------- GRID LAYOUTS ---------- */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .details-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    /* ---------- SPLIT CHART LAYOUT ---------- */
+    .split-chart-layout {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .inventory-layout .chart-shell {
+        flex: 1;
+        min-width: 180px;
+        height: 200px;
+        position: relative;
+    }
+
+    .category-chart-wrap {
+        position: relative;
+        height: 100%;
+    }
+
+    .chart-center-kpi {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        background: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 60px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        pointer-events: none;
+    }
+
+        .chart-center-kpi span {
+            display: block;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.03em;
+        }
+
+        .chart-center-kpi strong {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+    .legend-panel {
+        flex: 1;
+        min-width: 180px;
+    }
+
+        .legend-panel h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            margin: 0 0 1rem;
+            color: #64748b;
+        }
+
+    .legend-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .legend-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto auto;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+    }
+
+    .legend-label {
+        font-weight: 500;
+        color: #1e293b;
+    }
+
+    .legend-value {
+        font-weight: 600;
+        color: #0f172a;
+        text-align: right;
+    }
+
+    .legend-percent {
+        color: #64748b;
+        font-size: 0.8rem;
+        text-align: right;
+    }
+
+    .legend-meter {
+        grid-column: 1 / -1;
+        height: 6px;
+        background: #eef2ff;
+        border-radius: 6px;
+        margin-top: 0.25rem;
+        overflow: hidden;
+    }
+
+        .legend-meter span {
+            display: block;
+            height: 100%;
+            border-radius: 6px;
+        }
+
+    /* ---------- CHART SHELLS ---------- */
+    .chart-shell {
+        width: 100%;
+        height: 240px;
+    }
+
+    .assignments-chart-shell {
+        height: 220px;
+    }
+
+    .stock-health-chart-shell {
+        height: 200px;
+    }
+
+    .chart-metrics {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #f0f2f5;
+    }
+
+    .metric-pill {
+        display: flex;
+        align-items: baseline;
+        gap: 0.4rem;
+        font-size: 0.85rem;
+    }
+
+    .metric-label {
+        color: #64748b;
+    }
+
+    .metric-pill strong {
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    /* ---------- STATUS CARDS (STOCK HEALTH) ---------- */
+    .status-cards {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .status-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: #f8fafc;
+        border-radius: 18px;
+        border: 1px solid #eef2ff;
+        transition: background 0.1s;
+    }
+
+        .status-card:hover {
+            background: #f1f5f9;
+        }
+
+    .status-card-icon {
+        font-size: 1.3rem;
+        color: #475569;
+    }
+
+    .status-card strong {
+        display: block;
+        font-size: 0.95rem;
+        margin-bottom: 0.15rem;
+        color: #1e293b;
+    }
+
+    .status-text {
+        display: block;
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+
+    .status-rate {
+        font-weight: 600;
+        color: #0f172a;
+        margin-left: 0.3rem;
+    }
+
+    .health-bar {
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 6px;
+        margin-top: 0.5rem;
+        overflow: hidden;
+        width: 100%;
+    }
+
+        .health-bar span {
+            display: block;
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 6px;
+        }
+
+    /* ---------- TABLE (TOP MATERIALS) ---------- */
+    .table-shell {
+        overflow-x: auto;
+        margin: -0.5rem -0.5rem 0;
+        padding: 0.5rem;
+    }
+
+    .dashboard-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+        .dashboard-table th {
+            text-align: left;
+            padding: 0.75rem 0.5rem 0.75rem 0;
+            font-weight: 600;
+            color: #475569;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .dashboard-table td {
+            padding: 0.85rem 0.5rem 0.85rem 0;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+        }
+
+        .dashboard-table tr:last-child td {
+            border-bottom: none;
+        }
+
+    .table-share {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .share-bar {
+        width: 60px;
+        height: 5px;
+        background: #eef2ff;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+        .share-bar span {
+            display: block;
+            height: 100%;
+            background: #6366f1;
+            border-radius: 5px;
+        }
+
+    /* Badges */
+    .stock-badge {
+        display: inline-block;
+        padding: 0.2rem 0.7rem;
+        border-radius: 30px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .status-ok {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-low {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-critical {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-neutral {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    /* ---------- QUICK ACTIONS ---------- */
+    .quick-actions-card {
+        margin-bottom: 0;
+    }
+
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .action-card {
+        background: #ffffff;
+        border: 1px solid #eef2ff;
+        border-radius: 20px;
+        padding: 1.5rem 1rem;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.2s ease;
+        display: block;
+    }
+
+        .action-card:hover {
+            background: #fafcff;
+            border-color: #cbd5e1;
+            box-shadow: 0 8px 20px -8px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+    .action-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #3b82f6;
+        display: block;
+    }
+
+    .action-card h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0 0.3rem;
+                color: #64748b;
+                
+    }
+
+    .action-card p {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    /* ---------- EMPTY STATES ---------- */
+    .chart-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 150px;
+        color: #94a3b8;
+        font-style: italic;
+        background: #fafcff;
+        border-radius: 20px;
+        border: 1px dashed #e2e8f0;
+    }
+
+    /* ---------- RESPONSIVE ---------- */
+    @@media (max-width: 1100px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .details-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .split-chart-layout {
+            flex-direction: column;
+        }
+
+        .legend-panel {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 640px) {
+        .dashboard-container {
+            padding: 1rem;
+        }
+
+        .header-content {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Radzen chart integration */
+    .radzen-chart {
+        font-family: inherit;
+    }
+
+    .radzen-icon {
+        vertical-align: middle;
+    }
+</style>
+
+@code {
+    private DashboardStatsDto? DashboardStats;
+    private List<DashboardMaterialItemDto>? Inventory;
+    private List<MonthlyAssignmentDto>? MonthlyData;
+
+    private List<DashboardMaterialItemDto> TopInventory = [];
+    private List<ChartSlice> InventoryByType = [];
+    private List<ChartSlice> StockHealthBreakdown = [];
+    private List<CategoryBreakdownItem> CategoryBreakdown = [];
+    private List<MonthlyTrendPoint> MonthlyTrendPoints = [];
+
+    private bool IsLoading = true;
+    private string? ErrorMessage;
+    private string CurrentUserRole = "Employee";
+
+    private int HealthyStockCount;
+    private int LowStockCount;
+    private int CriticalStockCount;
+    private int TotalInventoryUnits;
+    private int CurrentMonthAssignments;
+    private int PeakMonthAssignments;
+    private string PeakMonthLabel = "N/A";
+    private double AverageMonthlyAssignments;
+
+    private string MaterialsTrendText = "Live inventory status";
+    private string MaterialsTrendClass = "positive";
+    private string AssignmentsTrendText = "Trend unavailable";
+    private string AssignmentsTrendClass = "warning";
+    private string CriticalStockTrendText = "No critical stock";
+    private string CriticalStockTrendClass = "positive";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            IsLoading = true;
+            ErrorMessage = null;
+
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            CurrentUserRole = authState.User.FindFirst(ClaimTypes.Role)?.Value ?? "Employee";
+
+            var materialsQuery = await MaterielService.GetMateriels();
+            var assignmentsQuery = await AssignmentService.GetAssignments();
+
+            var inventory = materialsQuery
+                .Where(m => !m.IsDeleted)
+                .Select(m => new DashboardMaterialItemDto
+                {
+                    Id = m.Id,
+                    MaterielName = m.MaterielName ?? "N/A",
+                    Type = m.Type ?? "N/A",
+                    QuantityITStock = m.QuantityITStock,
+                    QuantityPDRStock = m.QuantityPDRStock
+                })
+                .ToList();
+
+            var assignments = assignmentsQuery
+                .Where(a => !a.IsDeleted)
+                .OrderBy(a => a.CreatedAt)
+                .ToList();
+
+            DashboardStats = new DashboardStatsDto(
+                TotalMaterials: inventory.Count,
+                TotalAssignments: assignments.Count,
+                PendingRequests: assignments.Count(a => a.RestoreDate == null));
+
+            Inventory = inventory;
+            TopInventory = inventory
+                .OrderByDescending(m => m.Total)
+                .Take(6)
+                .ToList();
+
+            var now = DateTime.UtcNow;
+            var startOfCurrentMonth = new DateTime(now.Year, now.Month, 1);
+            var last12Months = Enumerable.Range(0, 12)
+                .Select(i => startOfCurrentMonth.AddMonths(-i))
+                .OrderBy(d => d)
+                .ToList();
+
+            MonthlyData = last12Months
+                .Select(month => new MonthlyAssignmentDto
+                {
+                    Month = month.ToString("MMM"),
+                    Value = assignments.Count(a =>
+                        a.CreatedAt.Year == month.Year &&
+                        a.CreatedAt.Month == month.Month)
+                })
+                .ToList();
+
+            BuildDashboardShapes();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Failed to load dashboard data: {ex.Message}";
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Dashboard Error",
+                Detail = ErrorMessage,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void BuildDashboardShapes()
+    {
+        var inventory = Inventory ?? [];
+        TotalInventoryUnits = inventory.Sum(i => i.Total);
+
+        InventoryByType = inventory
+            .GroupBy(item => string.IsNullOrWhiteSpace(item.Type) ? "Unknown" : item.Type)
+            .Select(group => new ChartSlice
+            {
+                Category = group.Key,
+                Value = group.Sum(item => item.Total)
+            })
+            .OrderByDescending(item => item.Value)
+            .ToList();
+
+        HealthyStockCount = inventory.Count(i => string.Equals(i.StatusBadge, "OK", StringComparison.OrdinalIgnoreCase));
+        LowStockCount = inventory.Count(i => string.Equals(i.StatusBadge, "LOW", StringComparison.OrdinalIgnoreCase));
+        CriticalStockCount = inventory.Count(i => string.Equals(i.StatusBadge, "CRITICAL", StringComparison.OrdinalIgnoreCase));
+        StockHealthBreakdown = new List<ChartSlice>
+        {
+            new ChartSlice { Category = "Healthy", Value = HealthyStockCount },
+            new ChartSlice { Category = "Low", Value = LowStockCount },
+            new ChartSlice { Category = "Critical", Value = CriticalStockCount }
+        }
+            .Where(slice => slice.Value > 0)
+            .ToList();
+
+        var palette = new[] { "#6366f1", "#22d3ee", "#10b981", "#f59e0b", "#fb7185", "#8b5cf6", "#14b8a6", "#38bdf8" };
+        CategoryBreakdown = InventoryByType
+            .Take(6)
+            .Select((item, index) => new CategoryBreakdownItem
+            {
+                Category = item.Category,
+                Value = item.Value,
+                Percentage = TotalInventoryUnits == 0 ? 0 : (item.Value * 100d) / TotalInventoryUnits,
+                Color = palette[index % palette.Length]
+            })
+            .ToList();
+
+        CriticalStockTrendText = CriticalStockCount == 0
+            ? "No critical stock"
+            : $"{CriticalStockCount} item(s) require replenishment";
+        CriticalStockTrendClass = CriticalStockCount == 0 ? "positive" : "danger";
+
+        if (MonthlyData is not { Count: >= 2 })
+        {
+            AssignmentsTrendText = "Trend unavailable";
+            AssignmentsTrendClass = "warning";
+            CurrentMonthAssignments = 0;
+            PeakMonthAssignments = 0;
+            PeakMonthLabel = "N/A";
+            AverageMonthlyAssignments = 0;
+            MonthlyTrendPoints = [];
+            return;
+        }
+
+        var latestValue = MonthlyData[^1].Value;
+        var previousValue = MonthlyData[^2].Value;
+        MonthlyTrendPoints = MonthlyData
+            .Select((point, index) => new MonthlyTrendPoint
+            {
+                Month = point.Month,
+                Assignments = point.Value,
+                Trend = Math.Round(MonthDataWindowAverage(index), 1)
+            })
+            .ToList();
+
+        CurrentMonthAssignments = latestValue;
+        var peakMonth = MonthlyData.OrderByDescending(item => item.Value).First();
+        PeakMonthAssignments = peakMonth.Value;
+        PeakMonthLabel = peakMonth.Month;
+        AverageMonthlyAssignments = MonthlyData.Average(item => item.Value);
+
+        if (previousValue == 0)
+        {
+            AssignmentsTrendText = latestValue == 0 ? "No movement this month" : "New monthly activity";
+            AssignmentsTrendClass = latestValue == 0 ? "warning" : "positive";
+            return;
+        }
+
+        var deltaPercent = ((double)(latestValue - previousValue) / previousValue) * 100;
+        AssignmentsTrendText = $"{deltaPercent:+0.##;-0.##;0}% vs previous month";
+        AssignmentsTrendClass = deltaPercent >= 0 ? "positive" : "danger";
+    }
+
+    private double MonthDataWindowAverage(int index)
+    {
+        if (MonthlyData is null || MonthlyData.Count == 0)
+        {
+            return 0;
+        }
+
+        var start = Math.Max(0, index - 2);
+        var window = MonthlyData.Skip(start).Take(index - start + 1);
+        return window.Average(point => point.Value);
+    }
+
+    private static string GetStatusClass(string statusBadge)
+    {
+        return statusBadge.ToUpperInvariant() switch
+        {
+            "OK" => "status-ok",
+            "LOW" => "status-low",
+            "CRITICAL" => "status-critical",
+            _ => "status-neutral"
+        };
+    }
+
+    private bool IsRole(params string[] roles)
+    {
+        return roles.Any(role => string.Equals(role, CurrentUserRole, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private double GetMaterialShare(DashboardMaterialItemDto material)
+    {
+        return TotalInventoryUnits == 0 ? 0 : (material.Total * 100d) / TotalInventoryUnits;
+    }
+
+    private string GetMaterialShareStyle(DashboardMaterialItemDto material)
+    {
+        var width = GetMaterialShare(material).ToString("0.#", CultureInfo.InvariantCulture);
+        return $"width:{width}%";
+    }
+
+    private double GetHealthPercentage(int count)
+    {
+        var trackedTotal = HealthyStockCount + LowStockCount + CriticalStockCount;
+        return trackedTotal == 0 ? 0 : (count * 100d) / trackedTotal;
+    }
+
+    private string GetHealthWidthStyle(int count)
+    {
+        var width = GetHealthPercentage(count).ToString("0.#", CultureInfo.InvariantCulture);
+        return $"width:{width}%";
+    }
+
+    private sealed class ChartSlice
+    {
+        public string Category { get; set; } = string.Empty;
+        public int Value { get; set; }
+    }
+
+    private sealed class CategoryBreakdownItem
+    {
+        public string Category { get; set; } = string.Empty;
+        public int Value { get; set; }
+        public double Percentage { get; set; }
+        public string Color { get; set; } = "#6366f1";
+    }
+
+    private sealed class MonthlyTrendPoint
+    {
+        public string Month { get; set; } = string.Empty;
+        public int Assignments { get; set; }
+        public double Trend { get; set; }
+    }
+}

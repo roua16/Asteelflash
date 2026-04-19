@@ -1,0 +1,626 @@
+@page "/purchase-page"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.Employees
+@using ITStockM.Services.Requests
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,Purchasing")]
+@inject IRequestService RequestService
+@inject IEmployeeService EmployeeService
+@inject NotificationService NotificationService
+
+<PageTitle>Purchase Requests - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Purchase Requests</h1>
+                <p class="page-subtitle">Create, review, and progress procurement requests across teams.</p>
+            </div>
+            <RadzenButton Icon="add_circle"
+                          Text="New Request"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@OpenCreateModal" />
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Visible Requests</span>
+            <span class="metric-value">@filteredRequests.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Pending</span>
+            <span class="metric-value text-warning">@filteredRequests.Count(r => IsStatus(r.Status, "Pending"))</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Approved</span>
+            <span class="metric-value text-primary">@filteredRequests.Count(r => IsStatus(r.Status, "Approved"))</span>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="page-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Search</span>
+                <div class="search-box">
+                    <input type="text"
+                           placeholder="Title, project, employee, status..."
+                           value="@searchText"
+                           @oninput="OnSearchChanged" />
+                </div>
+            </div>
+
+            <div class="toolbar-group">
+                <span class="toolbar-label">Scope</span>
+                <select class="filter-select" value="@scopeFilter" @onchange="OnScopeChanged">
+                    <option value="active">Active</option>
+                    <option value="all">All</option>
+                    <option value="archived">Archived</option>
+                </select>
+            </div>
+
+            <div class="toolbar-group">
+                <span class="toolbar-label">Status</span>
+                <select class="filter-select" value="@statusFilter" @onchange="OnStatusChanged">
+                    <option value="all">All statuses</option>
+                    @foreach (var status in AvailableStatuses)
+                    {
+                        <option value="@status">@status</option>
+                    }
+                </select>
+            </div>
+
+            <div class="toolbar-group toolbar-group-end">
+                <RadzenButton Icon="refresh"
+                              Text="Refresh"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@ReloadAsync" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         Text="@loadError" />
+        }
+
+        @if (isLoading)
+        {
+            <div class="content-placeholder loading">
+                <RadzenIcon Icon="shopping_cart" Style="font-size: 42px;" />
+                <h2>Loading requests...</h2>
+            </div>
+        }
+        else if (filteredRequests.Count == 0)
+        {
+            <div class="content-placeholder">
+                <RadzenIcon Icon="description" Style="font-size: 42px;" />
+                <h2>No matching requests</h2>
+                <p>Adjust filters or create a new request.</p>
+            </div>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@filteredRequests"
+                            TItem="Request"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            PageSize="10"
+                            Responsive="true"
+                            Class="inventory-grid">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Request" Title="ID">
+                        <Template Context="r">#@r.Id</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Request" Property="Title" Title="Title" />
+                    <RadzenDataGridColumn TItem="Request" Title="Employee">
+                        <Template Context="r">@r.Employee?.FullName</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Request" Property="ProjectName" Title="Project" />
+                    <RadzenDataGridColumn TItem="Request" Property="MaterialType" Title="Material Type" />
+                    <RadzenDataGridColumn TItem="Request" Title="Date">
+                        <Template Context="r">@r.Date.ToString("yyyy-MM-dd")</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Request" Title="Status">
+                        <Template Context="r">
+                            <span class="badge @StatusBadge(r.Status)">@NormalizeStatus(r.Status)</span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Request" Title="Actions" Filterable="false" Sortable="false" Width="260px">
+                        <Template Context="r">
+                            <div class="table-actions">
+                                <RadzenButton Icon="edit"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Primary"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => OpenEditModal(r))" />
+                                <RadzenButton Icon="delete"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => DeleteRequestAsync(r))" />
+                                @if (ShowAdminStatusTools)
+                                {
+                                    <RadzenButton Icon="check"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Success"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => SetStatusAsync(r, "Approved"))" />
+                                    <RadzenButton Icon="done_all"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => SetStatusAsync(r, "Done"))" />
+                                }
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </div>
+</div>
+
+@if (showEditorModal)
+{
+    <div class="modal-overlay" @onclick="CloseEditorModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isEditMode ? "Edit Request" : "Create Request")</h2>
+                <button type="button" class="modal-close" @onclick="CloseEditorModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(editorError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@editorError" />
+            }
+
+            <EditForm Model="@editorModel" OnValidSubmit="@SaveRequestAsync" class="modal-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="req-title">Title</label>
+                        <InputText id="req-title" @bind-Value="editorModel.Title" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="req-project">Project Name</label>
+                        <InputText id="req-project" @bind-Value="editorModel.ProjectName" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="req-type">Material Type</label>
+                        <InputText id="req-type" @bind-Value="editorModel.MaterialType" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="req-employee">Employee</label>
+                        <select id="req-employee" class="filter-select" @bind="editorModel.EmployeeId">
+                            @foreach (var employee in employees)
+                            {
+                                <option value="@employee.Id">@employee.FullName (@employee.Service)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="req-date">Request Date</label>
+                        <InputDate id="req-date" @bind-Value="editorModel.Date" />
+                    </div>
+
+                    @if (ShowAdminStatusTools)
+                    {
+                        <div class="form-group">
+                            <label for="req-status">Status</label>
+                            <select id="req-status" class="filter-select" @bind="editorModel.Status">
+                                @foreach (var status in AvailableStatuses)
+                                {
+                                    <option value="@status">@status</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                </div>
+
+                <div class="form-group">
+                    <label for="req-description">Description</label>
+                    <InputTextArea id="req-description" @bind-Value="editorModel.Description" />
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton Icon="save"
+                                  Text="Save"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter"
+                                  ButtonType="ButtonType.Submit" />
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@(_ => CloseEditorModal())" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string InitialScope { get; set; } = "active";
+    [Parameter] public bool ShowAdminStatusTools { get; set; }
+
+    private static readonly string[] AvailableStatuses = ["Pending", "Approved", "Done", "Rejected"];
+
+    private readonly List<Request> requests = [];
+    private readonly List<Employee> employees = [];
+    private List<Request> filteredRequests = [];
+
+    private bool isLoading = true;
+    private bool showEditorModal;
+    private bool isEditMode;
+    private bool initializedScope;
+
+    private string searchText = string.Empty;
+    private string statusFilter = "all";
+    private string scopeFilter = "active";
+    private string? loadError;
+    private string? editorError;
+
+    private RequestEditorModel editorModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (!initializedScope)
+        {
+            scopeFilter = NormalizeScope(InitialScope);
+            initializedScope = true;
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var employeeList = await EmployeeService.GetEmployeesList();
+            employees.Clear();
+            employees.AddRange(employeeList.OrderBy(e => e.FullName));
+
+            var requestList = await RequestService.GetRequestsList();
+            requests.Clear();
+            requests.AddRange(requestList);
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load requests: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Request> query = requests;
+
+        query = scopeFilter switch
+        {
+            "archived" => query.Where(r => IsArchivedStatus(r.Status)),
+            "active" => query.Where(r => !IsArchivedStatus(r.Status)),
+            _ => query
+        };
+
+        if (!string.Equals(statusFilter, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(r => IsStatus(r.Status, statusFilter));
+        }
+
+        var term = searchText.Trim();
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(r =>
+                Contains(r.Title, term) ||
+                Contains(r.ProjectName, term) ||
+                Contains(r.Description, term) ||
+                Contains(r.MaterialType, term) ||
+                Contains(r.Employee?.FullName, term) ||
+                Contains(r.Status, term));
+        }
+
+        filteredRequests = query
+            .OrderByDescending(r => r.Date)
+            .ThenByDescending(r => r.Id)
+            .ToList();
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnStatusChanged(ChangeEventArgs args)
+    {
+        statusFilter = args.Value?.ToString() ?? "all";
+        ApplyFilters();
+    }
+
+    private void OnScopeChanged(ChangeEventArgs args)
+    {
+        scopeFilter = NormalizeScope(args.Value?.ToString());
+        ApplyFilters();
+    }
+
+    private void OpenCreateModal()
+    {
+        editorError = null;
+        isEditMode = false;
+        editorModel = new RequestEditorModel
+        {
+            EmployeeId = employees.FirstOrDefault()?.Id ?? 0,
+            Date = DateTime.UtcNow.Date,
+            Status = ShowAdminStatusTools ? "Pending" : "Pending"
+        };
+        showEditorModal = true;
+    }
+
+    private void OpenEditModal(Request request)
+    {
+        editorError = null;
+        isEditMode = true;
+        editorModel = new RequestEditorModel
+        {
+            Id = request.Id,
+            EmployeeId = request.EmployeeId,
+            Title = request.Title ?? string.Empty,
+            ProjectName = request.ProjectName ?? string.Empty,
+            Description = request.Description ?? string.Empty,
+            MaterialType = request.MaterialType ?? string.Empty,
+            Date = request.Date,
+            Status = NormalizeStatus(request.Status)
+        };
+        showEditorModal = true;
+    }
+
+    private async Task SaveRequestAsync()
+    {
+        editorError = ValidateEditor();
+        if (!string.IsNullOrWhiteSpace(editorError))
+        {
+            return;
+        }
+
+        var payload = new Request
+        {
+            Id = editorModel.Id,
+            EmployeeId = editorModel.EmployeeId,
+            Title = editorModel.Title.Trim(),
+            ProjectName = editorModel.ProjectName.Trim(),
+            Description = editorModel.Description.Trim(),
+            MaterialType = editorModel.MaterialType.Trim(),
+            Date = editorModel.Date,
+            Status = ShowAdminStatusTools ? editorModel.Status : "Pending",
+            File = null
+        };
+
+        try
+        {
+            if (isEditMode)
+            {
+                await RequestService.UpdateRequest(editorModel.Id, payload);
+                NotifySuccess("Request updated", $"Request #{editorModel.Id} updated.");
+            }
+            else
+            {
+                await RequestService.CreateRequest(payload);
+                NotifySuccess("Request created", $"{payload.Title} created.");
+            }
+
+            CloseEditorModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            editorError = ex.Message;
+        }
+    }
+
+    private async Task SetStatusAsync(Request request, string status)
+    {
+        var payload = CloneRequest(request);
+        payload.Status = status;
+        payload.ApprovedAt = IsStatus(status, "Approved") ? DateTime.UtcNow : payload.ApprovedAt;
+
+        try
+        {
+            await RequestService.UpdateRequest(request.Id, payload);
+            NotifySuccess("Status updated", $"Request #{request.Id} marked {status}.");
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Status update failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private async Task DeleteRequestAsync(Request request)
+    {
+        try
+        {
+            await RequestService.DeleteRequest(request.Id);
+            NotifySuccess("Request deleted", $"Request #{request.Id} removed.");
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Delete failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private void CloseEditorModal()
+    {
+        showEditorModal = false;
+        editorError = null;
+    }
+
+    private string? ValidateEditor()
+    {
+        if (editorModel.EmployeeId <= 0)
+        {
+            return "Please select an employee.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.Title))
+        {
+            return "Title is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.ProjectName))
+        {
+            return "Project name is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.Description))
+        {
+            return "Description is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.MaterialType))
+        {
+            return "Material type is required.";
+        }
+
+        if (ShowAdminStatusTools && string.IsNullOrWhiteSpace(editorModel.Status))
+        {
+            return "Status is required.";
+        }
+
+        return null;
+    }
+
+    private void NotifySuccess(string summary, string detail)
+    {
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = summary,
+            Detail = detail,
+            Duration = 2500
+        });
+    }
+
+    private static string NormalizeScope(string? scope) =>
+        scope?.Trim().ToLowerInvariant() switch
+        {
+            "all" => "all",
+            "archived" => "archived",
+            _ => "active"
+        };
+
+    private static string NormalizeStatus(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return "Pending";
+        }
+
+        foreach (var candidate in AvailableStatuses)
+        {
+            if (string.Equals(candidate, status, StringComparison.OrdinalIgnoreCase))
+            {
+                return candidate;
+            }
+        }
+
+        return status;
+    }
+
+    private static bool IsArchivedStatus(string? status) =>
+        IsStatus(status, "Done") || IsStatus(status, "Rejected") || IsStatus(status, "Archived") || IsStatus(status, "Closed");
+
+    private static bool IsStatus(string? status, string expected) =>
+        string.Equals(status?.Trim(), expected, StringComparison.OrdinalIgnoreCase);
+
+    private static string StatusBadge(string? status)
+    {
+        if (IsStatus(status, "Done"))
+        {
+            return "badge-success";
+        }
+
+        if (IsStatus(status, "Approved"))
+        {
+            return "badge-primary";
+        }
+
+        if (IsStatus(status, "Rejected"))
+        {
+            return "badge-danger";
+        }
+
+        return "badge-warning";
+    }
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static Request CloneRequest(Request source) =>
+        new()
+        {
+            Id = source.Id,
+            EmployeeId = source.EmployeeId,
+            Title = source.Title,
+            ProjectName = source.ProjectName,
+            Description = source.Description,
+            MaterialType = source.MaterialType,
+            Date = source.Date,
+            Status = source.Status,
+            File = source.File,
+            FileExtension = source.FileExtension,
+            FileName = source.FileName,
+            ApprovedAt = source.ApprovedAt
+        };
+
+    private sealed class RequestEditorModel
+    {
+        public int Id { get; set; }
+        public int EmployeeId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string ProjectName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string MaterialType { get; set; } = string.Empty;
+        public DateTime Date { get; set; } = DateTime.UtcNow.Date;
+        public string Status { get; set; } = "Pending";
+    }
+}

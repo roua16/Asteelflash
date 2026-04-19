@@ -1,0 +1,521 @@
+@page "/asset-lifecycle"
+@using ITStockM.Domain.Entities
+@using ITStockM.Domain.Enums
+@using ITStockM.Services.Interfaces
+@using ITStockM.Services.Materiels
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,IT,Infrastructure")]
+@inject IAssetLifecycleService AssetLifecycleService
+@inject IMaterielService MaterielService
+@inject NotificationService NotificationService
+
+<PageTitle>Asset Lifecycle - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Asset Lifecycle Tracker</h1>
+                <p class="page-subtitle">Track stages, transitions, and replacement risk from purchase to retirement.</p>
+            </div>
+            <RadzenButton Icon="autorenew"
+                          Text="Transition Stage"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@(() => OpenTransitionModal(null))" />
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Tracked Assets</span>
+            <span class="metric-value">@filteredRows.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Under Maintenance</span>
+            <span class="metric-value text-warning">@filteredRows.Count(r => string.Equals(r.Record.Stage, LifecycleStage.UnderMaintenance, StringComparison.OrdinalIgnoreCase))</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Near End of Life</span>
+            <span class="metric-value text-danger">@nearingEolMaterielIds.Count</span>
+        </div>
+    </div>
+
+    <div class="page-content">
+        <div class="content-section">
+            <div class="page-toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Search</span>
+                    <div class="search-box">
+                        <input type="text"
+                               placeholder="Search by asset, type, serial, notes..."
+                               value="@searchText"
+                               @oninput="OnSearchChanged" />
+                    </div>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Stage</span>
+                    <select class="filter-select" value="@stageFilter" @onchange="OnStageChanged">
+                        <option value="">All Stages</option>
+                        @foreach (var stage in LifecycleStage.All)
+                        {
+                            <option value="@stage">@stage</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="toolbar-group toolbar-group-end">
+                    <RadzenButton Icon="refresh"
+                                  Text="Refresh"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@ReloadAsync" />
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(loadError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@loadError" />
+            }
+
+            @if (isLoading)
+            {
+                <div class="content-placeholder loading">
+                    <RadzenIcon Icon="autorenew" Style="font-size: 42px;" />
+                    <h2>Loading lifecycle data...</h2>
+                </div>
+            }
+            else if (filteredRows.Count == 0)
+            {
+                <div class="content-placeholder">
+                    <RadzenIcon Icon="search_off" Style="font-size: 42px;" />
+                    <h2>No lifecycle records found</h2>
+                    <p>Try different filters or create a stage transition.</p>
+                </div>
+            }
+            else
+            {
+                <RadzenDataGrid Data="@filteredRows"
+                                TItem="LifecycleRow"
+                                AllowPaging="true"
+                                AllowSorting="true"
+                                PageSize="10"
+                                Responsive="true"
+                                Class="inventory-grid">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="LifecycleRow" Title="Asset">
+                            <Template Context="row">
+                                <strong>@row.MaterielName</strong>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="LifecycleRow" Title="Type">
+                            <Template Context="row">@row.MaterielType</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="LifecycleRow" Title="Serial #">
+                            <Template Context="row">@row.SerialNumber</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="LifecycleRow" Title="Stage">
+                            <Template Context="row">
+                                <span class="badge @StageBadge(row.Record.Stage)">@row.Record.Stage</span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="LifecycleRow" Title="Since">
+                            <Template Context="row">@row.Record.StartDate.ToString("yyyy-MM-dd")</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="LifecycleRow" Title="Stock (IT/PDR)">
+                            <Template Context="row">@row.ItStock / @row.PdrStock</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="LifecycleRow" Title="Risk">
+                            <Template Context="row">
+                                @if (nearingEolMaterielIds.Contains(row.Record.MaterielId))
+                                {
+                                    <span class="badge badge-danger">Near EOL</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-success">Normal</span>
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="LifecycleRow" Title="Actions" Filterable="false" Sortable="false" Width="210px">
+                            <Template Context="row">
+                                <div class="table-actions">
+                                    <RadzenButton Icon="history"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => OpenHistoryModal(row))" />
+                                    <RadzenButton Icon="autorenew"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Primary"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => OpenTransitionModal(row.Record.MaterielId))" />
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            }
+        </div>
+    </div>
+</div>
+
+@if (showTransitionModal)
+{
+    <div class="modal-overlay" @onclick="CloseTransitionModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Stage Transition</h2>
+                <button type="button" class="modal-close" @onclick="CloseTransitionModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(transitionError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@transitionError" />
+            }
+
+            <div class="form-group">
+                <label for="transition-asset">Asset</label>
+                <select id="transition-asset" value="@ToNullableIntValue(transitionMaterielId)" @onchange="OnTransitionAssetChanged">
+                    <option value="">Select asset</option>
+                    @foreach (var asset in assets.OrderBy(m => m.MaterielName))
+                    {
+                        <option value="@asset.Id">@asset.MaterielName (@asset.Type)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="transition-stage">New Stage</label>
+                <select id="transition-stage" value="@transitionStage" @onchange="OnTransitionStageChanged">
+                    @foreach (var stage in LifecycleStage.All)
+                    {
+                        <option value="@stage">@stage</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="transition-notes">Notes</label>
+                <InputTextArea id="transition-notes" @bind-Value="transitionNotes" />
+            </div>
+
+            <div class="form-actions">
+                <RadzenButton Icon="check_circle"
+                              Text="Apply Transition"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Shade="Shade.Lighter"
+                              Click="@ApplyTransitionAsync" />
+                <RadzenButton Icon="cancel"
+                              Text="Cancel"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@(_ => CloseTransitionModal())" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (showHistoryModal && historyTarget is not null)
+{
+    <div class="modal-overlay" @onclick="CloseHistoryModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Lifecycle History</h2>
+                <button type="button" class="modal-close" @onclick="CloseHistoryModal">×</button>
+            </div>
+
+            <div class="info-box">
+                <strong>@historyTarget.MaterielName</strong> (@historyTarget.MaterielType)<br />
+                <span class="text-muted">Serial: @historyTarget.SerialNumber</span>
+            </div>
+
+            @if (historyRows.Count == 0)
+            {
+                <div class="content-placeholder">
+                    <RadzenIcon Icon="history" Style="font-size: 38px;" />
+                    <h2>No lifecycle history</h2>
+                </div>
+            }
+            else
+            {
+                <table class="data-grid">
+                    <thead>
+                        <tr>
+                            <th>Stage</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in historyRows)
+                        {
+                            <tr>
+                                <td><span class="badge @StageBadge(row.Stage)">@row.Stage</span></td>
+                                <td>@row.StartDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@(row.EndDate?.ToString("yyyy-MM-dd HH:mm") ?? "Current")</td>
+                                <td>@(string.IsNullOrWhiteSpace(row.Notes) ? "-" : row.Notes)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private readonly List<Materiel> assets = [];
+    private readonly List<AssetLifecycleRecord> currentRecords = [];
+    private readonly HashSet<int> nearingEolMaterielIds = [];
+
+    private List<LifecycleRow> filteredRows = [];
+    private List<AssetLifecycleRecord> historyRows = [];
+
+    private bool isLoading = true;
+    private bool showTransitionModal;
+    private bool showHistoryModal;
+
+    private string searchText = string.Empty;
+    private string stageFilter = string.Empty;
+    private string? loadError;
+    private string? transitionError;
+    private string transitionStage = LifecycleStage.InStock;
+    private string transitionNotes = string.Empty;
+    private int? transitionMaterielId;
+
+    private LifecycleRow? historyTarget;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var assetsQuery = await MaterielService.GetMateriels();
+            var currentStages = await AssetLifecycleService.GetCurrentStagesAsync();
+            var nearingEol = await AssetLifecycleService.GetAssetsNearingEndOfLifeAsync(6);
+
+            assets.Clear();
+            assets.AddRange(assetsQuery.ToList());
+
+            currentRecords.Clear();
+            currentRecords.AddRange(currentStages.ToList());
+
+            nearingEolMaterielIds.Clear();
+            foreach (var id in nearingEol.Select(x => x.Id).Distinct())
+            {
+                nearingEolMaterielIds.Add(id);
+            }
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Unable to load lifecycle data: {ex.Message}";
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Lifecycle load failed",
+                Detail = loadError,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnStageChanged(ChangeEventArgs args)
+    {
+        stageFilter = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<LifecycleRow> rows = currentRecords.Select(record =>
+        {
+            var asset = assets.FirstOrDefault(m => m.Id == record.MaterielId);
+            return new LifecycleRow(
+                record,
+                asset?.MaterielName ?? $"Asset #{record.MaterielId}",
+                asset?.Type ?? "-",
+                asset?.SerialNumber ?? "-",
+                asset?.QuantityITStock ?? 0,
+                asset?.QuantityPDRStock ?? 0);
+        });
+
+        var term = searchText.Trim();
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            rows = rows.Where(r =>
+                Contains(r.MaterielName, term) ||
+                Contains(r.MaterielType, term) ||
+                Contains(r.SerialNumber, term) ||
+                Contains(r.Record.Stage, term) ||
+                Contains(r.Record.Notes, term));
+        }
+
+        if (!string.IsNullOrWhiteSpace(stageFilter))
+        {
+            rows = rows.Where(r => string.Equals(r.Record.Stage, stageFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        filteredRows = rows
+            .OrderBy(r => r.MaterielName)
+            .ThenByDescending(r => r.Record.StartDate)
+            .ToList();
+    }
+
+    private void OpenTransitionModal(int? materielId)
+    {
+        transitionError = null;
+        transitionNotes = string.Empty;
+        transitionStage = LifecycleStage.InStock;
+        transitionMaterielId = materielId;
+        showTransitionModal = true;
+    }
+
+    private void OnTransitionAssetChanged(ChangeEventArgs args)
+    {
+        transitionMaterielId = ParseNullableInt(args.Value?.ToString());
+    }
+
+    private void OnTransitionStageChanged(ChangeEventArgs args)
+    {
+        transitionStage = args.Value?.ToString() ?? LifecycleStage.InStock;
+    }
+
+    private async Task ApplyTransitionAsync()
+    {
+        if (!transitionMaterielId.HasValue || transitionMaterielId.Value <= 0)
+        {
+            transitionError = "Please choose an asset.";
+            return;
+        }
+
+        if (!LifecycleStage.All.Contains(transitionStage))
+        {
+            transitionError = "Invalid lifecycle stage selected.";
+            return;
+        }
+
+        transitionError = null;
+
+        try
+        {
+            await AssetLifecycleService.TransitionStageAsync(
+                transitionMaterielId.Value,
+                transitionStage,
+                string.IsNullOrWhiteSpace(transitionNotes) ? null : transitionNotes.Trim());
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Stage updated",
+                Detail = "Lifecycle transition applied successfully.",
+                Duration = 3000
+            });
+
+            CloseTransitionModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            transitionError = $"Failed to apply transition: {ex.Message}";
+        }
+    }
+
+    private void CloseTransitionModal()
+    {
+        showTransitionModal = false;
+        transitionError = null;
+    }
+
+    private async Task OpenHistoryModal(LifecycleRow row)
+    {
+        historyTarget = row;
+        showHistoryModal = true;
+        historyRows = [];
+
+        try
+        {
+            historyRows = (await AssetLifecycleService.GetLifecycleHistoryAsync(row.Record.MaterielId))
+                .OrderByDescending(r => r.StartDate)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "History load failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private void CloseHistoryModal()
+    {
+        showHistoryModal = false;
+        historyTarget = null;
+        historyRows = [];
+    }
+
+    private static string StageBadge(string stage) => stage switch
+    {
+        LifecycleStage.Purchased => "badge-primary",
+        LifecycleStage.InStock => "badge-success",
+        LifecycleStage.Assigned => "badge-primary",
+        LifecycleStage.UnderMaintenance => "badge-warning",
+        LifecycleStage.Retired => "badge-danger",
+        _ => "badge-primary"
+    };
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static string ToNullableIntValue(int? value) => value?.ToString() ?? string.Empty;
+
+    private static int? ParseNullableInt(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return int.TryParse(value, out var parsed) ? parsed : null;
+    }
+
+    private sealed record LifecycleRow(
+        AssetLifecycleRecord Record,
+        string MaterielName,
+        string MaterielType,
+        string SerialNumber,
+        int ItStock,
+        int PdrStock);
+}

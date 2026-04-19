@@ -1,0 +1,341 @@
+@page "/projects-super-admin"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.Assignments
+@using ITStockM.Services.Projects
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@inject IProjectService ProjectService
+@inject IAssignmentService AssignmentService
+@inject NotificationService NotificationService
+
+<PageTitle>Projects Administration - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Projects Administration</h1>
+                <p class="page-subtitle">Manage projects used by assignment and procurement workflows.</p>
+            </div>
+            <RadzenButton Icon="add_circle"
+                          Text="Add Project"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@OpenCreateModal" />
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Visible Projects</span>
+            <span class="metric-value">@filteredProjects.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Assignments Linked</span>
+            <span class="metric-value">@filteredProjects.Sum(p => projectAssignmentCounts.GetValueOrDefault(p.Id))</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Unused Projects</span>
+            <span class="metric-value text-warning">@filteredProjects.Count(p => projectAssignmentCounts.GetValueOrDefault(p.Id) == 0)</span>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="page-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Search</span>
+                <div class="search-box">
+                    <input type="text"
+                           placeholder="Search project name..."
+                           value="@searchText"
+                           @oninput="OnSearchChanged" />
+                </div>
+            </div>
+            <div class="toolbar-group toolbar-group-end">
+                <RadzenButton Icon="refresh"
+                              Text="Refresh"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@ReloadAsync" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         Text="@loadError" />
+        }
+
+        @if (isLoading)
+        {
+            <div class="content-placeholder loading">
+                <RadzenIcon Icon="work" Style="font-size: 42px;" />
+                <h2>Loading projects...</h2>
+            </div>
+        }
+        else if (filteredProjects.Count == 0)
+        {
+            <div class="content-placeholder">
+                <RadzenIcon Icon="work_off" Style="font-size: 42px;" />
+                <h2>No projects found</h2>
+                <p>Create a project to attach assignment missions and planning data.</p>
+            </div>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@filteredProjects"
+                            TItem="Project"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            PageSize="10"
+                            Responsive="true"
+                            Class="inventory-grid">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Project" Title="ID">
+                        <Template Context="p">#@p.Id</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Project" Property="ProjectName" Title="Project Name" />
+                    <RadzenDataGridColumn TItem="Project" Title="Assignments">
+                        <Template Context="p">@projectAssignmentCounts.GetValueOrDefault(p.Id)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Project" Title="Actions" Filterable="false" Sortable="false" Width="180px">
+                        <Template Context="p">
+                            <div class="table-actions">
+                                <RadzenButton Icon="edit"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Primary"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => OpenEditModal(p))" />
+                                <RadzenButton Icon="delete"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => DeleteProjectAsync(p))" />
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </div>
+</div>
+
+@if (showEditorModal)
+{
+    <div class="modal-overlay" @onclick="CloseEditorModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isEditMode ? "Edit Project" : "Add Project")</h2>
+                <button type="button" class="modal-close" @onclick="CloseEditorModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(editorError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@editorError" />
+            }
+
+            <EditForm Model="@editorModel" OnValidSubmit="@SaveProjectAsync" class="modal-form">
+                <DataAnnotationsValidator />
+                <div class="form-group">
+                    <label for="project-name">Project Name</label>
+                    <InputText id="project-name" @bind-Value="editorModel.ProjectName" />
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton Icon="save"
+                                  Text="Save"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter"
+                                  ButtonType="ButtonType.Submit" />
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@(_ => CloseEditorModal())" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly List<Project> projects = [];
+    private readonly Dictionary<int, int> projectAssignmentCounts = [];
+    private List<Project> filteredProjects = [];
+
+    private bool isLoading = true;
+    private bool showEditorModal;
+    private bool isEditMode;
+
+    private string searchText = string.Empty;
+    private string? loadError;
+    private string? editorError;
+
+    private ProjectEditorModel editorModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var assignmentsQuery = await AssignmentService.GetAssignments();
+            var assignmentList = assignmentsQuery.ToList();
+            var projectList = await ProjectService.GetProjectsList();
+
+            projects.Clear();
+            projects.AddRange(projectList);
+
+            projectAssignmentCounts.Clear();
+            foreach (var group in assignmentList
+                .Where(a => a.ProjectId.HasValue)
+                .GroupBy(a => a.ProjectId!.Value))
+            {
+                projectAssignmentCounts[group.Key] = group.Count();
+            }
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load projects: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var term = searchText.Trim();
+        IEnumerable<Project> query = projects;
+
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(p =>
+                !string.IsNullOrWhiteSpace(p.ProjectName) &&
+                p.ProjectName.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        filteredProjects = query
+            .OrderBy(p => p.ProjectName)
+            .ToList();
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditMode = false;
+        editorError = null;
+        editorModel = new ProjectEditorModel();
+        showEditorModal = true;
+    }
+
+    private void OpenEditModal(Project project)
+    {
+        isEditMode = true;
+        editorError = null;
+        editorModel = new ProjectEditorModel
+        {
+            Id = project.Id,
+            ProjectName = project.ProjectName ?? string.Empty
+        };
+        showEditorModal = true;
+    }
+
+    private async Task SaveProjectAsync()
+    {
+        editorError = string.IsNullOrWhiteSpace(editorModel.ProjectName) ? "Project name is required." : null;
+        if (!string.IsNullOrWhiteSpace(editorError))
+        {
+            return;
+        }
+
+        var payload = new Project
+        {
+            Id = editorModel.Id,
+            ProjectName = editorModel.ProjectName.Trim()
+        };
+
+        try
+        {
+            if (isEditMode)
+            {
+                await ProjectService.UpdateProject(editorModel.Id, payload);
+                NotifySuccess("Project updated", $"{payload.ProjectName} updated.");
+            }
+            else
+            {
+                await ProjectService.CreateProject(payload);
+                NotifySuccess("Project created", $"{payload.ProjectName} created.");
+            }
+
+            CloseEditorModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            editorError = ex.Message;
+        }
+    }
+
+    private async Task DeleteProjectAsync(Project project)
+    {
+        try
+        {
+            await ProjectService.DeleteProject(project.Id);
+            NotifySuccess("Project deleted", $"{project.ProjectName} removed.");
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Delete failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private void CloseEditorModal()
+    {
+        showEditorModal = false;
+        editorError = null;
+    }
+
+    private void NotifySuccess(string summary, string detail)
+    {
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = summary,
+            Detail = detail,
+            Duration = 2500
+        });
+    }
+
+    private sealed class ProjectEditorModel
+    {
+        public int Id { get; set; }
+        public string ProjectName { get; set; } = string.Empty;
+    }
+}

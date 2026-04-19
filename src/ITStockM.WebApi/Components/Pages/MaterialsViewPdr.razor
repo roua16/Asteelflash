@@ -1,0 +1,762 @@
+@page "/materials-view-interface-pdr"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.Materiels
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,PDR,Purchasing")]
+@inject IMaterielService MaterielService
+@inject NotificationService NotificationService
+
+<PageTitle>Materials View (PDR) - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>PDR Materials Inventory</h1>
+                <p class="page-subtitle">PDR operations with stock distribution and repair/irreparable flow tracking.</p>
+            </div>
+            <RadzenButton Icon="add_circle"
+                          Text="Add Material"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@OpenCreateModal" />
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">PDR Units</span>
+            <span class="metric-value">@filteredMateriels.Sum(m => m.QuantityPDRStock)</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Repairing Units</span>
+            <span class="metric-value text-primary">@filteredMateriels.Sum(m => m.Repairing_Quantity)</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Irreparable Units</span>
+            <span class="metric-value text-danger">@filteredMateriels.Sum(m => m.IrreparableQuantity)</span>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="page-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Search</span>
+                <div class="search-box">
+                    <input type="text"
+                           placeholder="Search by name, type, serial..."
+                           value="@searchText"
+                           @oninput="OnSearchChanged" />
+                </div>
+            </div>
+
+            <div class="toolbar-group">
+                <span class="toolbar-label">Type</span>
+                <select class="filter-select" value="@selectedType" @onchange="OnTypeChanged">
+                    <option value="">All Types</option>
+                    @foreach (var type in typeOptions)
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+            </div>
+
+            <div class="toolbar-group">
+                <span class="toolbar-label">Stock Focus</span>
+                <select class="filter-select" value="@pdrStateFilter" @onchange="OnPdrStateChanged">
+                    <option value="all">All</option>
+                    <option value="low">Low PDR stock (≤ 5)</option>
+                    <option value="repairing">Has repairing qty</option>
+                    <option value="irreparable">Has irreparable qty</option>
+                </select>
+            </div>
+
+            <div class="toolbar-group toolbar-group-end">
+                <RadzenButton Icon="refresh"
+                              Text="Refresh"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@ReloadAsync" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         Text="@loadError" />
+        }
+
+        @if (isLoading)
+        {
+            <div class="content-placeholder loading">
+                <RadzenIcon Icon="inventory" Style="font-size: 42px;" />
+                <h2>Loading PDR inventory...</h2>
+            </div>
+        }
+        else if (filteredMateriels.Count == 0)
+        {
+            <div class="content-placeholder">
+                <RadzenIcon Icon="search_off" Style="font-size: 42px;" />
+                <h2>No PDR materials found</h2>
+                <p>Adjust filters or add a new material.</p>
+            </div>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@filteredMateriels"
+                            TItem="Materiel"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            PageSize="10"
+                            Responsive="true"
+                            Class="inventory-grid">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Materiel" Property="MaterielName" Title="Name" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="Type" Title="Type" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="SerialNumber" Title="Serial #" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="QuantityPDRStock" Title="PDR" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="QuantityITStock" Title="IT" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="Repairing_Quantity" Title="Repairing" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="IrreparableQuantity" Title="Irreparable" />
+                    <RadzenDataGridColumn TItem="Materiel" Title="Actions" Filterable="false" Sortable="false" Width="240px">
+                        <Template Context="item">
+                            <div class="table-actions">
+                                <RadzenButton Icon="swap_horiz"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Primary"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => OpenOperationModal(item))" />
+                                <RadzenButton Icon="edit"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Light"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => OpenEditModal(item))" />
+                                <RadzenButton Icon="delete"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => AskDelete(item))" />
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </div>
+</div>
+
+@if (showOperationModal && operationTarget is not null)
+{
+    <div class="modal-overlay" @onclick="CloseOperationModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>PDR Stock Operation</h2>
+                <button type="button" class="modal-close" @onclick="CloseOperationModal">×</button>
+            </div>
+
+            <div class="info-box">
+                <strong>@operationTarget.MaterielName</strong> (@operationTarget.Type)<br />
+                <span class="text-muted">Current PDR: @operationTarget.QuantityPDRStock, IT: @operationTarget.QuantityITStock, Repairing: @operationTarget.Repairing_Quantity, Irreparable: @operationTarget.IrreparableQuantity</span>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(operationError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@operationError" />
+            }
+
+            <div class="form-group">
+                <label for="op-type">Operation</label>
+                <select id="op-type" value="@operationType" @onchange="OnOperationTypeChanged">
+                    <option value="ReceiveToPdr">Receive to PDR</option>
+                    <option value="DistributeToIt">Distribute to IT stock</option>
+                    <option value="SendToRepair">Send to repair</option>
+                    <option value="MarkIrreparable">Mark as irreparable</option>
+                    <option value="RepairToPdr">Return repaired to PDR</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="op-qty">Quantity</label>
+                <InputNumber id="op-qty" @bind-Value="operationQuantity" />
+                <small class="text-muted">Available for selected operation: @AvailableForOperationLabel</small>
+            </div>
+
+            <div class="form-group">
+                <label for="op-note">Note (optional)</label>
+                <InputTextArea id="op-note" @bind-Value="operationNote" />
+            </div>
+
+            <div class="form-actions">
+                <RadzenButton Icon="check_circle"
+                              Text="Apply"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Shade="Shade.Lighter"
+                              Disabled="@(operationQuantity <= 0 || AvailableForOperation <= 0)"
+                              Click="@ApplyOperationAsync" />
+                <RadzenButton Icon="cancel"
+                              Text="Cancel"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@(_ => CloseOperationModal())" />
+            </div>
+        </div>
+    </div>
+}
+
+@if (showEditorModal)
+{
+    <div class="modal-overlay" @onclick="CloseEditorModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isEditMode ? "Edit Material" : "Add Material")</h2>
+                <button type="button" class="modal-close" @onclick="CloseEditorModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(formError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@formError" />
+            }
+
+            <EditForm Model="@editorModel" OnValidSubmit="@SaveMaterielAsync">
+                <DataAnnotationsValidator />
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="mat-name">Material Name</label>
+                        <InputText id="mat-name" @bind-Value="editorModel.MaterielName" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-type">Type</label>
+                        <InputText id="mat-type" @bind-Value="editorModel.Type" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-serial">Serial Number</label>
+                        <InputText id="mat-serial" @bind-Value="editorModel.SerialNumber" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-lifecycle">Lifecycle Status</label>
+                        <InputText id="mat-lifecycle" @bind-Value="editorModel.LifecycleStatus" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-it">IT Stock</label>
+                        <InputNumber id="mat-it" @bind-Value="editorModel.QuantityITStock" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-pdr">PDR Stock</label>
+                        <InputNumber id="mat-pdr" @bind-Value="editorModel.QuantityPDRStock" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-irreparable">Irreparable Qty</label>
+                        <InputNumber id="mat-irreparable" @bind-Value="editorModel.IrreparableQuantity" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-repairing">Repairing Qty</label>
+                        <InputNumber id="mat-repairing" @bind-Value="editorModel.Repairing_Quantity" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-warranty">Warranty Date</label>
+                        <InputDate id="mat-warranty" @bind-Value="editorModel.Warranty" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-purchase">Purchase Date</label>
+                        <InputDate id="mat-purchase" @bind-Value="editorModel.PurchaseDate" />
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton ButtonType="ButtonType.Submit"
+                                  Icon="save"
+                                  Text="Save"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter" />
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@(_ => CloseEditorModal())" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (showDeleteModal && deleteTarget is not null)
+{
+    <div class="modal-overlay" @onclick="CloseDeleteModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Delete Material</h2>
+                <button type="button" class="modal-close" @onclick="CloseDeleteModal">×</button>
+            </div>
+            <p>
+                Delete <strong>@deleteTarget.MaterielName</strong> (@deleteTarget.Type)?
+                This action cannot be undone.
+            </p>
+            <div class="form-actions">
+                <RadzenButton Icon="delete"
+                              Text="Delete"
+                              ButtonStyle="ButtonStyle.Danger"
+                              Shade="Shade.Lighter"
+                              Click="@DeleteMaterielAsync" />
+                <RadzenButton Icon="cancel"
+                              Text="Cancel"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@(_ => CloseDeleteModal())" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly List<Materiel> allMateriels = [];
+    private List<Materiel> filteredMateriels = [];
+    private List<string> typeOptions = [];
+
+    private bool isLoading = true;
+    private bool showEditorModal;
+    private bool showDeleteModal;
+    private bool showOperationModal;
+    private bool isEditMode;
+
+    private string searchText = string.Empty;
+    private string selectedType = string.Empty;
+    private string pdrStateFilter = "all";
+    private string? loadError;
+    private string? formError;
+    private string? operationError;
+
+    private int? editingMaterielId;
+    private Materiel editorModel = CreateDefaultMateriel();
+    private Materiel? deleteTarget;
+    private Materiel? operationTarget;
+    private int? operationTargetId;  // Store ID to reload fresh entity for update
+
+    private string operationType = "ReceiveToPdr";
+    private int operationQuantity = 1;
+    private string operationNote = string.Empty;
+
+    private int AvailableForOperation => operationTarget is null
+        ? 0
+        : operationType switch
+        {
+            "ReceiveToPdr" => int.MaxValue,
+            "DistributeToIt" => operationTarget.QuantityPDRStock,
+            "SendToRepair" => operationTarget.QuantityPDRStock,
+            "MarkIrreparable" => operationTarget.QuantityPDRStock,
+            "RepairToPdr" => operationTarget.Repairing_Quantity,
+            _ => 0
+        };
+
+    private string AvailableForOperationLabel =>
+        operationType == "ReceiveToPdr"
+            ? "unlimited (external supply)"
+            : $"{Math.Max(0, AvailableForOperation)} unit(s)";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var query = await MaterielService.GetMateriels();
+            allMateriels.Clear();
+            allMateriels.AddRange(query.ToList());
+            typeOptions = allMateriels
+                .Select(m => m.Type?.Trim())
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(t => t)
+                .ToList();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load PDR materials: {ex.Message}";
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Load failed",
+                Detail = loadError,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnTypeChanged(ChangeEventArgs args)
+    {
+        selectedType = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnPdrStateChanged(ChangeEventArgs args)
+    {
+        pdrStateFilter = args.Value?.ToString() ?? "all";
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Materiel> query = allMateriels;
+        var term = searchText.Trim();
+
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(m =>
+                Contains(m.MaterielName, term) ||
+                Contains(m.Type, term) ||
+                Contains(m.SerialNumber, term));
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedType))
+        {
+            query = query.Where(m => string.Equals(m.Type, selectedType, StringComparison.OrdinalIgnoreCase));
+        }
+
+        query = pdrStateFilter switch
+        {
+            "low" => query.Where(m => m.QuantityPDRStock <= 5),
+            "repairing" => query.Where(m => m.Repairing_Quantity > 0),
+            "irreparable" => query.Where(m => m.IrreparableQuantity > 0),
+            _ => query
+        };
+
+        filteredMateriels = query
+            .OrderBy(m => m.MaterielName)
+            .ThenBy(m => m.Type)
+            .ToList();
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditMode = false;
+        editingMaterielId = null;
+        formError = null;
+        editorModel = CreateDefaultMateriel();
+        showEditorModal = true;
+    }
+
+    private void OpenEditModal(Materiel materiel)
+    {
+        isEditMode = true;
+        editingMaterielId = materiel.Id;
+        formError = null;
+        editorModel = CloneMateriel(materiel);
+        showEditorModal = true;
+    }
+
+    private void OpenOperationModal(Materiel materiel)
+    {
+        operationTargetId = materiel.Id;
+        operationTarget = CloneMateriel(materiel);
+        operationType = "ReceiveToPdr";
+        operationQuantity = 1;
+        operationNote = string.Empty;
+        operationError = null;
+        showOperationModal = true;
+    }
+
+    private void OnOperationTypeChanged(ChangeEventArgs args)
+    {
+        operationType = args.Value?.ToString() ?? "ReceiveToPdr";
+    }
+
+    private void AskDelete(Materiel materiel)
+    {
+        deleteTarget = materiel;
+        showDeleteModal = true;
+    }
+
+    private void CloseEditorModal()
+    {
+        showEditorModal = false;
+        formError = null;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        deleteTarget = null;
+    }
+
+    private void CloseOperationModal()
+    {
+        showOperationModal = false;
+        operationTarget = null;
+        operationTargetId = null;
+        operationError = null;
+    }
+
+    private async Task SaveMaterielAsync()
+    {
+        if (!ValidateMaterialEditor(out var validationError))
+        {
+            formError = validationError;
+            return;
+        }
+
+        var payload = CloneMateriel(editorModel);
+        payload.MaterielName = payload.MaterielName.Trim();
+        payload.Type = payload.Type.Trim();
+        payload.SerialNumber = string.IsNullOrWhiteSpace(payload.SerialNumber) ? null : payload.SerialNumber.Trim();
+        payload.LifecycleStatus = string.IsNullOrWhiteSpace(payload.LifecycleStatus) ? "InStock" : payload.LifecycleStatus.Trim();
+        payload.ExpectedLifetimeMonths ??= 48;
+
+        try
+        {
+            if (isEditMode && editingMaterielId.HasValue)
+            {
+                await MaterielService.UpdateMateriel(editingMaterielId.Value, payload);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Material updated",
+                    Detail = $"{payload.MaterielName} has been updated.",
+                    Duration = 3000
+                });
+            }
+            else
+            {
+                await MaterielService.CreateMateriel(payload);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Material created",
+                    Detail = $"{payload.MaterielName} has been added.",
+                    Duration = 3000
+                });
+            }
+
+            CloseEditorModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            formError = $"Unable to save material: {ex.Message}";
+        }
+    }
+
+    private async Task ApplyOperationAsync()
+    {
+        if (operationTarget is null || !operationTargetId.HasValue)
+        {
+            return;
+        }
+
+        if (operationQuantity <= 0)
+        {
+            operationError = "Quantity must be greater than zero.";
+            return;
+        }
+
+        operationError = null;
+
+        // Collect the changes that need to be applied
+        var quantityPdrChange = 0;
+        var quantityItChange = 0;
+        var repairingChange = 0;
+        var irreparableChange = 0;
+
+        switch (operationType)
+        {
+            case "ReceiveToPdr":
+                quantityPdrChange = operationQuantity;
+                break;
+
+            case "DistributeToIt":
+                if (operationQuantity > operationTarget.QuantityPDRStock)
+                {
+                    operationError = "Cannot distribute more than available PDR stock.";
+                    return;
+                }
+                quantityPdrChange = -operationQuantity;
+                quantityItChange = operationQuantity;
+                break;
+
+            case "SendToRepair":
+                if (operationQuantity > operationTarget.QuantityPDRStock)
+                {
+                    operationError = "Cannot send to repair more than available PDR stock.";
+                    return;
+                }
+                quantityPdrChange = -operationQuantity;
+                repairingChange = operationQuantity;
+                break;
+
+            case "MarkIrreparable":
+                if (operationQuantity > operationTarget.QuantityPDRStock)
+                {
+                    operationError = "Cannot mark irreparable more than available PDR stock.";
+                    return;
+                }
+                quantityPdrChange = -operationQuantity;
+                irreparableChange = operationQuantity;
+                break;
+
+            case "RepairToPdr":
+                if (operationQuantity > operationTarget.Repairing_Quantity)
+                {
+                    operationError = "Cannot return more than current repairing quantity.";
+                    return;
+                }
+                repairingChange = -operationQuantity;
+                quantityPdrChange = operationQuantity;
+                break;
+        }
+
+        try
+        {
+            // Load fresh entity to avoid tracking conflicts
+            var freshMateriel = await MaterielService.GetMaterielById(operationTargetId.Value);
+            if (freshMateriel is null)
+            {
+                operationError = "Material no longer exists.";
+                return;
+            }
+
+            // Apply changes to the fresh entity
+            freshMateriel.QuantityPDRStock += quantityPdrChange;
+            freshMateriel.QuantityITStock += quantityItChange;
+            freshMateriel.Repairing_Quantity += repairingChange;
+            freshMateriel.IrreparableQuantity += irreparableChange;
+
+            // Update the fresh entity (which is now tracked)
+            await MaterielService.UpdateMateriel(freshMateriel.Id, freshMateriel);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "PDR operation applied",
+                Detail = $"{operationQuantity} unit(s) processed. {operationNote}",
+                Duration = 3500
+            });
+            CloseOperationModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            operationError = $"Operation failed: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteMaterielAsync()
+    {
+        if (deleteTarget is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await MaterielService.DeleteMateriel(deleteTarget.Id);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Material deleted",
+                Detail = $"{deleteTarget.MaterielName} has been deleted.",
+                Duration = 3000
+            });
+            CloseDeleteModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Delete failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private bool ValidateMaterialEditor(out string? error)
+    {
+        if (string.IsNullOrWhiteSpace(editorModel.MaterielName))
+        {
+            error = "Material name is required.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.Type))
+        {
+            error = "Type is required.";
+            return false;
+        }
+
+        if (editorModel.QuantityITStock < 0 ||
+            editorModel.QuantityPDRStock < 0 ||
+            editorModel.IrreparableQuantity < 0 ||
+            editorModel.Repairing_Quantity < 0)
+        {
+            error = "Stock values cannot be negative.";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static Materiel CreateDefaultMateriel() =>
+        new()
+        {
+            MaterielName = string.Empty,
+            Type = string.Empty,
+            SerialNumber = null,
+            QuantityITStock = 0,
+            QuantityPDRStock = 0,
+            IrreparableQuantity = 0,
+            Repairing_Quantity = 0,
+            Warranty = DateTime.Today.AddYears(1),
+            PurchaseDate = DateTime.Today,
+            LifecycleStatus = "InStock",
+            ExpectedLifetimeMonths = 48
+        };
+
+    private static Materiel CloneMateriel(Materiel source) =>
+        new()
+        {
+            Id = source.Id,
+            MaterielName = source.MaterielName,
+            Type = source.Type,
+            SerialNumber = source.SerialNumber,
+            QuantityITStock = source.QuantityITStock,
+            QuantityPDRStock = source.QuantityPDRStock,
+            IrreparableQuantity = source.IrreparableQuantity,
+            Repairing_Quantity = source.Repairing_Quantity,
+            Warranty = source.Warranty,
+            PurchaseDate = source.PurchaseDate,
+            ExpectedLifetimeMonths = source.ExpectedLifetimeMonths,
+            CurrentHealthScore = source.CurrentHealthScore,
+            LifecycleStatus = source.LifecycleStatus
+        };
+}

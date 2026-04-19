@@ -1,0 +1,503 @@
+@page "/offers-super-admin"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.Offers
+@using ITStockM.Services.Requests
+@using ITStockM.Services.Suppliers
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@inject IOfferService OfferService
+@inject IRequestService RequestService
+@inject ISupplierService SupplierService
+@inject NotificationService NotificationService
+
+<PageTitle>Offers Administration - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Offers Administration</h1>
+                <p class="page-subtitle">Manage supplier offers linked to requests and delivery planning.</p>
+            </div>
+            <RadzenButton Icon="add_circle"
+                          Text="Add Offer"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@OpenCreateModal" />
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Visible Offers</span>
+            <span class="metric-value">@filteredOffers.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Selected Offers</span>
+            <span class="metric-value text-primary">@filteredOffers.Count(o => o.Selected == true)</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Average Price</span>
+            <span class="metric-value">@FormatPrice(filteredOffers.Count == 0 ? 0m : filteredOffers.Average(o => o.Price))</span>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="page-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Search</span>
+                <div class="search-box">
+                    <input type="text"
+                           placeholder="Request, supplier, status..."
+                           value="@searchText"
+                           @oninput="OnSearchChanged" />
+                </div>
+            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-label">Selection</span>
+                <select class="filter-select" value="@selectionFilter" @onchange="OnSelectionChanged">
+                    <option value="all">All</option>
+                    <option value="selected">Selected</option>
+                    <option value="not-selected">Not selected</option>
+                </select>
+            </div>
+            <div class="toolbar-group toolbar-group-end">
+                <RadzenButton Icon="refresh"
+                              Text="Refresh"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@ReloadAsync" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         Text="@loadError" />
+        }
+
+        @if (isLoading)
+        {
+            <div class="content-placeholder loading">
+                <RadzenIcon Icon="local_offer" Style="font-size: 42px;" />
+                <h2>Loading offers...</h2>
+            </div>
+        }
+        else if (filteredOffers.Count == 0)
+        {
+            <div class="content-placeholder">
+                <RadzenIcon Icon="local_offer" Style="font-size: 42px;" />
+                <h2>No offers found</h2>
+                <p>Create an offer to compare suppliers for a request.</p>
+            </div>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@filteredOffers"
+                            TItem="Offer"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            PageSize="10"
+                            Responsive="true"
+                            Class="inventory-grid">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Offer" Title="ID">
+                        <Template Context="o">#@o.Id</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Offer" Title="Request">
+                        <Template Context="o">@DisplayRequest(o)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Offer" Property="SupplierName" Title="Supplier" />
+                    <RadzenDataGridColumn TItem="Offer" Title="Delivery Date">
+                        <Template Context="o">@o.DeliveryDate.ToString("yyyy-MM-dd")</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Offer" Title="Price">
+                        <Template Context="o">@FormatPrice(o.Price)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Offer" Title="Selected">
+                        <Template Context="o">
+                            <span class="badge @(o.Selected == true ? "badge-success" : "badge-secondary")">
+                                @(o.Selected == true ? "Yes" : "No")
+                            </span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Offer" Title="Actions" Filterable="false" Sortable="false" Width="240px">
+                        <Template Context="o">
+                            <div class="table-actions">
+                                <RadzenButton Icon="edit"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Primary"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => OpenEditModal(o))" />
+                                <RadzenButton Icon="check"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Success"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => ToggleSelectedAsync(o))" />
+                                <RadzenButton Icon="delete"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => DeleteOfferAsync(o))" />
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </div>
+</div>
+
+@if (showEditorModal)
+{
+    <div class="modal-overlay" @onclick="CloseEditorModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isEditMode ? "Edit Offer" : "Add Offer")</h2>
+                <button type="button" class="modal-close" @onclick="CloseEditorModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(editorError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@editorError" />
+            }
+
+            <EditForm Model="@editorModel" OnValidSubmit="@SaveOfferAsync" class="modal-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="offer-request">Request</label>
+                        <select id="offer-request" class="filter-select" @bind="editorModel.RequestId">
+                            @foreach (var request in requests)
+                            {
+                                <option value="@request.Id">#@request.Id - @request.Title</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="offer-supplier">Supplier</label>
+                        <select id="offer-supplier" class="filter-select" @bind="editorModel.SupplierName">
+                            @foreach (var supplier in suppliers)
+                            {
+                                <option value="@supplier.SupplierName">@supplier.SupplierName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="offer-date">Delivery Date</label>
+                        <InputDate id="offer-date" @bind-Value="editorModel.DeliveryDate" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="offer-price">Price</label>
+                        <InputNumber id="offer-price" @bind-Value="editorModel.Price" />
+                    </div>
+                </div>
+
+                <div class="form-check">
+                    <InputCheckbox id="offer-selected" @bind-Value="editorModel.Selected" />
+                    <label for="offer-selected">Mark as selected offer</label>
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton Icon="save"
+                                  Text="Save"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter"
+                                  ButtonType="ButtonType.Submit" />
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@(_ => CloseEditorModal())" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly List<Offer> offers = [];
+    private readonly List<Request> requests = [];
+    private readonly List<Supplier> suppliers = [];
+    private List<Offer> filteredOffers = [];
+
+    private bool isLoading = true;
+    private bool showEditorModal;
+    private bool isEditMode;
+
+    private string searchText = string.Empty;
+    private string selectionFilter = "all";
+    private string? loadError;
+    private string? editorError;
+
+    private OfferEditorModel editorModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            requests.Clear();
+            requests.AddRange(await RequestService.GetRequestsList());
+
+            suppliers.Clear();
+            suppliers.AddRange(await SupplierService.GetSuppliersList());
+
+            offers.Clear();
+            offers.AddRange(await OfferService.GetOffersList());
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load offers: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnSelectionChanged(ChangeEventArgs args)
+    {
+        selectionFilter = args.Value?.ToString() ?? "all";
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Offer> query = offers;
+
+        query = selectionFilter switch
+        {
+            "selected" => query.Where(o => o.Selected == true),
+            "not-selected" => query.Where(o => o.Selected != true),
+            _ => query
+        };
+
+        var term = searchText.Trim();
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(o =>
+                Contains(o.SupplierName, term) ||
+                Contains(o.Request?.Title, term) ||
+                Contains(o.Request?.ProjectName, term) ||
+                Contains(o.Selected == true ? "selected" : "not selected", term));
+        }
+
+        filteredOffers = query
+            .OrderByDescending(o => o.Selected == true)
+            .ThenBy(o => o.DeliveryDate)
+            .ToList();
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditMode = false;
+        editorError = null;
+        editorModel = new OfferEditorModel
+        {
+            RequestId = requests.FirstOrDefault()?.Id ?? 0,
+            SupplierName = suppliers.FirstOrDefault()?.SupplierName ?? string.Empty,
+            DeliveryDate = DateTime.UtcNow.Date.AddDays(7),
+            Price = 0,
+            Selected = false
+        };
+        showEditorModal = true;
+    }
+
+    private void OpenEditModal(Offer offer)
+    {
+        isEditMode = true;
+        editorError = null;
+        editorModel = new OfferEditorModel
+        {
+            Id = offer.Id,
+            RequestId = offer.RequestId,
+            SupplierName = offer.SupplierName ?? string.Empty,
+            DeliveryDate = offer.DeliveryDate,
+            Price = offer.Price,
+            Selected = offer.Selected == true
+        };
+        showEditorModal = true;
+    }
+
+    private async Task SaveOfferAsync()
+    {
+        editorError = ValidateEditor();
+        if (!string.IsNullOrWhiteSpace(editorError))
+        {
+            return;
+        }
+
+        var payload = new Offer
+        {
+            Id = editorModel.Id,
+            RequestId = editorModel.RequestId,
+            SupplierName = editorModel.SupplierName,
+            DeliveryDate = editorModel.DeliveryDate,
+            Price = editorModel.Price,
+            Selected = editorModel.Selected
+        };
+
+        try
+        {
+            if (isEditMode)
+            {
+                await OfferService.UpdateOffer(editorModel.Id, payload);
+                NotifySuccess("Offer updated", $"Offer #{editorModel.Id} updated.");
+            }
+            else
+            {
+                await OfferService.CreateOffer(payload);
+                NotifySuccess("Offer created", $"Offer for request #{payload.RequestId} created.");
+            }
+
+            CloseEditorModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            editorError = ex.Message;
+        }
+    }
+
+    private async Task ToggleSelectedAsync(Offer offer)
+    {
+        var payload = CloneOffer(offer);
+        payload.Selected = !(payload.Selected ?? false);
+
+        try
+        {
+            await OfferService.UpdateOffer(offer.Id, payload);
+            NotifySuccess("Selection updated", $"Offer #{offer.Id} selection changed.");
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Update failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private async Task DeleteOfferAsync(Offer offer)
+    {
+        try
+        {
+            await OfferService.DeleteOffer(offer.Id);
+            NotifySuccess("Offer deleted", $"Offer #{offer.Id} deleted.");
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Delete failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private void CloseEditorModal()
+    {
+        showEditorModal = false;
+        editorError = null;
+    }
+
+    private string? ValidateEditor()
+    {
+        if (editorModel.RequestId <= 0)
+        {
+            return "Please select a request.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.SupplierName))
+        {
+            return "Please select a supplier.";
+        }
+
+        if (editorModel.Price <= 0)
+        {
+            return "Price must be greater than zero.";
+        }
+
+        return null;
+    }
+
+    private void NotifySuccess(string summary, string detail)
+    {
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = summary,
+            Detail = detail,
+            Duration = 2500
+        });
+    }
+
+    private static string DisplayRequest(Offer offer)
+    {
+        if (offer.Request is null)
+        {
+            return $"#{offer.RequestId}";
+        }
+
+        return $"#{offer.RequestId} - {offer.Request.Title}";
+    }
+
+    private static string FormatPrice(decimal value) => $"{value:N2}";
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static Offer CloneOffer(Offer source) =>
+        new()
+        {
+            Id = source.Id,
+            RequestId = source.RequestId,
+            SupplierName = source.SupplierName,
+            DeliveryDate = source.DeliveryDate,
+            Price = source.Price,
+            Selected = source.Selected
+        };
+
+    private sealed class OfferEditorModel
+    {
+        public int Id { get; set; }
+        public int RequestId { get; set; }
+        public string SupplierName { get; set; } = string.Empty;
+        public DateTime DeliveryDate { get; set; } = DateTime.UtcNow.Date;
+        public decimal Price { get; set; }
+        public bool Selected { get; set; }
+    }
+}

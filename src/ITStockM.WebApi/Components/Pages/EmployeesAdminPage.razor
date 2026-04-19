@@ -1,0 +1,478 @@
+@page "/employees-super-admin"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.Employees
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@inject IEmployeeService EmployeeService
+@inject NotificationService NotificationService
+
+<PageTitle>Employees Administration - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Employees Administration</h1>
+                <p class="page-subtitle">Manage employee records, services, and access roles.</p>
+            </div>
+            <RadzenButton Icon="person_add"
+                          Text="Add Employee"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@OpenCreateModal" />
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Visible Employees</span>
+            <span class="metric-value">@filteredEmployees.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Admin Users</span>
+            <span class="metric-value text-primary">@filteredEmployees.Count(e => IsRole(e.Role, "Admin"))</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Guest Users</span>
+            <span class="metric-value text-warning">@filteredEmployees.Count(e => IsRole(e.Role, "Guest"))</span>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="page-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Search</span>
+                <div class="search-box">
+                    <input type="text"
+                           placeholder="Name, email, role, service..."
+                           value="@searchText"
+                           @oninput="OnSearchChanged" />
+                </div>
+            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-label">Role</span>
+                <select class="filter-select" value="@roleFilter" @onchange="OnRoleChanged">
+                    <option value="all">All roles</option>
+                    @foreach (var role in RoleOptions)
+                    {
+                        <option value="@role">@role</option>
+                    }
+                </select>
+            </div>
+            <div class="toolbar-group toolbar-group-end">
+                <RadzenButton Icon="refresh"
+                              Text="Refresh"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@ReloadAsync" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         Text="@loadError" />
+        }
+
+        @if (isLoading)
+        {
+            <div class="content-placeholder loading">
+                <RadzenIcon Icon="people" Style="font-size: 42px;" />
+                <h2>Loading employees...</h2>
+            </div>
+        }
+        else if (filteredEmployees.Count == 0)
+        {
+            <div class="content-placeholder">
+                <RadzenIcon Icon="person_off" Style="font-size: 42px;" />
+                <h2>No employees found</h2>
+                <p>Adjust filters or add new employee records.</p>
+            </div>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@filteredEmployees"
+                            TItem="Employee"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            PageSize="10"
+                            Responsive="true"
+                            Class="inventory-grid">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Employee" Property="FullName" Title="Full Name" />
+                    <RadzenDataGridColumn TItem="Employee" Property="Email" Title="Email" />
+                    <RadzenDataGridColumn TItem="Employee" Property="Post" Title="Post" />
+                    <RadzenDataGridColumn TItem="Employee" Property="Service" Title="Service" />
+                    <RadzenDataGridColumn TItem="Employee" Property="PhoneNumber" Title="Phone" />
+                    <RadzenDataGridColumn TItem="Employee" Title="Role">
+                        <Template Context="e">
+                            <span class="badge @RoleBadge(e.Role)">@NormalizeRole(e.Role)</span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Employee" Title="Actions" Filterable="false" Sortable="false" Width="180px">
+                        <Template Context="e">
+                            <div class="table-actions">
+                                <RadzenButton Icon="edit"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Primary"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => OpenEditModal(e))" />
+                                <RadzenButton Icon="delete"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => DeleteEmployeeAsync(e))" />
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </div>
+</div>
+
+@if (showEditorModal)
+{
+    <div class="modal-overlay" @onclick="CloseEditorModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isEditMode ? "Edit Employee" : "Add Employee")</h2>
+                <button type="button" class="modal-close" @onclick="CloseEditorModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(editorError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@editorError" />
+            }
+
+            <EditForm Model="@editorModel" OnValidSubmit="@SaveEmployeeAsync" class="modal-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="emp-name">Full Name</label>
+                        <InputText id="emp-name" @bind-Value="editorModel.FullName" />
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-email">Email</label>
+                        <InputText id="emp-email" @bind-Value="editorModel.Email" />
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-post">Post</label>
+                        <InputText id="emp-post" @bind-Value="editorModel.Post" />
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-service">Service</label>
+                        <InputText id="emp-service" @bind-Value="editorModel.Service" />
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-phone">Phone Number</label>
+                        <InputText id="emp-phone" @bind-Value="editorModel.PhoneNumber" />
+                    </div>
+                    <div class="form-group">
+                        <label for="emp-role">Role</label>
+                        <select id="emp-role" class="filter-select" @bind="editorModel.Role">
+                            @foreach (var role in RoleOptions)
+                            {
+                                <option value="@role">@role</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton Icon="save"
+                                  Text="Save"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter"
+                                  ButtonType="ButtonType.Submit" />
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@(_ => CloseEditorModal())" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private static readonly string[] RoleOptions = ["Admin", "PDR", "Purchasing", "IT", "Infrastructure", "Employee", "Guest"];
+
+    private readonly List<Employee> employees = [];
+    private List<Employee> filteredEmployees = [];
+
+    private bool isLoading = true;
+    private bool showEditorModal;
+    private bool isEditMode;
+
+    private string searchText = string.Empty;
+    private string roleFilter = "all";
+    private string? loadError;
+    private string? editorError;
+
+    private EmployeeEditorModel editorModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            employees.Clear();
+            employees.AddRange(await EmployeeService.GetEmployeesList());
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load employees: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnRoleChanged(ChangeEventArgs args)
+    {
+        roleFilter = args.Value?.ToString() ?? "all";
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Employee> query = employees;
+
+        if (!string.Equals(roleFilter, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(e => IsRole(e.Role, roleFilter));
+        }
+
+        var term = searchText.Trim();
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(e =>
+                Contains(e.FullName, term) ||
+                Contains(e.Email, term) ||
+                Contains(e.Post, term) ||
+                Contains(e.Service, term) ||
+                Contains(e.Role, term));
+        }
+
+        filteredEmployees = query
+            .OrderBy(e => e.FullName)
+            .ToList();
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditMode = false;
+        editorError = null;
+        editorModel = new EmployeeEditorModel { Role = "Employee" };
+        showEditorModal = true;
+    }
+
+    private void OpenEditModal(Employee employee)
+    {
+        isEditMode = true;
+        editorError = null;
+        editorModel = new EmployeeEditorModel
+        {
+            Id = employee.Id,
+            FullName = employee.FullName ?? string.Empty,
+            Email = employee.Email ?? string.Empty,
+            Post = employee.Post ?? string.Empty,
+            Service = employee.Service ?? string.Empty,
+            PhoneNumber = employee.PhoneNumber ?? string.Empty,
+            Role = NormalizeRole(employee.Role)
+        };
+        showEditorModal = true;
+    }
+
+    private async Task SaveEmployeeAsync()
+    {
+        editorError = ValidateEditor();
+        if (!string.IsNullOrWhiteSpace(editorError))
+        {
+            return;
+        }
+
+        var payload = new Employee
+        {
+            Id = editorModel.Id,
+            FullName = editorModel.FullName.Trim(),
+            Email = editorModel.Email.Trim(),
+            Post = editorModel.Post.Trim(),
+            Service = editorModel.Service.Trim(),
+            PhoneNumber = editorModel.PhoneNumber.Trim(),
+            Role = editorModel.Role
+        };
+
+        try
+        {
+            if (isEditMode)
+            {
+                await EmployeeService.UpdateEmployee(editorModel.Id, payload);
+                NotifySuccess("Employee updated", $"{payload.FullName} updated.");
+            }
+            else
+            {
+                await EmployeeService.CreateEmployee(payload);
+                NotifySuccess("Employee created", $"{payload.FullName} created.");
+            }
+
+            CloseEditorModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            editorError = ex.Message;
+        }
+    }
+
+    private async Task DeleteEmployeeAsync(Employee employee)
+    {
+        try
+        {
+            await EmployeeService.DeleteEmployee(employee.Id);
+            NotifySuccess("Employee deleted", $"{employee.FullName} removed.");
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Delete failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private void CloseEditorModal()
+    {
+        showEditorModal = false;
+        editorError = null;
+    }
+
+    private string? ValidateEditor()
+    {
+        if (string.IsNullOrWhiteSpace(editorModel.FullName))
+        {
+            return "Full name is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.Email) || !editorModel.Email.Contains('@'))
+        {
+            return "A valid email is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.Post))
+        {
+            return "Post is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.Service))
+        {
+            return "Service is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.PhoneNumber))
+        {
+            return "Phone number is required.";
+        }
+
+        if (!RoleOptions.Contains(editorModel.Role))
+        {
+            return "Please choose a valid role.";
+        }
+
+        return null;
+    }
+
+    private void NotifySuccess(string summary, string detail)
+    {
+        NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = summary,
+            Detail = detail,
+            Duration = 2500
+        });
+    }
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsRole(string? source, string expected) =>
+        string.Equals(source?.Trim(), expected, StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizeRole(string? role)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return "Employee";
+        }
+
+        foreach (var candidate in RoleOptions)
+        {
+            if (string.Equals(candidate, role, StringComparison.OrdinalIgnoreCase))
+            {
+                return candidate;
+            }
+        }
+
+        return role;
+    }
+
+    private static string RoleBadge(string? role)
+    {
+        if (IsRole(role, "Admin"))
+        {
+            return "badge-danger";
+        }
+
+        if (IsRole(role, "Purchasing") || IsRole(role, "IT"))
+        {
+            return "badge-primary";
+        }
+
+        if (IsRole(role, "Guest"))
+        {
+            return "badge-warning";
+        }
+
+        return "badge-secondary";
+    }
+
+    private sealed class EmployeeEditorModel
+    {
+        public int Id { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Post { get; set; } = string.Empty;
+        public string Service { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Role { get; set; } = "Employee";
+    }
+}

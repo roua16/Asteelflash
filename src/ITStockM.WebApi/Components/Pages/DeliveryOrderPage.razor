@@ -1,0 +1,5 @@
+@page "/delivery-order"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,Purchasing,PDR")]
+
+<PendingDeliveriesPage Scope="all" ShowCreateOrderTools="true" />

@@ -1,0 +1,526 @@
+@page "/materials-view-interface"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.Materiels
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,Purchasing,IT")]
+@inject IMaterielService MaterielService
+@inject NotificationService NotificationService
+
+<PageTitle>Materials View - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Materials Inventory</h1>
+                <p class="page-subtitle">Full inventory management for IT, Purchasing, and Admin roles.</p>
+            </div>
+            <RadzenButton Icon="add_circle"
+                          Text="Add Material"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@OpenCreateModal" />
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Visible Materials</span>
+            <span class="metric-value">@filteredMateriels.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">IT Stock Units</span>
+            <span class="metric-value">@filteredMateriels.Sum(m => m.QuantityITStock)</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Low Stock Alerts</span>
+            <span class="metric-value text-warning">@filteredMateriels.Count(m => (m.QuantityITStock + m.QuantityPDRStock) <= 5)</span>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="page-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Search</span>
+                <div class="search-box">
+                    <input type="text"
+                           placeholder="Search by name, type, serial..."
+                           value="@searchText"
+                           @oninput="OnSearchChanged" />
+                </div>
+            </div>
+
+            <div class="toolbar-group">
+                <span class="toolbar-label">Type</span>
+                <select class="filter-select" value="@selectedType" @onchange="OnTypeChanged">
+                    <option value="">All Types</option>
+                    @foreach (var type in typeOptions)
+                    {
+                        <option value="@type">@type</option>
+                    }
+                </select>
+            </div>
+
+            <div class="toolbar-group toolbar-group-end">
+                <RadzenButton Icon="refresh"
+                              Text="Refresh"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@ReloadAsync" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         Text="@loadError" />
+        }
+
+        @if (isLoading)
+        {
+            <div class="content-placeholder loading">
+                <RadzenIcon Icon="inventory_2" Style="font-size: 42px;" />
+                <h2>Loading inventory...</h2>
+            </div>
+        }
+        else if (filteredMateriels.Count == 0)
+        {
+            <div class="content-placeholder">
+                <RadzenIcon Icon="search_off" Style="font-size: 42px;" />
+                <h2>No materials found</h2>
+                <p>Try a different search or filter, or add a new material.</p>
+            </div>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@filteredMateriels"
+                            TItem="Materiel"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            PageSize="10"
+                            Responsive="true"
+                            Class="inventory-grid">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Materiel" Property="MaterielName" Title="Name" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="Type" Title="Type" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="SerialNumber" Title="Serial #" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="QuantityITStock" Title="IT Stock" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="QuantityPDRStock" Title="PDR Stock" />
+                    <RadzenDataGridColumn TItem="Materiel" Property="Warranty" Title="Warranty">
+                        <Template Context="item">
+                            @item.Warranty.ToString("yyyy-MM-dd")
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Materiel" Property="LifecycleStatus" Title="Lifecycle" />
+                    <RadzenDataGridColumn TItem="Materiel" Title="Actions" Filterable="false" Sortable="false" Width="190px">
+                        <Template Context="item">
+                            <div class="table-actions">
+                                <RadzenButton Icon="edit"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Light"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => OpenEditModal(item))" />
+                                <RadzenButton Icon="delete"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => AskDelete(item))" />
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </div>
+</div>
+
+@if (showEditorModal)
+{
+    <div class="modal-overlay" @onclick="CloseEditorModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isEditMode ? "Edit Material" : "Add Material")</h2>
+                <button type="button" class="modal-close" @onclick="CloseEditorModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(formError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@formError" />
+            }
+
+            <EditForm Model="@editorModel" OnValidSubmit="@SaveMaterielAsync">
+                <DataAnnotationsValidator />
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="mat-name">Material Name</label>
+                        <InputText id="mat-name" @bind-Value="editorModel.MaterielName" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-type">Type</label>
+                        <InputText id="mat-type" @bind-Value="editorModel.Type" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-serial">Serial Number</label>
+                        <InputText id="mat-serial" @bind-Value="editorModel.SerialNumber" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-lifecycle">Lifecycle Status</label>
+                        <InputText id="mat-lifecycle" @bind-Value="editorModel.LifecycleStatus" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-it">IT Stock</label>
+                        <InputNumber id="mat-it" @bind-Value="editorModel.QuantityITStock" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-pdr">PDR Stock</label>
+                        <InputNumber id="mat-pdr" @bind-Value="editorModel.QuantityPDRStock" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-irreparable">Irreparable Qty</label>
+                        <InputNumber id="mat-irreparable" @bind-Value="editorModel.IrreparableQuantity" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-repairing">Repairing Qty</label>
+                        <InputNumber id="mat-repairing" @bind-Value="editorModel.Repairing_Quantity" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-warranty">Warranty Date</label>
+                        <InputDate id="mat-warranty" @bind-Value="editorModel.Warranty" />
+                    </div>
+                    <div class="form-group">
+                        <label for="mat-purchase">Purchase Date</label>
+                        <InputDate id="mat-purchase" @bind-Value="editorModel.PurchaseDate" />
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton ButtonType="ButtonType.Submit"
+                                  Icon="save"
+                                  Text="Save"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter" />
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@(_ => CloseEditorModal())" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (showDeleteModal && deleteTarget is not null)
+{
+    <div class="modal-overlay" @onclick="CloseDeleteModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Delete Material</h2>
+                <button type="button" class="modal-close" @onclick="CloseDeleteModal">×</button>
+            </div>
+            <p>
+                Delete <strong>@deleteTarget.MaterielName</strong> (@deleteTarget.Type)?
+                This action cannot be undone.
+            </p>
+            <div class="form-actions">
+                <RadzenButton Icon="delete"
+                              Text="Delete"
+                              ButtonStyle="ButtonStyle.Danger"
+                              Shade="Shade.Lighter"
+                              Click="@DeleteMaterielAsync" />
+                <RadzenButton Icon="cancel"
+                              Text="Cancel"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@(_ => CloseDeleteModal())" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly List<Materiel> allMateriels = [];
+    private List<Materiel> filteredMateriels = [];
+    private List<string> typeOptions = [];
+
+    private bool isLoading = true;
+    private bool showEditorModal;
+    private bool showDeleteModal;
+    private bool isEditMode;
+
+    private string searchText = string.Empty;
+    private string selectedType = string.Empty;
+    private string? loadError;
+    private string? formError;
+
+    private int? editingMaterielId;
+    private Materiel editorModel = CreateDefaultMateriel();
+    private Materiel? deleteTarget;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var query = await MaterielService.GetMateriels();
+            allMateriels.Clear();
+            allMateriels.AddRange(query.ToList());
+            typeOptions = allMateriels
+                .Select(m => m.Type?.Trim())
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t!)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(t => t)
+                .ToList();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load materials: {ex.Message}";
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Load failed",
+                Detail = loadError,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnTypeChanged(ChangeEventArgs args)
+    {
+        selectedType = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<Materiel> query = allMateriels;
+        var term = searchText.Trim();
+
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            query = query.Where(m =>
+                Contains(m.MaterielName, term) ||
+                Contains(m.Type, term) ||
+                Contains(m.SerialNumber, term) ||
+                Contains(m.LifecycleStatus, term));
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedType))
+        {
+            query = query.Where(m => string.Equals(m.Type, selectedType, StringComparison.OrdinalIgnoreCase));
+        }
+
+        filteredMateriels = query
+            .OrderBy(m => m.MaterielName)
+            .ThenBy(m => m.Type)
+            .ToList();
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditMode = false;
+        editingMaterielId = null;
+        formError = null;
+        editorModel = CreateDefaultMateriel();
+        showEditorModal = true;
+    }
+
+    private void OpenEditModal(Materiel materiel)
+    {
+        isEditMode = true;
+        editingMaterielId = materiel.Id;
+        formError = null;
+        editorModel = CloneMateriel(materiel);
+        showEditorModal = true;
+    }
+
+    private void AskDelete(Materiel materiel)
+    {
+        deleteTarget = materiel;
+        showDeleteModal = true;
+    }
+
+    private void CloseEditorModal()
+    {
+        showEditorModal = false;
+        formError = null;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        deleteTarget = null;
+    }
+
+    private async Task SaveMaterielAsync()
+    {
+        if (!ValidateEditor(out var validationError))
+        {
+            formError = validationError;
+            return;
+        }
+
+        formError = null;
+        var payload = CloneMateriel(editorModel);
+        payload.MaterielName = payload.MaterielName.Trim();
+        payload.Type = payload.Type.Trim();
+        payload.SerialNumber = string.IsNullOrWhiteSpace(payload.SerialNumber) ? null : payload.SerialNumber.Trim();
+        payload.LifecycleStatus = string.IsNullOrWhiteSpace(payload.LifecycleStatus) ? "InStock" : payload.LifecycleStatus.Trim();
+        payload.ExpectedLifetimeMonths ??= 48;
+
+        try
+        {
+            if (isEditMode && editingMaterielId.HasValue)
+            {
+                await MaterielService.UpdateMateriel(editingMaterielId.Value, payload);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Material updated",
+                    Detail = $"{payload.MaterielName} has been updated.",
+                    Duration = 3000
+                });
+            }
+            else
+            {
+                await MaterielService.CreateMateriel(payload);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Material created",
+                    Detail = $"{payload.MaterielName} has been added.",
+                    Duration = 3000
+                });
+            }
+
+            CloseEditorModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            formError = $"Unable to save material: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteMaterielAsync()
+    {
+        if (deleteTarget is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await MaterielService.DeleteMateriel(deleteTarget.Id);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Material deleted",
+                Detail = $"{deleteTarget.MaterielName} has been deleted.",
+                Duration = 3000
+            });
+            CloseDeleteModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Delete failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private bool ValidateEditor(out string? error)
+    {
+        if (string.IsNullOrWhiteSpace(editorModel.MaterielName))
+        {
+            error = "Material name is required.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(editorModel.Type))
+        {
+            error = "Type is required.";
+            return false;
+        }
+
+        if (editorModel.QuantityITStock < 0 ||
+            editorModel.QuantityPDRStock < 0 ||
+            editorModel.IrreparableQuantity < 0 ||
+            editorModel.Repairing_Quantity < 0)
+        {
+            error = "Stock values cannot be negative.";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static Materiel CreateDefaultMateriel() =>
+        new()
+        {
+            MaterielName = string.Empty,
+            Type = string.Empty,
+            SerialNumber = null,
+            QuantityITStock = 0,
+            QuantityPDRStock = 0,
+            IrreparableQuantity = 0,
+            Repairing_Quantity = 0,
+            Warranty = DateTime.Today.AddYears(1),
+            PurchaseDate = DateTime.Today,
+            LifecycleStatus = "InStock",
+            ExpectedLifetimeMonths = 48
+        };
+
+    private static Materiel CloneMateriel(Materiel source) =>
+        new()
+        {
+            Id = source.Id,
+            MaterielName = source.MaterielName,
+            Type = source.Type,
+            SerialNumber = source.SerialNumber,
+            QuantityITStock = source.QuantityITStock,
+            QuantityPDRStock = source.QuantityPDRStock,
+            IrreparableQuantity = source.IrreparableQuantity,
+            Repairing_Quantity = source.Repairing_Quantity,
+            Warranty = source.Warranty,
+            PurchaseDate = source.PurchaseDate,
+            ExpectedLifetimeMonths = source.ExpectedLifetimeMonths,
+            CurrentHealthScore = source.CurrentHealthScore,
+            LifecycleStatus = source.LifecycleStatus
+        };
+}

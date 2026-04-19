@@ -1,0 +1,28 @@
+# Build outputs
+**/bin/
+**/obj/
+
+# User/IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.cache
+
+# Git
+.git/
+.gitignore
+
+# Tests (not needed for runtime image)
+ITStockM.Tests/
+
+# Guard against accidental mirrored source trees in synced Windows folders
+Asteelflash/
+
+# Docs / misc
+*.md
+*.tex
+
+# OS
+Thumbs.db
+Desktop.ini

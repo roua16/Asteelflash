@@ -1,0 +1,911 @@
+@page "/assignments-interface"
+@using ITStockM.Domain.Entities
+@using ITStockM.Services.AssignmentMateriels
+@using ITStockM.Services.Assignments
+@using ITStockM.Services.Employees
+@using ITStockM.Services.Materiels
+@using ITStockM.Services.Projects
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,IT,Infrastructure,Employee")]
+@inject IAssignmentService AssignmentService
+@inject IAssignmentMaterielService AssignmentMaterielService
+@inject IEmployeeService EmployeeService
+@inject IProjectService ProjectService
+@inject IMaterielService MaterielService
+@inject NotificationService NotificationService
+
+<PageTitle>Materials Assignments - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Material Assignments</h1>
+                <p class="page-subtitle">Manage assignment records and linked materials with operational popups.</p>
+            </div>
+            <RadzenButton Icon="add_circle"
+                          Text="New Assignment"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@OpenCreateModal" />
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <div class="content-section metric-card">
+            <span class="metric-label">Visible Assignments</span>
+            <span class="metric-value">@filteredAssignments.Count</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Active Missions</span>
+            <span class="metric-value text-primary">@filteredAssignments.Count(a => a.Assignment.OnMission)</span>
+        </div>
+        <div class="content-section metric-card">
+            <span class="metric-label">Assigned Units</span>
+            <span class="metric-value">@filteredAssignments.Sum(a => a.LinkedMaterialQuantity)</span>
+        </div>
+    </div>
+
+    <div class="content-section">
+        <div class="page-toolbar">
+            <div class="toolbar-group">
+                <span class="toolbar-label">Search</span>
+                <div class="search-box">
+                    <input type="text"
+                           placeholder="Search description, employee, project..."
+                           value="@searchText"
+                           @oninput="OnSearchChanged" />
+                </div>
+            </div>
+
+            <div class="toolbar-group">
+                <span class="toolbar-label">Mission</span>
+                <select class="filter-select" value="@missionFilter" @onchange="OnMissionFilterChanged">
+                    <option value="all">All</option>
+                    <option value="mission">On mission</option>
+                    <option value="not-mission">Not on mission</option>
+                </select>
+            </div>
+
+            <div class="toolbar-group toolbar-group-end">
+                <RadzenButton Icon="refresh"
+                              Text="Refresh"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@ReloadAsync" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(loadError))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         Text="@loadError" />
+        }
+
+        @if (isLoading)
+        {
+            <div class="content-placeholder loading">
+                <RadzenIcon Icon="assignment" Style="font-size: 42px;" />
+                <h2>Loading assignments...</h2>
+            </div>
+        }
+        else if (filteredAssignments.Count == 0)
+        {
+            <div class="content-placeholder">
+                <RadzenIcon Icon="search_off" Style="font-size: 42px;" />
+                <h2>No assignments found</h2>
+                <p>Try different filters or create a new assignment.</p>
+            </div>
+        }
+        else
+        {
+            <RadzenDataGrid Data="@filteredAssignments"
+                            TItem="AssignmentRow"
+                            AllowPaging="true"
+                            AllowSorting="true"
+                            PageSize="10"
+                            Responsive="true"
+                            Class="inventory-grid">
+                <Columns>
+                    <RadzenDataGridColumn TItem="AssignmentRow" Title="Date">
+                        <Template Context="row">
+                            @row.Assignment.Date.ToString("yyyy-MM-dd")
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AssignmentRow" Title="Assigned To">
+                        <Template Context="row">@row.AssignedToName</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AssignmentRow" Title="Assigned By">
+                        <Template Context="row">@row.AssignedByName</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AssignmentRow" Title="Project">
+                        <Template Context="row">@row.ProjectName</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AssignmentRow" Title="Description">
+                        <Template Context="row">@row.Assignment.Descipriton</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AssignmentRow" Title="Mission">
+                        <Template Context="row">
+                            <span class="badge @(row.Assignment.OnMission ? "badge-primary" : "badge-success")">
+                                @(row.Assignment.OnMission ? "On mission" : "In stock")
+                            </span>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AssignmentRow" Title="Linked Materials">
+                        <Template Context="row">
+                            @row.LinkedMaterialLines line(s) / @row.LinkedMaterialQuantity unit(s)
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AssignmentRow" Title="Actions" Filterable="false" Sortable="false" Width="250px">
+                        <Template Context="row">
+                            <div class="table-actions">
+                                <RadzenButton Icon="inventory_2"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Primary"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => OpenMaterialsModal(row))" />
+                                <RadzenButton Icon="edit"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Light"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => OpenEditModal(row.Assignment))" />
+                                <RadzenButton Icon="delete"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Shade="Shade.Lighter"
+                                              Click="@(() => AskDelete(row.Assignment))" />
+                            </div>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        }
+    </div>
+</div>
+
+@if (showAssignmentModal)
+{
+    <div class="modal-overlay" @onclick="CloseAssignmentModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>@(isEditMode ? "Edit Assignment" : "Create Assignment")</h2>
+                <button type="button" class="modal-close" @onclick="CloseAssignmentModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(assignmentError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@assignmentError" />
+            }
+
+            <EditForm Model="@assignmentEditor" OnValidSubmit="@SaveAssignmentAsync">
+                <DataAnnotationsValidator />
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="asg-to">Assigned To (optional)</label>
+                        <select id="asg-to" value="@ToNullableIntValue(assignmentEditor.AssignedTo)" @onchange="OnAssignedToChanged">
+                            <option value="">Unassigned</option>
+                            @foreach (var employee in employees.OrderBy(e => e.FullName))
+                            {
+                                <option value="@employee.Id">@employee.FullName (@employee.Role)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asg-by">Assigned By</label>
+                        <select id="asg-by" value="@assignmentEditor.AssignedBy" @onchange="OnAssignedByChanged">
+                            <option value="0">Select employee</option>
+                            @foreach (var employee in employees.OrderBy(e => e.FullName))
+                            {
+                                <option value="@employee.Id">@employee.FullName (@employee.Role)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asg-project">Project (optional)</label>
+                        <select id="asg-project" value="@ToNullableIntValue(assignmentEditor.ProjectId)" @onchange="OnProjectChanged">
+                            <option value="">No project</option>
+                            @foreach (var project in projects.OrderBy(p => p.ProjectName))
+                            {
+                                <option value="@project.Id">@project.ProjectName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asg-date">Date</label>
+                        <InputDate id="asg-date" @bind-Value="assignmentEditor.Date" />
+                    </div>
+
+                    <div class="form-group form-group-span-2">
+                        <label for="asg-desc">Description</label>
+                        <InputTextArea id="asg-desc" @bind-Value="assignmentEditor.Descipriton" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asg-mission">On Mission</label>
+                        <InputCheckbox id="asg-mission" @bind-Value="assignmentEditor.OnMission" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asg-restore-limit">Restore Date Limit</label>
+                        <InputDate id="asg-restore-limit" @bind-Value="assignmentEditor.RestoreDateLimit" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asg-restore">Restore Date</label>
+                        <InputDate id="asg-restore" @bind-Value="assignmentEditor.RestoreDate" />
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton ButtonType="ButtonType.Submit"
+                                  Icon="save"
+                                  Text="Save"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter" />
+                    <RadzenButton Icon="cancel"
+                                  Text="Cancel"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@(_ => CloseAssignmentModal())" />
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (showMaterialsModal && selectedAssignment is not null)
+{
+    <div class="modal-overlay" @onclick="CloseMaterialsModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Assignment Materials</h2>
+                <button type="button" class="modal-close" @onclick="CloseMaterialsModal">×</button>
+            </div>
+
+            <div class="info-box">
+                <strong>Assignment #@selectedAssignment.Id</strong><br />
+                <span class="text-muted">@selectedAssignment.Descipriton</span>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(materialsError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@materialsError" />
+            }
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="asg-material">Material</label>
+                    <select id="asg-material" value="@ToNullableIntValue(selectedMaterielId)" @onchange="OnSelectedMaterielChanged">
+                        <option value="">Select material</option>
+                        @foreach (var material in materiels.OrderBy(m => m.MaterielName))
+                        {
+                            <option value="@material.Id">@material.MaterielName (@material.Type) - PDR:@material.QuantityPDRStock IT:@material.QuantityITStock</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="asg-qty">Quantity</label>
+                    <InputNumber id="asg-qty" @bind-Value="selectedMaterielQuantity" />
+                    @if (selectedMaterielId.HasValue)
+                    {
+                        <small class="text-muted">Available stock (IT + PDR): @SelectedMaterielAvailable</small>
+                    }
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <RadzenButton Icon="add"
+                              Text="Add / Increase"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Shade="Shade.Lighter"
+                              Disabled="@(!CanAddSelectedMateriel)"
+                              Click="@AddOrIncreaseLinkAsync" />
+            </div>
+
+            @if (CurrentSelectedLinks.Count == 0)
+            {
+                <div class="content-placeholder">
+                    <RadzenIcon Icon="inventory_2" Style="font-size: 36px;" />
+                    <h2>No linked materials yet</h2>
+                </div>
+            }
+            else
+            {
+                <table class="data-grid assignment-links-table">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var link in CurrentSelectedLinks)
+                        {
+                            <tr>
+                                <td>@GetMaterielName(link.MaterielId)</td>
+                                <td>@GetMaterielType(link.MaterielId)</td>
+                                <td>@link.Qte</td>
+                                <td>
+                                    <RadzenButton Icon="delete"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Danger"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => DeleteLinkAsync(link))" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+}
+
+@if (showDeleteModal && deleteTarget is not null)
+{
+    <div class="modal-overlay" @onclick="CloseDeleteModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Delete Assignment</h2>
+                <button type="button" class="modal-close" @onclick="CloseDeleteModal">×</button>
+            </div>
+            <p>
+                Delete assignment dated <strong>@deleteTarget.Date.ToString("yyyy-MM-dd")</strong>?
+                Linked assignment materials will also be removed.
+            </p>
+            <div class="form-actions">
+                <RadzenButton Icon="delete"
+                              Text="Delete"
+                              ButtonStyle="ButtonStyle.Danger"
+                              Shade="Shade.Lighter"
+                              Click="@DeleteAssignmentAsync" />
+                <RadzenButton Icon="cancel"
+                              Text="Cancel"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@(_ => CloseDeleteModal())" />
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly List<Assignment> assignments = [];
+    private readonly List<AssignmentMateriel> assignmentMateriels = [];
+    private readonly List<Employee> employees = [];
+    private readonly List<Project> projects = [];
+    private readonly List<Materiel> materiels = [];
+
+    private List<AssignmentRow> filteredAssignments = [];
+
+    private bool isLoading = true;
+    private bool showAssignmentModal;
+    private bool showMaterialsModal;
+    private bool showDeleteModal;
+    private bool isEditMode;
+
+    private string searchText = string.Empty;
+    private string missionFilter = "all";
+    private string? loadError;
+    private string? assignmentError;
+    private string? materialsError;
+
+    private int? editingAssignmentId;
+    private Assignment assignmentEditor = CreateDefaultAssignment();
+    private Assignment? selectedAssignment;
+    private Assignment? deleteTarget;
+
+    private int? selectedMaterielId;
+    private int selectedMaterielQuantity = 1;
+
+    private List<AssignmentMateriel> CurrentSelectedLinks =>
+        selectedAssignment is null
+            ? []
+            : assignmentMateriels
+                .Where(am => am.AssignmentId == selectedAssignment.Id)
+                .OrderBy(am => GetMaterielName(am.MaterielId))
+                .ToList();
+
+    private int SelectedMaterielAvailable =>
+        !selectedMaterielId.HasValue
+            ? 0
+            : materiels
+                .Where(m => m.Id == selectedMaterielId.Value)
+                .Select(m => m.QuantityITStock + m.QuantityPDRStock)
+                .FirstOrDefault();
+
+    private bool CanAddSelectedMateriel => selectedMaterielId.HasValue && selectedMaterielQuantity > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            // Sequential reads avoid concurrent DbContext operations on Blazor Server scoped services.
+            var assignmentsQuery = await AssignmentService.GetAssignments();
+            var assignmentMaterielsQuery = await AssignmentMaterielService.GetAssignmentMateriels();
+            var employeeList = await EmployeeService.GetEmployeesList();
+            var projectList = await ProjectService.GetProjectsList();
+            var materielsQuery = await MaterielService.GetMateriels();
+
+            assignments.Clear();
+            assignmentMateriels.Clear();
+            employees.Clear();
+            projects.Clear();
+            materiels.Clear();
+
+            assignments.AddRange(assignmentsQuery.ToList());
+            assignmentMateriels.AddRange(assignmentMaterielsQuery.ToList());
+            employees.AddRange(employeeList);
+            projects.AddRange(projectList);
+            materiels.AddRange(materielsQuery.ToList());
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load assignments data: {ex.Message}";
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Load failed",
+                Detail = loadError,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs args)
+    {
+        searchText = args.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnMissionFilterChanged(ChangeEventArgs args)
+    {
+        missionFilter = args.Value?.ToString() ?? "all";
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var employeeById = employees.ToDictionary(e => e.Id, e => e.FullName ?? $"Employee #{e.Id}");
+        var projectById = projects.ToDictionary(p => p.Id, p => p.ProjectName);
+        var linksByAssignment = assignmentMateriels
+            .GroupBy(am => am.AssignmentId)
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    Lines = g.Count(),
+                    Quantity = g.Sum(x => x.Qte)
+                });
+
+        IEnumerable<AssignmentRow> rows = assignments.Select(assignment =>
+        {
+            linksByAssignment.TryGetValue(assignment.Id, out var links);
+            var assignedToName = assignment.AssignedTo.HasValue && employeeById.TryGetValue(assignment.AssignedTo.Value, out var assignedTo)
+                ? assignedTo
+                : "Unassigned";
+            var assignedByName = employeeById.TryGetValue(assignment.AssignedBy, out var assignedBy)
+                ? assignedBy
+                : $"Employee #{assignment.AssignedBy}";
+            var projectName = assignment.ProjectId.HasValue && projectById.TryGetValue(assignment.ProjectId.Value, out var projectNameValue)
+                ? projectNameValue
+                : "No project";
+
+            return new AssignmentRow(
+                assignment,
+                assignedToName,
+                assignedByName,
+                projectName,
+                links?.Lines ?? 0,
+                links?.Quantity ?? 0);
+        });
+
+        var term = searchText.Trim();
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            rows = rows.Where(row =>
+                Contains(row.Assignment.Descipriton, term) ||
+                Contains(row.AssignedToName, term) ||
+                Contains(row.AssignedByName, term) ||
+                Contains(row.ProjectName, term));
+        }
+
+        rows = missionFilter switch
+        {
+            "mission" => rows.Where(r => r.Assignment.OnMission),
+            "not-mission" => rows.Where(r => !r.Assignment.OnMission),
+            _ => rows
+        };
+
+        filteredAssignments = rows
+            .OrderByDescending(r => r.Assignment.Date)
+            .ThenBy(r => r.AssignedToName)
+            .ToList();
+    }
+
+    private void OpenCreateModal()
+    {
+        isEditMode = false;
+        editingAssignmentId = null;
+        assignmentError = null;
+        assignmentEditor = CreateDefaultAssignment();
+
+        if (employees.Count > 0)
+        {
+            assignmentEditor.AssignedBy = employees[0].Id;
+        }
+
+        showAssignmentModal = true;
+    }
+
+    private void OpenEditModal(Assignment assignment)
+    {
+        isEditMode = true;
+        editingAssignmentId = assignment.Id;
+        assignmentError = null;
+        assignmentEditor = CloneAssignment(assignment);
+        showAssignmentModal = true;
+    }
+
+    private void OpenMaterialsModal(AssignmentRow row)
+    {
+        selectedAssignment = row.Assignment;
+        selectedMaterielId = null;
+        selectedMaterielQuantity = 1;
+        materialsError = null;
+        showMaterialsModal = true;
+    }
+
+    private void AskDelete(Assignment assignment)
+    {
+        deleteTarget = assignment;
+        showDeleteModal = true;
+    }
+
+    private void CloseAssignmentModal()
+    {
+        showAssignmentModal = false;
+        assignmentError = null;
+    }
+
+    private void CloseMaterialsModal()
+    {
+        showMaterialsModal = false;
+        selectedAssignment = null;
+        materialsError = null;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        deleteTarget = null;
+    }
+
+    private void OnAssignedToChanged(ChangeEventArgs args)
+    {
+        assignmentEditor.AssignedTo = ParseNullableInt(args.Value?.ToString());
+    }
+
+    private void OnAssignedByChanged(ChangeEventArgs args)
+    {
+        assignmentEditor.AssignedBy = ParseRequiredInt(args.Value?.ToString());
+    }
+
+    private void OnProjectChanged(ChangeEventArgs args)
+    {
+        assignmentEditor.ProjectId = ParseNullableInt(args.Value?.ToString());
+    }
+
+    private void OnSelectedMaterielChanged(ChangeEventArgs args)
+    {
+        selectedMaterielId = ParseNullableInt(args.Value?.ToString());
+    }
+
+    private async Task SaveAssignmentAsync()
+    {
+        if (!ValidateAssignment(out var validationError))
+        {
+            assignmentError = validationError;
+            return;
+        }
+
+        assignmentError = null;
+        var payload = CloneAssignment(assignmentEditor);
+        payload.Descipriton = payload.Descipriton.Trim();
+
+        try
+        {
+            if (isEditMode && editingAssignmentId.HasValue)
+            {
+                await AssignmentService.UpdateAssignment(editingAssignmentId.Value, payload);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Assignment updated",
+                    Detail = "Assignment details were updated successfully.",
+                    Duration = 3000
+                });
+            }
+            else
+            {
+                await AssignmentService.CreateAssignment(payload);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Assignment created",
+                    Detail = "Assignment was created successfully.",
+                    Duration = 3000
+                });
+            }
+
+            CloseAssignmentModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            assignmentError = $"Unable to save assignment: {ex.Message}";
+        }
+    }
+
+    private async Task AddOrIncreaseLinkAsync()
+    {
+        if (selectedAssignment is null)
+        {
+            return;
+        }
+
+        if (!selectedMaterielId.HasValue || selectedMaterielId.Value <= 0)
+        {
+            materialsError = "Please select a material.";
+            return;
+        }
+
+        if (selectedMaterielQuantity <= 0)
+        {
+            materialsError = "Quantity must be greater than zero.";
+            return;
+        }
+
+        if (SelectedMaterielAvailable > 0 && selectedMaterielQuantity > SelectedMaterielAvailable)
+        {
+            materialsError = $"Requested quantity exceeds available stock ({SelectedMaterielAvailable}).";
+            return;
+        }
+
+        materialsError = null;
+
+        try
+        {
+            var existing = assignmentMateriels.FirstOrDefault(am =>
+                am.AssignmentId == selectedAssignment.Id &&
+                am.MaterielId == selectedMaterielId.Value);
+
+            if (existing is null)
+            {
+                var newLink = new AssignmentMateriel
+                {
+                    AssignmentId = selectedAssignment.Id,
+                    MaterielId = selectedMaterielId.Value,
+                    Qte = selectedMaterielQuantity
+                };
+
+                await AssignmentMaterielService.CreateAssignmentMateriel(newLink);
+            }
+            else
+            {
+                var update = CloneAssignmentMateriel(existing);
+                update.Qte += selectedMaterielQuantity;
+                await AssignmentMaterielService.UpdateAssignmentMateriel(existing.MaterielId, existing.AssignmentId, update);
+            }
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Material linked",
+                Detail = "Assignment material links were updated.",
+                Duration = 2500
+            });
+
+            var assignmentId = selectedAssignment.Id;
+            await ReloadAsync();
+            selectedAssignment = assignments.FirstOrDefault(a => a.Id == assignmentId);
+            showMaterialsModal = selectedAssignment is not null;
+            selectedMaterielId = null;
+            selectedMaterielQuantity = 1;
+        }
+        catch (Exception ex)
+        {
+            materialsError = $"Unable to update assignment materials: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteLinkAsync(AssignmentMateriel link)
+    {
+        try
+        {
+            await AssignmentMaterielService.DeleteAssignmentMateriel(link.MaterielId, link.AssignmentId);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Link removed",
+                Detail = "Material was unlinked from assignment.",
+                Duration = 2500
+            });
+
+            var assignmentId = link.AssignmentId;
+            await ReloadAsync();
+            selectedAssignment = assignments.FirstOrDefault(a => a.Id == assignmentId);
+            showMaterialsModal = selectedAssignment is not null;
+        }
+        catch (Exception ex)
+        {
+            materialsError = $"Unable to remove material link: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteAssignmentAsync()
+    {
+        if (deleteTarget is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var links = assignmentMateriels.Where(am => am.AssignmentId == deleteTarget.Id).ToList();
+            foreach (var link in links)
+            {
+                await AssignmentMaterielService.DeleteAssignmentMateriel(link.MaterielId, link.AssignmentId);
+            }
+
+            await AssignmentService.DeleteAssignment(deleteTarget.Id);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Assignment deleted",
+                Detail = "Assignment and linked records were deleted.",
+                Duration = 3000
+            });
+
+            CloseDeleteModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Delete failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
+
+    private bool ValidateAssignment(out string? error)
+    {
+        if (assignmentEditor.AssignedBy <= 0)
+        {
+            error = "Assigned By is required.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(assignmentEditor.Descipriton))
+        {
+            error = "Description is required.";
+            return false;
+        }
+
+        if (assignmentEditor.RestoreDate.HasValue &&
+            assignmentEditor.RestoreDateLimit.HasValue &&
+            assignmentEditor.RestoreDate.Value < assignmentEditor.RestoreDateLimit.Value)
+        {
+            error = "Restore Date cannot be before Restore Date Limit.";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    private string GetMaterielName(int materielId)
+    {
+        var material = materiels.FirstOrDefault(m => m.Id == materielId);
+        return material?.MaterielName ?? $"Material #{materielId}";
+    }
+
+    private string GetMaterielType(int materielId)
+    {
+        var material = materiels.FirstOrDefault(m => m.Id == materielId);
+        return material?.Type ?? "-";
+    }
+
+    private static bool Contains(string? source, string term) =>
+        !string.IsNullOrWhiteSpace(source) &&
+        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+    private static Assignment CreateDefaultAssignment() =>
+        new()
+        {
+            Date = DateTime.Today,
+            Descipriton = string.Empty,
+            OnMission = false,
+            AssignedBy = 0
+        };
+
+    private static Assignment CloneAssignment(Assignment source) =>
+        new()
+        {
+            Id = source.Id,
+            AssignedTo = source.AssignedTo,
+            AssignedBy = source.AssignedBy,
+            ProjectId = source.ProjectId,
+            Date = source.Date,
+            Descipriton = source.Descipriton,
+            OnMission = source.OnMission,
+            RestoreDateLimit = source.RestoreDateLimit,
+            RestoreDate = source.RestoreDate
+        };
+
+    private static AssignmentMateriel CloneAssignmentMateriel(AssignmentMateriel source) =>
+        new()
+        {
+            Id = source.Id,
+            AssignmentId = source.AssignmentId,
+            MaterielId = source.MaterielId,
+            Qte = source.Qte
+        };
+
+    private static string ToNullableIntValue(int? value) => value?.ToString() ?? string.Empty;
+
+    private static int? ParseNullableInt(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return int.TryParse(value, out var parsed) ? parsed : null;
+    }
+
+    private static int ParseRequiredInt(string? value)
+    {
+        return int.TryParse(value, out var parsed) ? parsed : 0;
+    }
+
+    private sealed record AssignmentRow(
+        Assignment Assignment,
+        string AssignedToName,
+        string AssignedByName,
+        string ProjectName,
+        int LinkedMaterialLines,
+        int LinkedMaterialQuantity);
+}

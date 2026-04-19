@@ -1,0 +1,296 @@
+@using ITStockM.WebApi.Services
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject NotificationService NotificationService
+
+<div class="gemini-fab" @onclick="ToggleChatAsync" title="Open AI Chat">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+</div>
+
+@if (showChatModal)
+{
+    <div class="gemini-chat-modal-overlay" @onclick="CloseChatAsync"></div>
+    <div class="gemini-chat-modal" @onclick:stopPropagation="true">
+        <div class="chat-header">
+            <h3>Gemini AI Assistant</h3>
+            <button type="button" class="chat-close-btn" @onclick="CloseChatAsync" aria-label="Close chat">×</button>
+        </div>
+
+        <div class="chat-messages" @ref="messagesContainer">
+            @if (localMessages.Count == 0)
+            {
+                <div class="chat-empty-state">
+                    <p>Start a conversation with Gemini AI</p>
+                </div>
+            }
+
+            @foreach (var msg in localMessages)
+            {
+                <div class="chat-message @(msg.Sender == "user" ? "chat-message-user" : "chat-message-assistant")">
+                    <div class="message-content">@msg.Content</div>
+                    <span class="message-time">@msg.Timestamp.ToString("HH:mm")</span>
+                </div>
+            }
+
+            @if (isLoading)
+            {
+                <div class="chat-message chat-message-assistant">
+                    <div class="message-content">
+                        <div class="typing-indicator">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(chatError))
+        {
+            <div class="chat-error">
+                <small>⚠️ @chatError</small>
+            </div>
+        }
+
+        <div class="chat-input-group">
+            <input type="text"
+                   class="chat-input"
+                   placeholder="Type a message..."
+                   @bind="messageInput"
+                   @bind:event="oninput"
+                   @onkeypress="OnKeyPressAsync"
+                   disabled="@isLoading"
+                   maxlength="500" />
+            <button type="button"
+                    class="chat-send-btn"
+                    @onclick="SendMessageAsync"
+                    disabled="@(isLoading || string.IsNullOrWhiteSpace(messageInput))"
+                    aria-label="Send message">
+                @if (isLoading)
+                {
+                    <span>...</span>
+                }
+                else
+                {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                }
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private bool showChatModal = false;
+    private string messageInput = string.Empty;
+    private string? chatError;
+    private bool isLoading = false;
+    private ElementReference messagesContainer;
+
+    // Local message list for UI - THIS IS THE KEY FIX
+    private List<ChatMessage> localMessages = new();
+
+    private async Task ToggleChatAsync()
+    {
+        showChatModal = !showChatModal;
+        if (showChatModal)
+        {
+            await Task.Delay(100);
+            await ScrollToBottomAsync();
+        }
+    }
+
+    private async Task CloseChatAsync()
+    {
+        showChatModal = false;
+    }
+
+    private async Task SendMessageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(messageInput) || isLoading)
+        {
+            return;
+        }
+
+        chatError = null;
+        isLoading = true;
+        var userMessage = messageInput;
+
+        // Add user message to local UI immediately
+        localMessages.Add(new ChatMessage
+        {
+            Sender = "user",
+            Content = userMessage,
+            Timestamp = DateTime.Now
+        });
+
+        messageInput = string.Empty;
+        await ScrollToBottomAsync();
+        StateHasChanged();
+
+        try
+        {
+            var request = new { message = userMessage };
+            var baseUri = NavigationManager.BaseUri.TrimEnd('/');
+            var uri = $"{baseUri}/api/GeminiChat/send";
+            var response = await Http.PostAsJsonAsync(uri, request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                chatError = ExtractErrorMessageFromApiResponse(response.StatusCode.ToString(), errorContent);
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Chat Error",
+                    Detail = chatError,
+                    Duration = 4000
+                });
+
+                // Remove the user message if API failed
+                localMessages.RemoveAt(localMessages.Count - 1);
+                return;
+            }
+
+            var jsonContent = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<ChatResponseModel>(
+                jsonContent,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            // Add AI response to local UI
+            if (result != null && result.Success && !string.IsNullOrWhiteSpace(result.Message))
+            {
+                localMessages.Add(new ChatMessage
+                {
+                    Sender = "assistant",
+                    Content = result.Message,
+                    Timestamp = DateTime.Now
+                });
+                await ScrollToBottomAsync();
+            }
+            else if (result != null && !result.Success)
+            {
+                chatError = result.Error ?? "Unknown error occurred";
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Chat Error",
+                    Detail = chatError,
+                    Duration = 4000
+                });
+            }
+            else
+            {
+                chatError = "Invalid response from server";
+            }
+        }
+        catch (Exception ex)
+        {
+            chatError = $"Connection error: {ex.Message}";
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Connection Error",
+                Detail = ex.Message,
+                Duration = 4000
+            });
+
+            // Remove the user message if API failed
+            if (localMessages.Count > 0 && localMessages.Last().Sender == "user")
+            {
+                localMessages.RemoveAt(localMessages.Count - 1);
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+            await ScrollToBottomAsync();
+        }
+    }
+
+    private async Task OnKeyPressAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !isLoading)
+        {
+            await SendMessageAsync();
+        }
+    }
+
+    private async Task ScrollToBottomAsync()
+    {
+        try
+        {
+            if (messagesContainer.Context != null)
+            {
+                await Task.Delay(50);
+                await messagesContainer.FocusAsync();
+            }
+        }
+        catch
+        {
+            // Ignore scroll errors
+        }
+    }
+
+    private static string ExtractErrorMessageFromApiResponse(string status, string? payload)
+    {
+        if (string.IsNullOrWhiteSpace(payload))
+        {
+            return $"Error {status}";
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("error", out var errorNode) &&
+                errorNode.GetString() is { Length: > 0 } error)
+            {
+                return error;
+            }
+
+            if (root.TryGetProperty("details", out var detailsNode) &&
+                detailsNode.GetString() is { Length: > 0 } details)
+            {
+                return details;
+            }
+
+            if (root.TryGetProperty("message", out var messageNode) &&
+                messageNode.GetString() is { Length: > 0 } message)
+            {
+                return message;
+            }
+        }
+        catch
+        {
+            // Ignore parsing errors and fallback to plain payload.
+        }
+
+        return payload;
+    }
+
+    // ChatMessage class for local use
+    private class ChatMessage
+    {
+        public string Sender { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; } = DateTime.Now;
+    }
+
+    private class ChatResponseModel
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public int MessageCount { get; set; }
+        public string? Error { get; set; }
+    }
+}

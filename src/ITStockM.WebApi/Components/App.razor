@@ -1,0 +1,32 @@
+@inject NavigationManager NavigationManager
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="@NavigationManager.BaseUri" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/material-base.css?v=@StaticAssetVersion" />
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/material.css?v=@StaticAssetVersion" />
+    <!-- Consolidated Global Stylesheet (replaces site.css + ui-redesign-foundation.css + pages.css) -->
+    <link rel="stylesheet" href="css/app.css?v=@StaticAssetVersion" />
+    <link rel="stylesheet" href="ITStockM.WebApi.styles.css?v=@StaticAssetVersion" />
+    <link rel="icon" href="IconAsteel.ico" />
+    <HeadOutlet @rendermode="@InteractiveServer" />
+</head>
+
+<body class="theme-dark">
+    <Routes @rendermode="@InteractiveServer" />
+    <script src="_framework/blazor.web.js"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)"></script>
+    <script src="js/site.js?v=@StaticAssetVersion"></script>
+</body>
+
+</html>
+
+@code {
+    private static readonly string StaticAssetVersion = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+}

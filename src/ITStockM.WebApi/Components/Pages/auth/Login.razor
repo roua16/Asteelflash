@@ -1,0 +1,92 @@
+﻿@page "/login"
+@attribute [AllowAnonymous]
+@if (isChecking)
+{
+    <div class="login-page-loading">Loading ...</div>
+}
+else
+{
+    <div class="login-page">
+        <div class="login-watermark" aria-hidden="true">AsteelFlash</div>
+        <div class="login-container">
+            <section class="login-card" aria-labelledby="loginTitle">
+                <header class="login-card-brand">
+                    <img src="images/logoAsteel.png" alt="AsteelFlash Logo" class="brand-logo" />
+                    <p class="brand-kicker">AsteelFlash</p>
+                    <h1 class="brand-title">IT Inventory Management System</h1>
+                    <p class="brand-subtitle">Secure access to your workspace</p>
+                </header>
+
+                <div class="login-card-body">
+                    <div class="login-header">
+                        <h2 id="loginTitle" class="login-title">Sign In</h2>
+                        <p class="login-subtitle">Use your company credentials to access your dashboard.</p>
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="false" Variant="Variant.Flat" Shade="Shade.Lighter">
+                                @errorMessage
+                            </RadzenAlert>
+                        }
+                    </div>
+
+                    <EditForm FormName="login-form" class="login-form" Model="@loginModel" OnValidSubmit="@HandleLogin" OnInvalidSubmit="@HandleInvalidLoginSubmit">
+                        <DataAnnotationsValidator />
+
+                        <div class="field-group">
+                            <label for="email">Email Address</label>
+                            <div class="input-with-icon">
+                                <span class="input-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M4 6.75H20C20.6904 6.75 21.25 7.30964 21.25 8V16C21.25 16.6904 20.6904 17.25 20 17.25H4C3.30964 17.25 2.75 16.6904 2.75 16V8C2.75 7.30964 3.30964 6.75 4 6.75Z" stroke="currentColor" stroke-width="1.7" />
+                                        <path d="M3.25 8L12 13.75L20.75 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </span>
+                                <InputText id="email" type="email" @bind-Value="loginModel.Email" class="form-control auth-input" placeholder="name@company.com" autocomplete="username" required />
+                            </div>
+                            <ValidationMessage For="@(() => loginModel.Email)" class="validation-message" />
+                        </div>
+
+                        <div class="field-group">
+                            <label for="password">Password</label>
+                            <div class="input-with-icon">
+                                <span class="input-icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M7.25 10V7.5C7.25 4.87665 9.37665 2.75 12 2.75C14.6234 2.75 16.75 4.87665 16.75 7.5V10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                                        <path d="M5.5 10.25H18.5C19.1904 10.25 19.75 10.8096 19.75 11.5V18.5C19.75 19.1904 19.1904 19.75 18.5 19.75H5.5C4.80964 19.75 4.25 19.1904 4.25 18.5V11.5C4.25 10.8096 4.80964 10.25 5.5 10.25Z" stroke="currentColor" stroke-width="1.7" />
+                                        <circle cx="12" cy="14.5" r="1.2" fill="currentColor" />
+                                    </svg>
+                                </span>
+                                <InputText id="password" type="password" @bind-Value="loginModel.Password" class="form-control auth-input" placeholder="Enter your password" autocomplete="current-password" required />
+                            </div>
+                            <ValidationMessage For="@(() => loginModel.Password)" class="validation-message" />
+                        </div>
+
+                        <div class="options-row">
+                            <label class="remember-me" for="rememberMe">
+                                <InputCheckbox id="rememberMe" @bind-Value="rememberMe" />
+                                <span>Remember me</span>
+                            </label>
+                            <span class="support-copy">Access is managed by your administrator</span>
+                        </div>
+
+                        <button type="submit" class="login-button" disabled="@isSubmitting" aria-busy="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <span class="button-spinner" aria-hidden="true"></span>
+                                <span>Signing In...</span>
+                            }
+                            else
+                            {
+                                <span>Sign In</span>
+                            }
+                        </button>
+
+                        <p class="login-footer">
+                            Need access? Contact your system administrator.
+                        </p>
+                    </EditForm>
+                </div>
+            </section>
+        </div>
+    </div>
+}

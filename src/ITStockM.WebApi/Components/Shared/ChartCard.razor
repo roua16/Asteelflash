@@ -1,0 +1,62 @@
+<section class="dashboard-section chart-card @ToneClass @SectionClass">
+    <div class="section-header-row">
+        <div class="chart-card-title">
+            <span class="chart-title-icon @IconClass">
+                <RadzenIcon Icon="@Icon" />
+            </span>
+            <div>
+                <h2 class="section-title">@Title</h2>
+                @if (!string.IsNullOrWhiteSpace(Subtitle))
+                {
+                    <p class="section-subtitle">@Subtitle</p>
+                }
+            </div>
+        </div>
+        @if (HeaderActions is not null)
+        {
+            <div class="chart-card-header-actions">
+                @HeaderActions
+            </div>
+        }
+    </div>
+
+    <div class="chart-card-content">
+        @ChildContent
+    </div>
+
+    @if (FooterContent is not null)
+    {
+        <div class="chart-card-footer">
+            @FooterContent
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Icon { get; set; } = string.Empty;
+
+    [Parameter]
+    public string IconClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    [Parameter]
+    public string SectionClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ToneClass { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; set; } = default!;
+
+    [Parameter]
+    public RenderFragment? HeaderActions { get; set; }
+
+    [Parameter]
+    public RenderFragment? FooterContent { get; set; }
+}
