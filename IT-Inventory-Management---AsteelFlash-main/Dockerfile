@@ -2,17 +2,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy csproj and restore as distinct layers
-COPY Directory.Packages.props ./
-COPY src/ITStockM.WebApi/ITStockM.WebApi.csproj src/ITStockM.WebApi/
-COPY src/ITStockM.Application/ITStockM.Application.csproj src/ITStockM.Application/
-COPY src/ITStockM.Infrastructure/ITStockM.Infrastructure.csproj src/ITStockM.Infrastructure/
-COPY src/ITStockM.Domain/ITStockM.Domain.csproj src/ITStockM.Domain/
+# Copy full source first so restore can always resolve centrally-managed package versions
+COPY . ./
 RUN dotnet restore --disable-parallel --verbosity normal ./src/ITStockM.WebApi/ITStockM.WebApi.csproj
 
-# Copy everything else and publish
-COPY . ./
-RUN dotnet publish ./src/ITStockM.WebApi/ITStockM.WebApi.csproj -c Release -o /app/publish /p:UseAppHost=false
+# Publish
+RUN dotnet publish ./src/ITStockM.WebApi/ITStockM.WebApi.csproj -c Release -o /app/publish /p:UseAppHost=false --no-restore
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
