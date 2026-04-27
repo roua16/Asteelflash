@@ -37,8 +37,6 @@ namespace ITStockM.Components.Layout
 
         protected bool inventoryExpanded = true;
 
-        protected bool lifecycleExpanded = true;
-
         protected bool purchasingExpanded = true;
 
         protected bool archivesExpanded = false;
@@ -109,7 +107,6 @@ namespace ITStockM.Components.Layout
 
             coreExpanded = false;
             inventoryExpanded = false;
-            lifecycleExpanded = false;
             purchasingExpanded = false;
             archivesExpanded = false;
             adminExpanded = false;
@@ -123,7 +120,6 @@ namespace ITStockM.Components.Layout
             {
                 "core" => coreExpanded,
                 "inventory" => inventoryExpanded,
-                "lifecycle" => lifecycleExpanded,
                 "purchasing" => purchasingExpanded,
                 "archives" => archivesExpanded,
                 "admin" => adminExpanded,
@@ -140,9 +136,6 @@ namespace ITStockM.Components.Layout
                     break;
                 case "inventory":
                     inventoryExpanded = expanded;
-                    break;
-                case "lifecycle":
-                    lifecycleExpanded = expanded;
                     break;
                 case "purchasing":
                     purchasingExpanded = expanded;

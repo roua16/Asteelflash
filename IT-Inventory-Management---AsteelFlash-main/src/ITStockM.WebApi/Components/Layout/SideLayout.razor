@@ -92,36 +92,7 @@
             <div class="menu-links">
                 <SidebarItem Roles="Admin,Purchasing,IT" Text="Materials View" Icon="inventory_2" Path="/materials-view-interface" Compact="@(!sidebarExpanded)" />
                 <SidebarItem Roles="Admin,IT,Infrastructure,Employee" Text="Materials Assignments" Icon="assignment" Path="/assignments-interface" Compact="@(!sidebarExpanded)" />
-                <SidebarItem Roles="Admin,PDR,Purchasing" Text="Materials View (PDR)" Icon="inventory" Path="/materials-view-interface-pdr" Compact="@(!sidebarExpanded)" />
-            </div>
-        </div>
-
-        <div class="menu-group @MenuGroupStateClass(lifecycleExpanded)">
-            <button type="button" class="menu-group-toggle" aria-expanded="@lifecycleExpanded" @onclick='() => ToggleMenuGroup("lifecycle")' disabled="@(!sidebarExpanded)">
-                <span class="menu-group-meta">
-                    <span class="menu-group-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M4 4v6h6" />
-                            <path d="M20 20v-6h-6" />
-                            <path d="M20 10a8 8 0 0 0-13.66-5.66L4 6" />
-                            <path d="M4 14a8 8 0 0 0 13.66 5.66L20 18" />
-                        </svg>
-                    </span>
-                    @if (sidebarExpanded)
-                    {
-                        <span class="menu-group-title">ASSET LIFECYCLE</span>
-                    }
-                </span>
-                @if (sidebarExpanded)
-                {
-                    <span class="menu-group-chevron"><RadzenIcon Icon="@(lifecycleExpanded ? "expand_less" : "expand_more")" /></span>
-                }
-            </button>
-            <div class="menu-links">
-                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Lifecycle Tracker" Icon="autorenew" Path="/asset-lifecycle" Compact="@(!sidebarExpanded)" />
-                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Maintenance Tickets" Icon="build" Path="/maintenance" Compact="@(!sidebarExpanded)" />
-                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Health Predictions" Icon="monitoring" Path="/asset-predictions" Compact="@(!sidebarExpanded)" />
-                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Infrastructure" Icon="memory" Path="/infra-interface" Compact="@(!sidebarExpanded)" />
+                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Assignment Standby" Icon="hourglass_empty" Path="/materials-view-interface-pdr" Compact="@(!sidebarExpanded)" />
             </div>
         </div>
 
@@ -147,6 +118,8 @@
             </button>
             <div class="menu-links">
                 <SidebarItem Roles="Admin,Purchasing" Text="Purchase Requests" Icon="shopping_cart" Path="/purchase-page" Compact="@(!sidebarExpanded)" />
+                <SidebarItem Roles="Admin,Purchasing" Text="Add Offer" Icon="local_offer" Path="/offers-super-admin" Compact="@(!sidebarExpanded)" />
+                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Infrastructure" Icon="memory" Path="/infra-interface" Compact="@(!sidebarExpanded)" />
                 <SidebarItem Roles="Admin,Purchasing,PDR" Text="Suppliers" Icon="storefront" Path="/suppliers" Compact="@(!sidebarExpanded)" />
                 <SidebarItem Roles="Admin,Purchasing,PDR" Text="Add Delivery Orders" Icon="add_circle" Path="/delivery-order" Compact="@(!sidebarExpanded)" />
                 <SidebarItem Roles="Admin,Purchasing,PDR" Text="Pending Deliveries" Icon="local_shipping" Path="/pending-deliveries" Compact="@(!sidebarExpanded)" />
@@ -214,7 +187,6 @@
                         <SidebarItem Text="Delivery Orders Mats" Icon="receipt" Path="/delivery-order-materiels-super-admin" Compact="@(!sidebarExpanded)" />
                         <SidebarItem Text="Requests" Icon="description" Path="/requests-super-admin" Compact="@(!sidebarExpanded)" />
                         <SidebarItem Text="Employees" Icon="people" Path="/employees-super-admin" Compact="@(!sidebarExpanded)" />
-                        <SidebarItem Text="Offers" Icon="local_offer" Path="/offers-super-admin" Compact="@(!sidebarExpanded)" />
                         <SidebarItem Text="Projects" Icon="work" Path="/projects-super-admin" Compact="@(!sidebarExpanded)" />
                         <SidebarItem Text="Suppliers" Icon="store" Path="/suppliers-super-admin" Compact="@(!sidebarExpanded)" />
                     </div>

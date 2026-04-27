@@ -17,163 +17,26 @@
                 <h1>Purchase Requests</h1>
                 <p class="page-subtitle">Create, review, and progress procurement requests across teams.</p>
             </div>
-            <RadzenButton Icon="add_circle"
-                          Text="New Request"
-                          ButtonStyle="ButtonStyle.Primary"
-                          Shade="Shade.Lighter"
-                          Click="@OpenCreateModal" />
         </div>
     </div>
 
-    <div class="grid-3">
-        <div class="content-section metric-card">
-            <span class="metric-label">Visible Requests</span>
-            <span class="metric-value">@filteredRequests.Count</span>
-        </div>
-        <div class="content-section metric-card">
-            <span class="metric-label">Pending</span>
-            <span class="metric-value text-warning">@filteredRequests.Count(r => IsStatus(r.Status, "Pending"))</span>
-        </div>
-        <div class="content-section metric-card">
-            <span class="metric-label">Approved</span>
-            <span class="metric-value text-primary">@filteredRequests.Count(r => IsStatus(r.Status, "Approved"))</span>
-        </div>
+    <div class="purchase-tabs">
+        <button type="button"
+                class="purchase-tab @(purchaseTab == "new" ? "purchase-tab-active" : "")"
+                @onclick="@(() => purchaseTab = "new")">
+            <span class="material-icons">add_circle</span> New Request
+        </button>
+        <button type="button"
+                class="purchase-tab @(purchaseTab == "list" ? "purchase-tab-active" : "")"
+                @onclick="@(() => purchaseTab = "list")">
+            <span class="material-icons">list_alt</span> View &amp; Accept Requests
+        </button>
     </div>
 
-    <div class="content-section">
-        <div class="page-toolbar">
-            <div class="toolbar-group">
-                <span class="toolbar-label">Search</span>
-                <div class="search-box">
-                    <input type="text"
-                           placeholder="Title, project, employee, status..."
-                           value="@searchText"
-                           @oninput="OnSearchChanged" />
-                </div>
-            </div>
-
-            <div class="toolbar-group">
-                <span class="toolbar-label">Scope</span>
-                <select class="filter-select" value="@scopeFilter" @onchange="OnScopeChanged">
-                    <option value="active">Active</option>
-                    <option value="all">All</option>
-                    <option value="archived">Archived</option>
-                </select>
-            </div>
-
-            <div class="toolbar-group">
-                <span class="toolbar-label">Status</span>
-                <select class="filter-select" value="@statusFilter" @onchange="OnStatusChanged">
-                    <option value="all">All statuses</option>
-                    @foreach (var status in AvailableStatuses)
-                    {
-                        <option value="@status">@status</option>
-                    }
-                </select>
-            </div>
-
-            <div class="toolbar-group toolbar-group-end">
-                <RadzenButton Icon="refresh"
-                              Text="Refresh"
-                              ButtonStyle="ButtonStyle.Light"
-                              Shade="Shade.Lighter"
-                              Click="@ReloadAsync" />
-            </div>
-        </div>
-
-        @if (!string.IsNullOrWhiteSpace(loadError))
-        {
-            <RadzenAlert AlertStyle="AlertStyle.Danger"
-                         Variant="Variant.Flat"
-                         Shade="Shade.Lighter"
-                         Text="@loadError" />
-        }
-
-        @if (isLoading)
-        {
-            <div class="content-placeholder loading">
-                <RadzenIcon Icon="shopping_cart" Style="font-size: 42px;" />
-                <h2>Loading requests...</h2>
-            </div>
-        }
-        else if (filteredRequests.Count == 0)
-        {
-            <div class="content-placeholder">
-                <RadzenIcon Icon="description" Style="font-size: 42px;" />
-                <h2>No matching requests</h2>
-                <p>Adjust filters or create a new request.</p>
-            </div>
-        }
-        else
-        {
-            <RadzenDataGrid Data="@filteredRequests"
-                            TItem="Request"
-                            AllowPaging="true"
-                            AllowSorting="true"
-                            PageSize="10"
-                            Responsive="true"
-                            Class="inventory-grid">
-                <Columns>
-                    <RadzenDataGridColumn TItem="Request" Title="ID">
-                        <Template Context="r">#@r.Id</Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="Request" Property="Title" Title="Title" />
-                    <RadzenDataGridColumn TItem="Request" Title="Employee">
-                        <Template Context="r">@r.Employee?.FullName</Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="Request" Property="ProjectName" Title="Project" />
-                    <RadzenDataGridColumn TItem="Request" Property="MaterialType" Title="Material Type" />
-                    <RadzenDataGridColumn TItem="Request" Title="Date">
-                        <Template Context="r">@r.Date.ToString("yyyy-MM-dd")</Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="Request" Title="Status">
-                        <Template Context="r">
-                            <span class="badge @StatusBadge(r.Status)">@NormalizeStatus(r.Status)</span>
-                        </Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="Request" Title="Actions" Filterable="false" Sortable="false" Width="260px">
-                        <Template Context="r">
-                            <div class="table-actions">
-                                <RadzenButton Icon="edit"
-                                              Size="ButtonSize.Small"
-                                              ButtonStyle="ButtonStyle.Primary"
-                                              Shade="Shade.Lighter"
-                                              Click="@(() => OpenEditModal(r))" />
-                                <RadzenButton Icon="delete"
-                                              Size="ButtonSize.Small"
-                                              ButtonStyle="ButtonStyle.Danger"
-                                              Shade="Shade.Lighter"
-                                              Click="@(() => DeleteRequestAsync(r))" />
-                                @if (ShowAdminStatusTools)
-                                {
-                                    <RadzenButton Icon="check"
-                                                  Size="ButtonSize.Small"
-                                                  ButtonStyle="ButtonStyle.Success"
-                                                  Shade="Shade.Lighter"
-                                                  Click="@(() => SetStatusAsync(r, "Approved"))" />
-                                    <RadzenButton Icon="done_all"
-                                                  Size="ButtonSize.Small"
-                                                  ButtonStyle="ButtonStyle.Light"
-                                                  Shade="Shade.Lighter"
-                                                  Click="@(() => SetStatusAsync(r, "Done"))" />
-                                }
-                            </div>
-                        </Template>
-                    </RadzenDataGridColumn>
-                </Columns>
-            </RadzenDataGrid>
-        }
-    </div>
-</div>
-
-@if (showEditorModal)
-{
-    <div class="modal-overlay" @onclick="CloseEditorModal">
-        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
-            <div class="modal-header">
-                <h2>@(isEditMode ? "Edit Request" : "Create Request")</h2>
-                <button type="button" class="modal-close" @onclick="CloseEditorModal">×</button>
-            </div>
+    @if (purchaseTab == "new")
+    {
+        <div class="content-section">
+            <h2 class="section-title">New Purchase Request</h2>
 
             @if (!string.IsNullOrWhiteSpace(editorError))
             {
@@ -181,6 +44,14 @@
                              Variant="Variant.Flat"
                              Shade="Shade.Lighter"
                              Text="@editorError" />
+            }
+
+            @if (newRequestSuccess)
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Success"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="Request submitted successfully!" />
             }
 
             <EditForm Model="@editorModel" OnValidSubmit="@SaveRequestAsync" class="modal-form">
@@ -216,12 +87,229 @@
                         <label for="req-date">Request Date</label>
                         <InputDate id="req-date" @bind-Value="editorModel.Date" />
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="req-description">Description</label>
+                    <InputTextArea id="req-description" @bind-Value="editorModel.Description" />
+                </div>
+
+                <div class="form-actions">
+                    <RadzenButton Icon="send"
+                                  Text="Submit Request"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Shade="Shade.Lighter"
+                                  ButtonType="ButtonType.Submit" />
+                </div>
+            </EditForm>
+        </div>
+    }
+
+    @if (purchaseTab == "list")
+    {
+        <div class="grid-3">
+            <div class="content-section metric-card">
+                <span class="metric-label">Visible Requests</span>
+                <span class="metric-value">@filteredRequests.Count</span>
+            </div>
+            <div class="content-section metric-card">
+                <span class="metric-label">Pending</span>
+                <span class="metric-value text-warning">@filteredRequests.Count(r => IsStatus(r.Status, "Pending"))</span>
+            </div>
+            <div class="content-section metric-card">
+                <span class="metric-label">Approved</span>
+                <span class="metric-value text-primary">@filteredRequests.Count(r => IsStatus(r.Status, "Approved"))</span>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <div class="page-toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Search</span>
+                    <div class="search-box">
+                        <input type="text"
+                               placeholder="Title, project, employee, status..."
+                               value="@searchText"
+                               @oninput="OnSearchChanged" />
+                    </div>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Scope</span>
+                    <select class="filter-select" value="@scopeFilter" @onchange="OnScopeChanged">
+                        <option value="active">Active</option>
+                        <option value="all">All</option>
+                        <option value="archived">Archived</option>
+                    </select>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Status</span>
+                    <select class="filter-select" value="@statusFilter" @onchange="OnStatusChanged">
+                        <option value="all">All statuses</option>
+                        @foreach (var status in AvailableStatuses)
+                        {
+                            <option value="@status">@status</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="toolbar-group toolbar-group-end">
+                    <RadzenButton Icon="refresh"
+                                  Text="Refresh"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Shade="Shade.Lighter"
+                                  Click="@ReloadAsync" />
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(loadError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@loadError" />
+            }
+
+            @if (isLoading)
+            {
+                <div class="content-placeholder loading">
+                    <RadzenIcon Icon="shopping_cart" Style="font-size: 42px;" />
+                    <h2>Loading requests...</h2>
+                </div>
+            }
+            else if (filteredRequests.Count == 0)
+            {
+                <div class="content-placeholder">
+                    <RadzenIcon Icon="description" Style="font-size: 42px;" />
+                    <h2>No matching requests</h2>
+                    <p>Adjust filters or submit a new request.</p>
+                </div>
+            }
+            else
+            {
+                <RadzenDataGrid Data="@filteredRequests"
+                                TItem="Request"
+                                AllowPaging="true"
+                                AllowSorting="true"
+                                PageSize="10"
+                                Responsive="true"
+                                Class="inventory-grid">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="Request" Title="ID">
+                            <Template Context="r">#@r.Id</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Request" Property="Title" Title="Title" />
+                        <RadzenDataGridColumn TItem="Request" Title="Employee">
+                            <Template Context="r">@r.Employee?.FullName</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Request" Property="ProjectName" Title="Project" />
+                        <RadzenDataGridColumn TItem="Request" Property="MaterialType" Title="Material Type" />
+                        <RadzenDataGridColumn TItem="Request" Title="Date">
+                            <Template Context="r">@r.Date.ToString("yyyy-MM-dd")</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Request" Title="Status">
+                            <Template Context="r">
+                                <span class="badge @StatusBadge(r.Status)">@NormalizeStatus(r.Status)</span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Request" Title="Actions" Filterable="false" Sortable="false" Width="280px">
+                            <Template Context="r">
+                                <div class="table-actions">
+                                    <RadzenButton Icon="edit"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Primary"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => OpenEditModal(r))" />
+                                    <RadzenButton Icon="delete"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Danger"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => DeleteRequestAsync(r))" />
+                                    @if (IsStatus(r.Status, "Pending"))
+                                    {
+                                        <RadzenButton Icon="check_circle"
+                                                      Text="Accept"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Success"
+                                                      Shade="Shade.Lighter"
+                                                      Click="@(() => SetStatusAsync(r, "Approved"))" />
+                                    }
+                                    @if (ShowAdminStatusTools && IsStatus(r.Status, "Approved"))
+                                    {
+                                        <RadzenButton Icon="done_all"
+                                                      Text="Done"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Light"
+                                                      Shade="Shade.Lighter"
+                                                      Click="@(() => SetStatusAsync(r, "Done"))" />
+                                    }
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            }
+        </div>
+    }
+</div>
+
+@if (showEditorModal)
+{
+    <div class="modal-overlay" @onclick="CloseEditorModal">
+        <div class="modal-content modal-content-wide" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>Edit Request</h2>
+                <button type="button" class="modal-close" @onclick="CloseEditorModal">×</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(editorError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@editorError" />
+            }
+
+            <EditForm Model="@editorModel" OnValidSubmit="@SaveRequestAsync" class="modal-form">
+                <DataAnnotationsValidator />
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="edit-req-title">Title</label>
+                        <InputText id="edit-req-title" @bind-Value="editorModel.Title" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-req-project">Project Name</label>
+                        <InputText id="edit-req-project" @bind-Value="editorModel.ProjectName" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-req-type">Material Type</label>
+                        <InputText id="edit-req-type" @bind-Value="editorModel.MaterialType" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-req-employee">Employee</label>
+                        <select id="edit-req-employee" class="filter-select" @bind="editorModel.EmployeeId">
+                            @foreach (var employee in employees)
+                            {
+                                <option value="@employee.Id">@employee.FullName (@employee.Service)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-req-date">Request Date</label>
+                        <InputDate id="edit-req-date" @bind-Value="editorModel.Date" />
+                    </div>
 
                     @if (ShowAdminStatusTools)
                     {
                         <div class="form-group">
-                            <label for="req-status">Status</label>
-                            <select id="req-status" class="filter-select" @bind="editorModel.Status">
+                            <label for="edit-req-status">Status</label>
+                            <select id="edit-req-status" class="filter-select" @bind="editorModel.Status">
                                 @foreach (var status in AvailableStatuses)
                                 {
                                     <option value="@status">@status</option>
@@ -232,8 +320,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="req-description">Description</label>
-                    <InputTextArea id="req-description" @bind-Value="editorModel.Description" />
+                    <label for="edit-req-description">Description</label>
+                    <InputTextArea id="edit-req-description" @bind-Value="editorModel.Description" />
                 </div>
 
                 <div class="form-actions">
@@ -267,7 +355,9 @@
     private bool showEditorModal;
     private bool isEditMode;
     private bool initializedScope;
+    private bool newRequestSuccess;
 
+    private string purchaseTab = "new";
     private string searchText = string.Empty;
     private string statusFilter = "all";
     private string scopeFilter = "active";
@@ -300,6 +390,11 @@
             var employeeList = await EmployeeService.GetEmployeesList();
             employees.Clear();
             employees.AddRange(employeeList.OrderBy(e => e.FullName));
+
+            if (editorModel.EmployeeId <= 0 && employees.Count > 0)
+            {
+                editorModel.EmployeeId = employees[0].Id;
+            }
 
             var requestList = await RequestService.GetRequestsList();
             requests.Clear();
@@ -372,14 +467,14 @@
     private void OpenCreateModal()
     {
         editorError = null;
+        newRequestSuccess = false;
         isEditMode = false;
         editorModel = new RequestEditorModel
         {
             EmployeeId = employees.FirstOrDefault()?.Id ?? 0,
             Date = DateTime.UtcNow.Date,
-            Status = ShowAdminStatusTools ? "Pending" : "Pending"
+            Status = "Pending"
         };
-        showEditorModal = true;
     }
 
     private void OpenEditModal(Request request)
@@ -427,14 +522,21 @@
             {
                 await RequestService.UpdateRequest(editorModel.Id, payload);
                 NotifySuccess("Request updated", $"Request #{editorModel.Id} updated.");
+                CloseEditorModal();
             }
             else
             {
                 await RequestService.CreateRequest(payload);
-                NotifySuccess("Request created", $"{payload.Title} created.");
+                NotifySuccess("Request submitted", $"{payload.Title} submitted successfully.");
+                newRequestSuccess = true;
+                editorModel = new RequestEditorModel
+                {
+                    EmployeeId = employees.FirstOrDefault()?.Id ?? 0,
+                    Date = DateTime.UtcNow.Date,
+                    Status = "Pending"
+                };
             }
 
-            CloseEditorModal();
             await ReloadAsync();
         }
         catch (Exception ex)

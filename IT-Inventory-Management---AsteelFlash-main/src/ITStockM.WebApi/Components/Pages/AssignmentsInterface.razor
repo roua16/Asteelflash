@@ -185,17 +185,49 @@
             <EditForm Model="@assignmentEditor" OnValidSubmit="@SaveAssignmentAsync">
                 <DataAnnotationsValidator />
 
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label for="asg-to">Assigned To (optional)</label>
-                        <select id="asg-to" value="@ToNullableIntValue(assignmentEditor.AssignedTo)" @onchange="OnAssignedToChanged">
-                            <option value="">Unassigned</option>
-                            @foreach (var employee in employees.OrderBy(e => e.FullName))
-                            {
-                                <option value="@employee.Id">@employee.FullName (@employee.Role)</option>
-                            }
-                        </select>
+                <div class="assignment-target-toggle">
+                    <label class="toggle-label">Assign to:</label>
+                    <div class="toggle-group">
+                        <button type="button"
+                                class="toggle-btn @(assignmentTarget == "person" ? "toggle-btn-active" : "")"
+                                @onclick="@(() => SetAssignmentTarget("person"))">
+                            <span class="material-icons">person</span> Person
+                        </button>
+                        <button type="button"
+                                class="toggle-btn @(assignmentTarget == "project" ? "toggle-btn-active" : "")"
+                                @onclick="@(() => SetAssignmentTarget("project"))">
+                            <span class="material-icons">folder</span> Project
+                        </button>
                     </div>
+                </div>
+
+                <div class="grid-2">
+                    @if (assignmentTarget == "person")
+                    {
+                        <div class="form-group">
+                            <label for="asg-to">Assigned To</label>
+                            <select id="asg-to" value="@ToNullableIntValue(assignmentEditor.AssignedTo)" @onchange="OnAssignedToChanged">
+                                <option value="">Select person</option>
+                                @foreach (var employee in employees.OrderBy(e => e.FullName))
+                                {
+                                    <option value="@employee.Id">@employee.FullName (@employee.Role)</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="form-group">
+                            <label for="asg-project">Project</label>
+                            <select id="asg-project" value="@ToNullableIntValue(assignmentEditor.ProjectId)" @onchange="OnProjectChanged">
+                                <option value="">Select project</option>
+                                @foreach (var project in projects.OrderBy(p => p.ProjectName))
+                                {
+                                    <option value="@project.Id">@project.ProjectName</option>
+                                }
+                            </select>
+                        </div>
+                    }
 
                     <div class="form-group">
                         <label for="asg-by">Assigned By</label>
@@ -204,17 +236,6 @@
                             @foreach (var employee in employees.OrderBy(e => e.FullName))
                             {
                                 <option value="@employee.Id">@employee.FullName (@employee.Role)</option>
-                            }
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="asg-project">Project (optional)</label>
-                        <select id="asg-project" value="@ToNullableIntValue(assignmentEditor.ProjectId)" @onchange="OnProjectChanged">
-                            <option value="">No project</option>
-                            @foreach (var project in projects.OrderBy(p => p.ProjectName))
-                            {
-                                <option value="@project.Id">@project.ProjectName</option>
                             }
                         </select>
                     </div>
@@ -409,6 +430,8 @@
     private Assignment? selectedAssignment;
     private Assignment? deleteTarget;
 
+    private string assignmentTarget = "person"; // "person" or "project"
+
     private int? selectedMaterielId;
     private int selectedMaterielQuantity = 1;
 
@@ -557,6 +580,7 @@
         editingAssignmentId = null;
         assignmentError = null;
         assignmentEditor = CreateDefaultAssignment();
+        assignmentTarget = "person";
 
         if (employees.Count > 0)
         {
@@ -572,7 +596,21 @@
         editingAssignmentId = assignment.Id;
         assignmentError = null;
         assignmentEditor = CloneAssignment(assignment);
+        assignmentTarget = assignment.ProjectId.HasValue && !assignment.AssignedTo.HasValue ? "project" : "person";
         showAssignmentModal = true;
+    }
+
+    private void SetAssignmentTarget(string target)
+    {
+        assignmentTarget = target;
+        if (target == "person")
+        {
+            assignmentEditor.ProjectId = null;
+        }
+        else
+        {
+            assignmentEditor.AssignedTo = null;
+        }
     }
 
     private void OpenMaterialsModal(AssignmentRow row)

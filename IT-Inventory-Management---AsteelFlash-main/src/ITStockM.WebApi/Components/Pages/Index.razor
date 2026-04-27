@@ -94,223 +94,103 @@
                     Compact="true" />
             </div>
 
-            <div class="charts-grid">
-                <ChartCard
-                    Title="Inventory by Category"
-                    Subtitle="Current total units by material type"
-                    Icon="donut_small"
-                    IconClass="is-accent"
-                    ToneClass="tone-cyan"
-                    SectionClass="card-elevated card-chart">
-                    <HeaderActions>
-                        <span class="card-kpi">Total units: @TotalInventoryUnits.ToString("N0")</span>
-                    </HeaderActions>
-                    <ChildContent>
-                        @if (InventoryByType.Count == 0)
-                        {
-                            <div class="chart-empty">No inventory data available.</div>
-                        }
-                        else
-                        {
-                            <div class="split-chart-layout inventory-layout">
-                                <div class="chart-shell category-chart-shell">
-                                    <div class="category-chart-wrap">
-                                        <RadzenChart>
-                                            <RadzenDonutSeries Data="@InventoryByType" CategoryProperty="Category" ValueProperty="Value" Title="Units">
-                                                <RadzenSeriesDataLabels Visible="false" />
-                                            </RadzenDonutSeries>
-                                        </RadzenChart>
-                                        <div class="chart-center-kpi">
-                                            <span>Total</span>
-                                            <strong>@TotalInventoryUnits.ToString("N0")</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="legend-panel">
-                                    <h3>Category Share</h3>
-                                    <div class="legend-list">
-                                        @foreach (var item in CategoryBreakdown)
-                                        {
-                                            <div class="legend-item">
-                                                <span class="legend-dot" style="@($"background:{item.Color};")"></span>
-                                                <span class="legend-label">@item.Category</span>
-                                                <span class="legend-value">@item.Value.ToString("N0")</span>
-                                                <span class="legend-percent">@item.Percentage.ToString("0.#")%</span>
-                                                <div class="legend-meter">
-                                                    <span style="@($"width:{item.Percentage.ToString("0.#", CultureInfo.InvariantCulture)}%; background:{item.Color};")"></span>
+            <ChartCard
+                Title="Monthly Assignments"
+                Subtitle="Rolling 12-month assignment volume"
+                Icon="insert_chart"
+                IconClass="is-success"
+                ToneClass="tone-emerald"
+                SectionClass="card-elevated card-chart card-chart-full">
+                <HeaderActions>
+                    <span class="card-kpi">Current month: @CurrentMonthAssignments</span>
+                </HeaderActions>
+                <ChildContent>
+                    @if (MonthlyTrendPoints.Count == 0)
+                    {
+                        <div class="chart-empty">No assignment history available.</div>
+                    }
+                    else
+                    {
+                        <div class="chart-shell assignments-chart-shell assignments-chart-full">
+                            <RadzenChart Style="height:320px">
+                                <RadzenColumnSeries Data="@MonthlyTrendPoints" CategoryProperty="Month" ValueProperty="Assignments" Title="Assignments">
+                                    <RadzenSeriesDataLabels Visible="false" />
+                                </RadzenColumnSeries>
+                                <RadzenLineSeries Data="@MonthlyTrendPoints" CategoryProperty="Month" ValueProperty="Trend" Title="Trend" />
+                                <RadzenColumnOptions Radius="8" />
+                                <RadzenValueAxis>
+                                    <RadzenGridLines Visible="true" />
+                                </RadzenValueAxis>
+                                <RadzenCategoryAxis>
+                                    <RadzenGridLines Visible="false" />
+                                </RadzenCategoryAxis>
+                            </RadzenChart>
+                        </div>
+                    }
+                </ChildContent>
+                <FooterContent>
+                    <div class="chart-metrics">
+                        <div class="metric-pill">
+                            <span class="metric-label">Peak</span>
+                            <strong>@PeakMonthAssignments (@PeakMonthLabel)</strong>
+                        </div>
+                        <div class="metric-pill">
+                            <span class="metric-label">Average</span>
+                            <strong>@AverageMonthlyAssignments.ToString("0.0", CultureInfo.InvariantCulture)/mo</strong>
+                        </div>
+                    </div>
+                </FooterContent>
+            </ChartCard>
+
+            <ChartCard
+                Title="Top Materials"
+                Subtitle="Top 4 highest stocked items by total units"
+                Icon="trending_up"
+                IconClass="is-warning"
+                ToneClass="tone-amber"
+                SectionClass="card-elevated">
+                @if (TopInventory.Count == 0)
+                {
+                    <div class="chart-empty">No materials found.</div>
+                }
+                else
+                {
+                    <div class="table-shell">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Material</th>
+                                    <th>Type</th>
+                                    <th>Total</th>
+                                    <th>Share</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var material in TopInventory)
+                                {
+                                    <tr>
+                                        <td>@material.MaterielName</td>
+                                        <td>@material.Type</td>
+                                        <td>@material.Total</td>
+                                        <td>
+                                            <div class="table-share">
+                                                <span>@GetMaterialShare(material).ToString("0.#")%</span>
+                                                <div class="share-bar">
+                                                    <span style="@GetMaterialShareStyle(material)"></span>
                                                 </div>
                                             </div>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                    </ChildContent>
-                </ChartCard>
-
-                <ChartCard
-                    Title="Monthly Assignments"
-                    Subtitle="Rolling 12-month assignment volume"
-                    Icon="insert_chart"
-                    IconClass="is-success"
-                    ToneClass="tone-emerald"
-                    SectionClass="card-elevated card-chart">
-                    <HeaderActions>
-                        <span class="card-kpi">Current month: @CurrentMonthAssignments</span>
-                    </HeaderActions>
-                    <ChildContent>
-                        @if (MonthlyTrendPoints.Count == 0)
-                        {
-                            <div class="chart-empty">No assignment history available.</div>
-                        }
-                        else
-                        {
-                            <div class="chart-shell assignments-chart-shell">
-                                <RadzenChart>
-                                    <RadzenColumnSeries Data="@MonthlyTrendPoints" CategoryProperty="Month" ValueProperty="Assignments" Title="Assignments">
-                                        <RadzenSeriesDataLabels Visible="false" />
-                                    </RadzenColumnSeries>
-                                    <RadzenLineSeries Data="@MonthlyTrendPoints" CategoryProperty="Month" ValueProperty="Trend" Title="Trend" />
-                                    <RadzenColumnOptions Radius="8" />
-                                    <RadzenValueAxis>
-                                        <RadzenGridLines Visible="true" />
-                                    </RadzenValueAxis>
-                                    <RadzenCategoryAxis>
-                                        <RadzenGridLines Visible="false" />
-                                    </RadzenCategoryAxis>
-                                </RadzenChart>
-                            </div>
-                        }
-                    </ChildContent>
-                    <FooterContent>
-                        <div class="chart-metrics">
-                            <div class="metric-pill">
-                                <span class="metric-label">Peak</span>
-                                <strong>@PeakMonthAssignments (@PeakMonthLabel)</strong>
-                            </div>
-                            <div class="metric-pill">
-                                <span class="metric-label">Average</span>
-                                <strong>@AverageMonthlyAssignments.ToString("0.0", CultureInfo.InvariantCulture)/mo</strong>
-                            </div>
-                        </div>
-                    </FooterContent>
-                </ChartCard>
-            </div>
-
-            <div class="details-grid">
-                <ChartCard
-                    Title="Top Materials"
-                    Subtitle="Highest stocked items by total units"
-                    Icon="trending_up"
-                    IconClass="is-warning"
-                    ToneClass="tone-amber"
-                    SectionClass="card-elevated">
-                    @if (TopInventory.Count == 0)
-                    {
-                        <div class="chart-empty">No materials found.</div>
-                    }
-                    else
-                    {
-                        <div class="table-shell">
-                            <table class="dashboard-table">
-                                <thead>
-                                    <tr>
-                                        <th>Material</th>
-                                        <th>Type</th>
-                                        <th>Total</th>
-                                        <th>Share</th>
-                                        <th>Status</th>
+                                        </td>
+                                        <td>
+                                            <span class="stock-badge @GetStatusClass(material.StatusBadge)">@material.StatusBadge</span>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var material in TopInventory)
-                                    {
-                                        <tr>
-                                            <td>@material.MaterielName</td>
-                                            <td>@material.Type</td>
-                                            <td>@material.Total</td>
-                                            <td>
-                                                <div class="table-share">
-                                                    <span>@GetMaterialShare(material).ToString("0.#")%</span>
-                                                    <div class="share-bar">
-                                                        <span style="@GetMaterialShareStyle(material)"></span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="stock-badge @GetStatusClass(material.StatusBadge)">@material.StatusBadge</span>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </ChartCard>
-
-                <ChartCard
-                    Title="Stock Health"
-                    Subtitle="Distribution by inventory status"
-                    Icon="monitor_heart"
-                    IconClass="is-info"
-                    ToneClass="tone-indigo"
-                    SectionClass="card-elevated">
-                    @if (StockHealthBreakdown.Count == 0)
-                    {
-                        <div class="chart-empty">No stock health data available.</div>
-                    }
-                    else
-                    {
-                        <div class="split-chart-layout stock-health-layout">
-                            <div class="chart-shell stock-health-chart-shell">
-                                <RadzenChart>
-                                    <RadzenPieSeries Data="@StockHealthBreakdown" CategoryProperty="Category" ValueProperty="Value" Title="Items">
-                                        <RadzenSeriesDataLabels Visible="true" />
-                                    </RadzenPieSeries>
-                                </RadzenChart>
-                            </div>
-                            <div class="status-cards">
-                                <div class="status-card">
-                                    <span class="status-indicator"></span>
-                                    <RadzenIcon Icon="check_circle" class="status-card-icon" />
-                                    <div>
-                                        <strong>Healthy</strong>
-                                        <span class="status-text">@HealthyStockCount item(s)</span>
-                                        <span class="status-rate">@GetHealthPercentage(HealthyStockCount).ToString("0.#")%</span>
-                                        <div class="health-bar">
-                                            <span style="@GetHealthWidthStyle(HealthyStockCount)"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="status-card">
-                                    <span class="status-indicator"></span>
-                                    <RadzenIcon Icon="priority_high" class="status-card-icon" />
-                                    <div>
-                                        <strong>Low</strong>
-                                        <span class="status-text">@LowStockCount item(s)</span>
-                                        <span class="status-rate">@GetHealthPercentage(LowStockCount).ToString("0.#")%</span>
-                                        <div class="health-bar">
-                                            <span style="@GetHealthWidthStyle(LowStockCount)"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="status-card">
-                                    <span class="status-indicator"></span>
-                                    <RadzenIcon Icon="error" class="status-card-icon" />
-                                    <div>
-                                        <strong>Critical</strong>
-                                        <span class="status-text">@CriticalStockCount item(s)</span>
-                                        <span class="status-rate">@GetHealthPercentage(CriticalStockCount).ToString("0.#")%</span>
-                                        <div class="health-bar">
-                                            <span style="@GetHealthWidthStyle(CriticalStockCount)"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </ChartCard>
-            </div>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </ChartCard>
 
             <ChartCard
                 Title="Quick Actions"
@@ -370,17 +250,12 @@
     private List<MonthlyAssignmentDto>? MonthlyData;
 
     private List<DashboardMaterialItemDto> TopInventory = [];
-    private List<ChartSlice> InventoryByType = [];
-    private List<ChartSlice> StockHealthBreakdown = [];
-    private List<CategoryBreakdownItem> CategoryBreakdown = [];
     private List<MonthlyTrendPoint> MonthlyTrendPoints = [];
 
     private bool IsLoading = true;
     private string? ErrorMessage;
     private string CurrentUserRole = "Employee";
 
-    private int HealthyStockCount;
-    private int LowStockCount;
     private int CriticalStockCount;
     private int TotalInventoryUnits;
     private int CurrentMonthAssignments;
@@ -393,9 +268,7 @@
     private string AssignmentsTrendText = "Trend unavailable";
     private string AssignmentsTrendClass = "warning";
     private string CriticalStockTrendText = "No critical stock";
-    private string CriticalStockTrendClass = "positive";
-
-    protected override async Task OnInitializedAsync()
+    private string CriticalStockTrendClass = "positive";    protected override async Task OnInitializedAsync()
     {
         try
         {
@@ -433,7 +306,7 @@
             Inventory = inventory;
             TopInventory = inventory
                 .OrderByDescending(m => m.Total)
-                .Take(6)
+                .Take(4)
                 .ToList();
 
             var now = DateTime.UtcNow;
@@ -477,39 +350,7 @@
         var inventory = Inventory ?? [];
         TotalInventoryUnits = inventory.Sum(i => i.Total);
 
-        InventoryByType = inventory
-            .GroupBy(item => string.IsNullOrWhiteSpace(item.Type) ? "Unknown" : item.Type)
-            .Select(group => new ChartSlice
-            {
-                Category = group.Key,
-                Value = group.Sum(item => item.Total)
-            })
-            .OrderByDescending(item => item.Value)
-            .ToList();
-
-        HealthyStockCount = inventory.Count(i => string.Equals(i.StatusBadge, "OK", StringComparison.OrdinalIgnoreCase));
-        LowStockCount = inventory.Count(i => string.Equals(i.StatusBadge, "LOW", StringComparison.OrdinalIgnoreCase));
         CriticalStockCount = inventory.Count(i => string.Equals(i.StatusBadge, "CRITICAL", StringComparison.OrdinalIgnoreCase));
-        StockHealthBreakdown = new List<ChartSlice>
-        {
-            new ChartSlice { Category = "Healthy", Value = HealthyStockCount },
-            new ChartSlice { Category = "Low", Value = LowStockCount },
-            new ChartSlice { Category = "Critical", Value = CriticalStockCount }
-        }
-            .Where(slice => slice.Value > 0)
-            .ToList();
-
-        var palette = new[] { "#6366f1", "#22d3ee", "#10b981", "#f59e0b", "#fb7185", "#8b5cf6", "#14b8a6", "#38bdf8" };
-        CategoryBreakdown = InventoryByType
-            .Take(6)
-            .Select((item, index) => new CategoryBreakdownItem
-            {
-                Category = item.Category,
-                Value = item.Value,
-                Percentage = TotalInventoryUnits == 0 ? 0 : (item.Value * 100d) / TotalInventoryUnits,
-                Color = palette[index % palette.Length]
-            })
-            .ToList();
 
         CriticalStockTrendText = CriticalStockCount == 0
             ? "No critical stock"
@@ -594,32 +435,6 @@
     {
         var width = GetMaterialShare(material).ToString("0.#", CultureInfo.InvariantCulture);
         return $"width:{width}%";
-    }
-
-    private double GetHealthPercentage(int count)
-    {
-        var trackedTotal = HealthyStockCount + LowStockCount + CriticalStockCount;
-        return trackedTotal == 0 ? 0 : (count * 100d) / trackedTotal;
-    }
-
-    private string GetHealthWidthStyle(int count)
-    {
-        var width = GetHealthPercentage(count).ToString("0.#", CultureInfo.InvariantCulture);
-        return $"width:{width}%";
-    }
-
-    private sealed class ChartSlice
-    {
-        public string Category { get; set; } = string.Empty;
-        public int Value { get; set; }
-    }
-
-    private sealed class CategoryBreakdownItem
-    {
-        public string Category { get; set; } = string.Empty;
-        public int Value { get; set; }
-        public double Percentage { get; set; }
-        public string Color { get; set; } = "#6366f1";
     }
 
     private sealed class MonthlyTrendPoint
