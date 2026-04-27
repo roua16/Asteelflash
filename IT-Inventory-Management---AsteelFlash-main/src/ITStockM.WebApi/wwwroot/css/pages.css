@@ -1255,3 +1255,33 @@
     margin-bottom: 1.25rem;
     color: var(--text-primary, #111827);
 }
+
+/* ─── Supplier Inline Form ────────────────────────────────────────────── */
+.new-supplier-form {
+    background: var(--surface-2);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    margin-top: 0.5rem;
+}
+
+.btn-link-inline {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.1rem 0;
+}
+
+.btn-link-inline:hover {
+    text-decoration: underline;
+}
+
+.form-error-text {
+    color: var(--rz-danger);
+    font-size: 0.82rem;
+    margin: 0 0 0.5rem;
+}

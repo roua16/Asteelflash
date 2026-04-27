@@ -61,6 +61,9 @@ namespace ITStockM.Domain.Entities
 
 
 
+        public int? SupplierId { get; set; }
+        public Supplier? Supplier { get; set; }
+
         public ICollection<AssignmentMateriel> AssignmentMateriels { get; set; } = new List<AssignmentMateriel>();
 
         public ICollection<DeliveryOrderMateriel> DeliveryOrderMateriels { get; set; } = new List<DeliveryOrderMateriel>();

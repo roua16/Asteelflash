@@ -20,6 +20,8 @@ namespace ITStockM.Domain.Entities
         [Required]
         public string? PhoneNumber { get; set; }
 
+        public ICollection<Materiel> Materiels { get; set; } = new List<Materiel>();
+
         public ICollection<DeliveryOrder> DeliveryOrders { get; set; } = new List<DeliveryOrder>();
 
         public ICollection<Offer> Offers { get; set; } = new List<Offer>();

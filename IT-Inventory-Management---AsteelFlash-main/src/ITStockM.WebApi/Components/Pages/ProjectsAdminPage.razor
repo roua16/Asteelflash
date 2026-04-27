@@ -1,11 +1,13 @@
 @page "/projects-super-admin"
 @using ITStockM.Domain.Entities
 @using ITStockM.Services.Assignments
+@using ITStockM.Services.Materiels
 @using ITStockM.Services.Projects
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin")]
 @inject IProjectService ProjectService
 @inject IAssignmentService AssignmentService
+@inject IMaterielService MaterielService
 @inject NotificationService NotificationService
 
 <PageTitle>Projects Administration - IT Stock Management</PageTitle>
@@ -100,7 +102,7 @@
                     <RadzenDataGridColumn TItem="Project" Title="Assignments">
                         <Template Context="p">@projectAssignmentCounts.GetValueOrDefault(p.Id)</Template>
                     </RadzenDataGridColumn>
-                    <RadzenDataGridColumn TItem="Project" Title="Actions" Filterable="false" Sortable="false" Width="180px">
+                    <RadzenDataGridColumn TItem="Project" Title="Actions" Filterable="false" Sortable="false" Width="220px">
                         <Template Context="p">
                             <div class="table-actions">
                                 <RadzenButton Icon="edit"
@@ -108,6 +110,13 @@
                                               ButtonStyle="ButtonStyle.Primary"
                                               Shade="Shade.Lighter"
                                               Click="@(() => OpenEditModal(p))" />
+                                <RadzenButton Icon="inventory"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Success"
+                                              Shade="Shade.Lighter"
+                                              Disabled="@(saveInProgress == p.Id)"
+                                              Click="@(() => SaveProjectToInventoryAsync(p))"
+                                              title="Return all project materials to inventory" />
                                 <RadzenButton Icon="delete"
                                               Size="ButtonSize.Small"
                                               ButtonStyle="ButtonStyle.Danger"
@@ -171,6 +180,7 @@
     private bool isLoading = true;
     private bool showEditorModal;
     private bool isEditMode;
+    private int? saveInProgress;
 
     private string searchText = string.Empty;
     private string? loadError;
@@ -313,6 +323,90 @@
                 Detail = ex.Message,
                 Duration = 5000
             });
+        }
+    }
+
+    private async Task SaveProjectToInventoryAsync(Project project)
+    {
+        saveInProgress = project.Id;
+        StateHasChanged();
+        try
+        {
+            var allAssignments = (await AssignmentService.GetAssignments())
+                .Where(a => a.ProjectId == project.Id && a.RestoreDate == null)
+                .ToList();
+
+            if (!allAssignments.Any())
+            {
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Info,
+                    Summary = "Nothing to return",
+                    Detail = "No active assignments found for this project.",
+                    Duration = 3000
+                });
+                return;
+            }
+
+            int materialCount = 0;
+            foreach (var assignment in allAssignments)
+            {
+                foreach (var am in assignment.AssignmentMateriels)
+                {
+                    var mat = await MaterielService.GetMaterielById(am.MaterielId);
+                    if (mat == null) continue;
+
+                    await MaterielService.UpdateMateriel(am.MaterielId, new Materiel
+                    {
+                        Id = mat.Id,
+                        MaterielName = mat.MaterielName,
+                        Type = mat.Type,
+                        SerialNumber = mat.SerialNumber,
+                        QuantityITStock = mat.QuantityITStock + am.Qte,
+                        QuantityPDRStock = mat.QuantityPDRStock,
+                        IrreparableQuantity = mat.IrreparableQuantity,
+                        Repairing_Quantity = mat.Repairing_Quantity,
+                        Warranty = mat.Warranty,
+                        PurchaseDate = mat.PurchaseDate,
+                        LifecycleStatus = "InStock",
+                        ExpectedLifetimeMonths = mat.ExpectedLifetimeMonths,
+                        CurrentHealthScore = mat.CurrentHealthScore,
+                        SupplierId = mat.SupplierId
+                    });
+                    materialCount++;
+                }
+
+                await AssignmentService.UpdateAssignment(assignment.Id, new Assignment
+                {
+                    Id = assignment.Id,
+                    AssignedTo = assignment.AssignedTo,
+                    AssignedBy = assignment.AssignedBy,
+                    ProjectId = assignment.ProjectId,
+                    Date = assignment.Date,
+                    Descipriton = assignment.Descipriton,
+                    OnMission = false,
+                    RestoreDateLimit = assignment.RestoreDateLimit,
+                    RestoreDate = DateTime.Now
+                });
+            }
+
+            NotifySuccess("Saved to inventory",
+                $"{materialCount} material(s) returned from {allAssignments.Count} assignment(s) for {project.ProjectName}.");
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            saveInProgress = null;
         }
     }
 

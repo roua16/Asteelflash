@@ -145,6 +145,13 @@ namespace ITStockM.Data
         .HasColumnType("datetime2");
 
       builder.Entity<ITStockM.Domain.Entities.Materiel>()
+        .HasOne(m => m.Supplier)
+        .WithMany(s => s.Materiels)
+        .HasForeignKey(m => m.SupplierId)
+        .IsRequired(false)
+        .OnDelete(DeleteBehavior.SetNull);
+
+      builder.Entity<ITStockM.Domain.Entities.Materiel>()
         .Property(p => p.Warranty)
         .HasColumnType("datetime2");
 

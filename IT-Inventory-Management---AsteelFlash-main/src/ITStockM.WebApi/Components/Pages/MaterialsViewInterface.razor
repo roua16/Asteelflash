@@ -1,9 +1,11 @@
 @page "/materials-view-interface"
 @using ITStockM.Domain.Entities
 @using ITStockM.Services.Materiels
+@using ITStockM.Services.Suppliers
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,Purchasing,IT")]
 @inject IMaterielService MaterielService
+@inject ISupplierService SupplierService
 @inject NotificationService NotificationService
 
 <PageTitle>Materials View - IT Stock Management</PageTitle>
@@ -108,6 +110,11 @@
                     <RadzenDataGridColumn TItem="Materiel" Property="SerialNumber" Title="Serial #" />
                     <RadzenDataGridColumn TItem="Materiel" Property="QuantityITStock" Title="IT Stock" />
                     <RadzenDataGridColumn TItem="Materiel" Property="QuantityPDRStock" Title="PDR Stock" />
+                    <RadzenDataGridColumn TItem="Materiel" Title="Supplier">
+                        <Template Context="item">
+                            @(item.Supplier?.SupplierName ?? "—")
+                        </Template>
+                    </RadzenDataGridColumn>
                     <RadzenDataGridColumn TItem="Materiel" Property="Warranty" Title="Warranty">
                         <Template Context="item">
                             @item.Warranty.ToString("yyyy-MM-dd")
@@ -199,6 +206,60 @@
                     </div>
                 </div>
 
+                <div class="form-group" style="margin-top:0.75rem;">
+                    <label>Supplier</label>
+                    <select class="filter-select" style="width:100%"
+                            value="@(editorModel.SupplierId?.ToString() ?? "")"
+                            @onchange="OnSupplierChanged">
+                        <option value="">— No Supplier —</option>
+                        @foreach (var s in allSuppliers)
+                        {
+                            <option value="@s.Id">@s.SupplierName</option>
+                        }
+                    </select>
+                    <button type="button"
+                            class="btn-link-inline"
+                            style="margin-top:0.35rem;font-size:0.82rem;"
+                            @onclick="ToggleNewSupplierForm">
+                        <RadzenIcon Icon="@(showNewSupplierForm ? "expand_less" : "add_circle_outline")" Style="font-size:1rem;vertical-align:middle;" />
+                        @(showNewSupplierForm ? "Hide" : "Add new supplier")
+                    </button>
+
+                    @if (showNewSupplierForm)
+                    {
+                        <div class="new-supplier-form">
+                            @if (!string.IsNullOrWhiteSpace(supplierFormError))
+                            {
+                                <p class="form-error-text">@supplierFormError</p>
+                            }
+                            <div class="grid-2" style="margin-top:0.5rem;">
+                                <div class="form-group">
+                                    <label>Name *</label>
+                                    <input type="text" @bind="newSupplierModel.SupplierName" placeholder="Supplier name" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Email *</label>
+                                    <input type="email" @bind="newSupplierModel.Email" placeholder="supplier@example.com" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Phone</label>
+                                    <input type="text" @bind="newSupplierModel.PhoneNumber" placeholder="+33 ..." />
+                                </div>
+                                <div class="form-group">
+                                    <label>Address</label>
+                                    <input type="text" @bind="newSupplierModel.Adress" placeholder="Address" />
+                                </div>
+                            </div>
+                            <RadzenButton Icon="save"
+                                          Text="Create Supplier"
+                                          ButtonStyle="ButtonStyle.Success"
+                                          Shade="Shade.Lighter"
+                                          Size="ButtonSize.Small"
+                                          Click="@CreateNewSupplierAsync" />
+                        </div>
+                    }
+                </div>
+
                 <div class="form-actions">
                     <RadzenButton ButtonType="ButtonType.Submit"
                                   Icon="save"
@@ -248,20 +309,24 @@
     private readonly List<Materiel> allMateriels = [];
     private List<Materiel> filteredMateriels = [];
     private List<string> typeOptions = [];
+    private List<Supplier> allSuppliers = [];
 
     private bool isLoading = true;
     private bool showEditorModal;
     private bool showDeleteModal;
     private bool isEditMode;
+    private bool showNewSupplierForm;
 
     private string searchText = string.Empty;
     private string selectedType = string.Empty;
     private string? loadError;
     private string? formError;
+    private string? supplierFormError;
 
     private int? editingMaterielId;
     private Materiel editorModel = CreateDefaultMateriel();
     private Materiel? deleteTarget;
+    private Supplier newSupplierModel = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -285,6 +350,9 @@
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(t => t)
                 .ToList();
+
+            allSuppliers = await SupplierService.GetSuppliersList();
+
             ApplyFilters();
         }
         catch (Exception ex)
@@ -346,6 +414,8 @@
         isEditMode = false;
         editingMaterielId = null;
         formError = null;
+        showNewSupplierForm = false;
+        newSupplierModel = new();
         editorModel = CreateDefaultMateriel();
         showEditorModal = true;
     }
@@ -355,6 +425,8 @@
         isEditMode = true;
         editingMaterielId = materiel.Id;
         formError = null;
+        showNewSupplierForm = false;
+        newSupplierModel = new();
         editorModel = CloneMateriel(materiel);
         showEditorModal = true;
     }
@@ -369,6 +441,7 @@
     {
         showEditorModal = false;
         formError = null;
+        showNewSupplierForm = false;
     }
 
     private void CloseDeleteModal()
@@ -459,6 +532,59 @@
         }
     }
 
+    private void OnSupplierChanged(ChangeEventArgs args)
+    {
+        if (int.TryParse(args.Value?.ToString(), out var id))
+            editorModel.SupplierId = id;
+        else
+            editorModel.SupplierId = null;
+    }
+
+    private void ToggleNewSupplierForm()
+    {
+        showNewSupplierForm = !showNewSupplierForm;
+        supplierFormError = null;
+        if (showNewSupplierForm) newSupplierModel = new();
+    }
+
+    private async Task CreateNewSupplierAsync()
+    {
+        supplierFormError = null;
+        if (string.IsNullOrWhiteSpace(newSupplierModel.SupplierName))
+        {
+            supplierFormError = "Supplier name is required.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(newSupplierModel.Email))
+        {
+            supplierFormError = "Email is required.";
+            return;
+        }
+
+        newSupplierModel.Adress ??= string.Empty;
+        newSupplierModel.PhoneNumber ??= string.Empty;
+
+        try
+        {
+            var created = await SupplierService.CreateSupplier(newSupplierModel);
+            allSuppliers.Add(created);
+            editorModel.SupplierId = created.Id;
+            showNewSupplierForm = false;
+            newSupplierModel = new();
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Supplier created",
+                Detail = $"{created.SupplierName} added and selected.",
+                Duration = 3000
+            });
+        }
+        catch (Exception ex)
+        {
+            supplierFormError = $"Failed to create supplier: {ex.Message}";
+        }
+    }
+
     private bool ValidateEditor(out string? error)
     {
         if (string.IsNullOrWhiteSpace(editorModel.MaterielName))
@@ -503,7 +629,8 @@
             Warranty = DateTime.Today.AddYears(1),
             PurchaseDate = DateTime.Today,
             LifecycleStatus = "InStock",
-            ExpectedLifetimeMonths = 48
+            ExpectedLifetimeMonths = 48,
+            SupplierId = null
         };
 
     private static Materiel CloneMateriel(Materiel source) =>
@@ -521,6 +648,7 @@
             PurchaseDate = source.PurchaseDate,
             ExpectedLifetimeMonths = source.ExpectedLifetimeMonths,
             CurrentHealthScore = source.CurrentHealthScore,
-            LifecycleStatus = source.LifecycleStatus
+            LifecycleStatus = source.LifecycleStatus,
+            SupplierId = source.SupplierId
         };
 }

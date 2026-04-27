@@ -25,6 +25,7 @@ public class MaterielService : BaseCrudService<Materiel, IMaterielRepository>, I
     protected override IQueryable<Materiel> ApplyIncludes(IQueryable<Materiel> query)
     {
         return query
+            .Include(m => m.Supplier)
             .Include(m => m.AssignmentMateriels)
             .ThenInclude(am => am.Assignment);
     }
