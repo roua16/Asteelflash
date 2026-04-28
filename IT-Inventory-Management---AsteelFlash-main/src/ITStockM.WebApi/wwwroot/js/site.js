@@ -121,3 +121,12 @@ window.setThemePreference = function (themeName) {
     window.themeManager.setStoredTheme(preferredTheme);
     window.themeManager.applyTheme(preferredTheme);
 })();
+
+window.blazorAuth = {
+    signIn: async function (token) {
+        await fetch('/api/auth/sign-in/' + token, { method: 'POST', credentials: 'include' });
+    },
+    signOut: async function () {
+        try { await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include' }); } catch (e) { }
+    }
+};

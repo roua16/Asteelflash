@@ -195,8 +195,6 @@ namespace ITStockM.Components.Layout
             }
             catch (System.Security.Cryptography.CryptographicException)
             {
-                // Stale browser data encrypted with a previous Data Protection key ring.
-                // Treat as missing — user will re-authenticate normally.
                 Logger.LogDebug("Data Protection key mismatch reading user session; treating as guest.");
                 return "Guest";
             }

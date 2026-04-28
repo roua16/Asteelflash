@@ -303,7 +303,8 @@
                 .Where(group => requests.All(r => r.Id != group.Key))
                 .Select(group =>
                 {
-                    var firstOffer = group.Value.First();
+                    var firstOffer = group.Value.FirstOrDefault();
+                    if (firstOffer is null) return null!;
                     var requestTitle = firstOffer.Request?.Title ?? $"Request #{group.Key}";
 
                     return new InfraViewModel
@@ -317,6 +318,7 @@
 
             groupedOffers = offersByRequest
                 .Concat(orphanOffers)
+                .Where(m => m is not null)
                 .OrderByDescending(model => model.RequestId)
                 .ToList();
         }

@@ -15,11 +15,11 @@
     <link rel="stylesheet" href="css/app.css?v=@StaticAssetVersion" />
     <link rel="stylesheet" href="ITStockM.WebApi.styles.css?v=@StaticAssetVersion" />
     <link rel="icon" href="IconAsteel.ico" />
-    <HeadOutlet @rendermode="@InteractiveServer" />
+    <HeadOutlet @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
 </head>
 
 <body class="theme-dark">
-    <Routes @rendermode="@InteractiveServer" />
+    <Routes @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)"></script>
     <script src="js/site.js?v=@StaticAssetVersion"></script>

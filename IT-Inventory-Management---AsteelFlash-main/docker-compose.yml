@@ -59,7 +59,7 @@ services:
       Seed__DemoData: "${SEED_DEMO_DATA:-true}"
       Seed__ClearOldData: "${SEED_CLEAR_OLD_DATA:-false}"
       Seed__AdminEmail: "${SEED_ADMIN_EMAIL:-admin@asteelflash.com}"
-      Seed__AdminPassword: "${SEED_ADMIN_PASSWORD:-admin123}"
+      Seed__AdminPassword: "${SEED_ADMIN_PASSWORD:-admin1234}"
       Seed__AdminFullName: "${SEED_ADMIN_FULLNAME:-Admin User}"
       Seed__AdminPhoneNumber: "${SEED_ADMIN_PHONE:-+0000000000}"
       Seed__AdminService: "${SEED_ADMIN_SERVICE:-IT}"

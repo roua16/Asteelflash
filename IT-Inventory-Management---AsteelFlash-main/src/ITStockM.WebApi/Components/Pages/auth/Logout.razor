@@ -1,11 +1,16 @@
 ﻿@page "/logout"
 @inject CustomAuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage.ProtectedLocalStorage LocalStorage
+@inject Microsoft.JSInterop.IJSRuntime JS
 
 @code {
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender) return;
+        try { await LocalStorage.DeleteAsync("UserSession"); } catch { }
+        try { await JS.InvokeVoidAsync("blazorAuth.signOut"); } catch { }
         await AuthStateProvider.UpdateAuthenticationState(null);
-        Navigation.NavigateTo("/login");
+        Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

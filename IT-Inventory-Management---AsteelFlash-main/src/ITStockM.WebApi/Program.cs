@@ -4,13 +4,16 @@ using ITStockM.Infrastructure.DependencyInjection;
 using ITStockM.Infrastructure.Identity;
 using ITStockM.WebApi.Middleware;
 using ITStockM.WebApi.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Radzen;
 using Serilog;
+using System.Collections.Concurrent;
 using System.Reflection;
+using System.Security.Claims;
 
 const string CorsPolicyName = "AppCorsPolicy";
 
@@ -164,6 +167,9 @@ static void ConfigureServices(IServiceCollection services, IConfiguration config
 
     services.AddAuthorization();
 
+    // One-time auth token store for Blazor → HTTP cookie exchange (tokens expire in 30 seconds)
+    services.AddSingleton<ConcurrentDictionary<string, (UserSession Session, DateTime Expires)>>();
+
     services.AddHealthChecks()
         .AddDbContextCheck<ITStockM.Data.ITStockManagmentContext>(
             name: "Database",
@@ -214,6 +220,41 @@ static async Task ConfigurePipelineAsync(WebApplication app)
 
     app.MapHealthChecks("/health");
     app.MapControllers();
+
+    // Token-exchange endpoint: Blazor validates credentials, generates a short-lived token,
+    // then JS fetches this endpoint so the browser receives a real Identity cookie.
+    app.MapPost("/api/auth/sign-in/{token}", [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        async (HttpContext ctx, string token,
+            ConcurrentDictionary<string, (UserSession Session, DateTime Expires)> store) =>
+        {
+            if (!store.TryRemove(token, out var entry) || entry.Expires < DateTime.UtcNow)
+                return Results.Unauthorized();
+
+            var session = entry.Session;
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, session.Id.ToString()),
+                new Claim(ClaimTypes.Email, session.Email),
+                new Claim(ClaimTypes.Name, session.FullName),
+                new Claim(ClaimTypes.Role, session.Role),
+            };
+            var identity = new ClaimsIdentity(claims, "Identity.Application");
+            var principal = new ClaimsPrincipal(identity);
+            await ctx.SignInAsync("Identity.Application", principal, new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8),
+                AllowRefresh = true,
+            });
+            return Results.Ok();
+        });
+
+    app.MapPost("/api/auth/sign-out", [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+        async (HttpContext ctx) =>
+        {
+            await ctx.SignOutAsync("Identity.Application");
+            return Results.Ok();
+        });
     app.MapGet("/index.html", () => Results.Redirect("/", permanent: false))
         .ExcludeFromDescription();
     app.MapRazorComponents<App>()
