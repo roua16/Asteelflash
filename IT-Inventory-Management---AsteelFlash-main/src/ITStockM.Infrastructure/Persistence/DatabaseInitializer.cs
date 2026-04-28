@@ -21,6 +21,9 @@ namespace ITStockM.Data
             await context.Database.EnsureCreatedAsync(cancellationToken);
             logger.LogInformation("Database schema ensured.");
 
+            // Apply any column additions that EnsureCreatedAsync won't add to existing databases.
+            await ApplySchemaUpdatesAsync(context, logger, cancellationToken);
+
             var seedSection = configuration.GetSection("Seed");
             var seedEnabled = seedSection.GetValue("Enabled", environment.IsDevelopment());
             var seedDemoData = seedSection.GetValue("DemoData", environment.IsDevelopment());
@@ -1004,6 +1007,42 @@ namespace ITStockM.Data
 
             await tx.CommitAsync(cancellationToken);
             logger.LogInformation("Cleared old data (development-only).");
+        }
+
+        /// <summary>
+        /// Idempotent schema updates: adds columns that EnsureCreatedAsync won't add to existing databases.
+        /// Safe to run on every startup.
+        /// </summary>
+        private static async Task ApplySchemaUpdatesAsync(
+            ITStockManagmentContext context,
+            ILogger logger,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                // Add SupplierId FK column to Materiel if it doesn't exist (added in v5)
+                await context.Database.ExecuteSqlRawAsync("""
+                    IF NOT EXISTS (
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                        WHERE TABLE_NAME = 'Materiel' AND COLUMN_NAME = 'SupplierId'
+                    )
+                    BEGIN
+                        ALTER TABLE [dbo].[Materiel] ADD [SupplierId] INT NULL;
+                        ALTER TABLE [dbo].[Materiel]
+                            ADD CONSTRAINT [FK_Materiel_Supplier_SupplierId]
+                            FOREIGN KEY ([SupplierId]) REFERENCES [dbo].[Supplier] ([Id])
+                            ON DELETE SET NULL;
+                        CREATE INDEX [IX_Materiel_SupplierId] ON [dbo].[Materiel] ([SupplierId]);
+                    END
+                    """, cancellationToken);
+
+                logger.LogInformation("Schema updates applied.");
+            }
+            catch (Exception ex)
+            {
+                // SQLite doesn't support IF NOT EXISTS in ALTER TABLE; skip gracefully.
+                logger.LogWarning(ex, "Schema update step skipped (may be running SQLite or column already present).");
+            }
         }
     }
 }

@@ -170,6 +170,13 @@ namespace ITStockM.Components.Layout
                 Logger.LogDebug(ex, "User display name unavailable during prerender.");
                 return "Guest";
             }
+            catch (System.Security.Cryptography.CryptographicException)
+            {
+                // Stale browser data encrypted with a previous Data Protection key ring.
+                // Treat as missing — user will re-authenticate normally.
+                Logger.LogDebug("Data Protection key mismatch reading user session; treating as guest.");
+                return "Guest";
+            }
         }
 
         private async Task<bool?> LoadSidebarStateAsync()
@@ -187,6 +194,12 @@ namespace ITStockM.Components.Layout
             catch (InvalidOperationException ex) when (IsPrerenderingInteropException(ex))
             {
                 Logger.LogDebug(ex, "Sidebar state unavailable during prerender.");
+                return null;
+            }
+            catch (System.Security.Cryptography.CryptographicException)
+            {
+                // Stale sidebar preference encrypted with old key — use default.
+                Logger.LogDebug("Data Protection key mismatch reading sidebar state; using default.");
                 return null;
             }
         }
