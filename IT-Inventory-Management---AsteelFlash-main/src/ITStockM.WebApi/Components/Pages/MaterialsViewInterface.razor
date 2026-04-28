@@ -36,7 +36,7 @@
         </div>
         <div class="content-section metric-card">
             <span class="metric-label">Low Stock Alerts</span>
-            <span class="metric-value text-warning">@filteredMateriels.Count(m => (m.QuantityITStock + m.QuantityPDRStock) <= 5)</span>
+            <span class="metric-value text-warning">@filteredMateriels.Count(m => m.QuantityITStock <= 10)</span>
         </div>
     </div>
 
@@ -109,7 +109,6 @@
                     <RadzenDataGridColumn TItem="Materiel" Property="Type" Title="Type" />
                     <RadzenDataGridColumn TItem="Materiel" Property="SerialNumber" Title="Serial #" />
                     <RadzenDataGridColumn TItem="Materiel" Property="QuantityITStock" Title="IT Stock" />
-                    <RadzenDataGridColumn TItem="Materiel" Property="QuantityPDRStock" Title="PDR Stock" />
                     <RadzenDataGridColumn TItem="Materiel" Title="Supplier">
                         <Template Context="item">
                             @(item.Supplier?.SupplierName ?? "—")
@@ -183,10 +182,6 @@
                     <div class="form-group">
                         <label for="mat-it">IT Stock</label>
                         <InputNumber id="mat-it" @bind-Value="editorModel.QuantityITStock" />
-                    </div>
-                    <div class="form-group">
-                        <label for="mat-pdr">PDR Stock</label>
-                        <InputNumber id="mat-pdr" @bind-Value="editorModel.QuantityPDRStock" />
                     </div>
                     <div class="form-group">
                         <label for="mat-irreparable">Irreparable Qty</label>
@@ -600,7 +595,6 @@
         }
 
         if (editorModel.QuantityITStock < 0 ||
-            editorModel.QuantityPDRStock < 0 ||
             editorModel.IrreparableQuantity < 0 ||
             editorModel.Repairing_Quantity < 0)
         {
