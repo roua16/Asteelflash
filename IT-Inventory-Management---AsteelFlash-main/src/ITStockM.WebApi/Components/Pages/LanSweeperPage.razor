@@ -28,11 +28,22 @@
     @if (!isConfigured)
     {
         <div class="info-banner info-banner-warn">
-            <RadzenIcon Icon="warning" class="info-banner-icon" />
-            <div>
-                <strong>LanSweeper not configured.</strong>
-                Set the <code>ConnectionStrings:LanSweeperConnection</code> key in <code>appsettings.json</code>
-                to point to your LanSweeper SQL Server instance.
+            <RadzenIcon Icon="wifi_off" class="info-banner-icon" />
+            <div style="flex:1">
+                <strong>LanSweeper is not connected.</strong>
+                <p style="margin:0.35rem 0 0.75rem;color:var(--app-text-soft);font-size:0.9rem;">
+                    No LanSweeper database connection is configured. Connect your LanSweeper SQL Server instance to begin discovering network devices.
+                </p>
+                <div class="setup-guide">
+                    <h3>🔧 Quick Setup</h3>
+                    <ol>
+                        <li>Open <code>appsettings.json</code> (or set an environment variable in Docker).</li>
+                        <li>Add the connection string:<br/>
+                            <code>"LanSweeperConnection": "Server=lansweeper-host;Database=lansweeperdb;..."</code>
+                        </li>
+                        <li>Restart the application — this page will automatically show discovered devices.</li>
+                    </ol>
+                </div>
             </div>
         </div>
     }
