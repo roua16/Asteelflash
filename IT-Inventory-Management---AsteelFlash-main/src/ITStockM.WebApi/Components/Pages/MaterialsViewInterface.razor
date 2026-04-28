@@ -169,7 +169,24 @@
                     </div>
                     <div class="form-group">
                         <label for="mat-type">Type</label>
-                        <InputText id="mat-type" @bind-Value="editorModel.Type" />
+                        <InputSelect id="mat-type" @bind-Value="editorModel.Type" class="filter-select" style="width:100%">
+                            <option value="">— Select type —</option>
+                            <option value="Laptop">Laptop</option>
+                            <option value="Desktop">Desktop</option>
+                            <option value="Server">Server</option>
+                            <option value="Switch">Switch</option>
+                            <option value="Router">Router</option>
+                            <option value="Firewall">Firewall</option>
+                            <option value="Printer">Printer</option>
+                            <option value="Monitor">Monitor</option>
+                            <option value="Phone">Phone</option>
+                            <option value="Tablet">Tablet</option>
+                            <option value="Projector">Projector</option>
+                            <option value="UPS">UPS</option>
+                            <option value="Scanner">Scanner</option>
+                            <option value="Headset">Headset</option>
+                            <option value="Other">Other</option>
+                        </InputSelect>
                     </div>
                     <div class="form-group">
                         <label for="mat-serial">Serial Number</label>
@@ -177,7 +194,15 @@
                     </div>
                     <div class="form-group">
                         <label for="mat-lifecycle">Lifecycle Status</label>
-                        <InputText id="mat-lifecycle" @bind-Value="editorModel.LifecycleStatus" />
+                        <InputSelect id="mat-lifecycle" @bind-Value="editorModel.LifecycleStatus" class="filter-select" style="width:100%">
+                            <option value="">— Select status —</option>
+                            <option value="Active">Active</option>
+                            <option value="In Repair">In Repair</option>
+                            <option value="Reserved">Reserved</option>
+                            <option value="Decommissioned">Decommissioned</option>
+                            <option value="End of Life">End of Life</option>
+                            <option value="Lost">Lost</option>
+                        </InputSelect>
                     </div>
                     <div class="form-group">
                         <label for="mat-it">IT Stock</label>

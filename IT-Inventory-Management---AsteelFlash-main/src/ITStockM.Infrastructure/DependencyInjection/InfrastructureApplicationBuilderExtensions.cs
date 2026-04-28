@@ -1,4 +1,5 @@
 using ITStockM.Data;
+using ITStockM.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -18,6 +19,9 @@ public static class InfrastructureApplicationBuilderExtensions
             var context = services.GetRequiredService<ITStockManagmentContext>();
             var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
             await DatabaseInitializer.InitializeAsync(context, app.Environment, app.Configuration, logger);
+
+            // Seed the LanSweeper demo database (creates lansweeperdb on the same SQL Server)
+            await LanSweeperDatabaseInitializer.InitializeAsync(app.Configuration, logger);
         }
         catch (Exception ex)
         {

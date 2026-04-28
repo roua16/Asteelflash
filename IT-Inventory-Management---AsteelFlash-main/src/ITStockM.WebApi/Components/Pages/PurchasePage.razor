@@ -2,10 +2,12 @@
 @using ITStockM.Domain.Entities
 @using ITStockM.Services.Employees
 @using ITStockM.Services.Requests
+@using ITStockM.Services.Projects
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,Purchasing")]
 @inject IRequestService RequestService
 @inject IEmployeeService EmployeeService
+@inject IProjectService ProjectService
 @inject NotificationService NotificationService
 
 <PageTitle>Purchase Requests - IT Stock Management</PageTitle>
@@ -64,13 +66,34 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="req-project">Project Name</label>
-                        <InputText id="req-project" @bind-Value="editorModel.ProjectName" />
+                        <label for="req-project">Project</label>
+                        <select id="req-project" class="filter-select" @bind="editorModel.ProjectName">
+                            <option value="">— Select project —</option>
+                            @foreach (var p in projects)
+                            {
+                                <option value="@p.ProjectName">@p.ProjectName</option>
+                            }
+                        </select>
                     </div>
 
                     <div class="form-group">
                         <label for="req-type">Material Type</label>
-                        <InputText id="req-type" @bind-Value="editorModel.MaterialType" />
+                        <select id="req-type" class="filter-select" @bind="editorModel.MaterialType">
+                            <option value="">— Select type —</option>
+                            <option value="Laptop">Laptop</option>
+                            <option value="Desktop">Desktop</option>
+                            <option value="Server">Server</option>
+                            <option value="Switch">Switch</option>
+                            <option value="Router">Router</option>
+                            <option value="Firewall">Firewall</option>
+                            <option value="Printer">Printer</option>
+                            <option value="Monitor">Monitor</option>
+                            <option value="Phone">Phone</option>
+                            <option value="Tablet">Tablet</option>
+                            <option value="Projector">Projector</option>
+                            <option value="UPS">UPS</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -281,13 +304,34 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="edit-req-project">Project Name</label>
-                        <InputText id="edit-req-project" @bind-Value="editorModel.ProjectName" />
+                        <label for="edit-req-project">Project</label>
+                        <select id="edit-req-project" class="filter-select" @bind="editorModel.ProjectName">
+                            <option value="">— Select project —</option>
+                            @foreach (var p in projects)
+                            {
+                                <option value="@p.ProjectName">@p.ProjectName</option>
+                            }
+                        </select>
                     </div>
 
                     <div class="form-group">
                         <label for="edit-req-type">Material Type</label>
-                        <InputText id="edit-req-type" @bind-Value="editorModel.MaterialType" />
+                        <select id="edit-req-type" class="filter-select" @bind="editorModel.MaterialType">
+                            <option value="">— Select type —</option>
+                            <option value="Laptop">Laptop</option>
+                            <option value="Desktop">Desktop</option>
+                            <option value="Server">Server</option>
+                            <option value="Switch">Switch</option>
+                            <option value="Router">Router</option>
+                            <option value="Firewall">Firewall</option>
+                            <option value="Printer">Printer</option>
+                            <option value="Monitor">Monitor</option>
+                            <option value="Phone">Phone</option>
+                            <option value="Tablet">Tablet</option>
+                            <option value="Projector">Projector</option>
+                            <option value="UPS">UPS</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -349,6 +393,7 @@
 
     private readonly List<Request> requests = [];
     private readonly List<Employee> employees = [];
+    private readonly List<Project> projects = [];
     private List<Request> filteredRequests = [];
 
     private bool isLoading = true;
@@ -395,6 +440,10 @@
             {
                 editorModel.EmployeeId = employees[0].Id;
             }
+
+            var projectList = await ProjectService.GetProjectsList();
+            projects.Clear();
+            projects.AddRange(projectList.OrderBy(p => p.ProjectName));
 
             var requestList = await RequestService.GetRequestsList();
             requests.Clear();
