@@ -56,8 +56,8 @@ public class LanSweeperService : ILanSweeperService
                     ac.Processor     AS Processor,
                     ac.Memory        AS MemoryMb,
                     ac.Location      AS Location
-                FROM lansweeperdb.dbo.tblAssets a
-                LEFT JOIN lansweeperdb.dbo.tblAssetCustom ac ON a.AssetID = ac.AssetID
+                FROM dbo.tblAssets a
+                LEFT JOIN dbo.tblAssetCustom ac ON a.AssetID = ac.AssetID
                 WHERE (@search IS NULL
                     OR a.AssetName   LIKE '%' + @search + '%'
                     OR a.IPAddress   LIKE '%' + @search + '%'
@@ -104,8 +104,8 @@ public class LanSweeperService : ILanSweeperService
                     ac.Processor     AS Processor,
                     ac.Memory        AS MemoryMb,
                     ac.Location      AS Location
-                FROM lansweeperdb.dbo.tblAssets a
-                LEFT JOIN lansweeperdb.dbo.tblAssetCustom ac ON a.AssetID = ac.AssetID
+                FROM dbo.tblAssets a
+                LEFT JOIN dbo.tblAssetCustom ac ON a.AssetID = ac.AssetID
                 WHERE a.AssetID = @assetId
                 """;
 

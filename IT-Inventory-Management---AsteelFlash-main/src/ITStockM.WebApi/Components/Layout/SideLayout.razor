@@ -67,6 +67,8 @@
             </button>
             <div class="menu-links">
                 <SidebarItem Roles="Admin,PDR,Purchasing,IT,Infrastructure,Employee" Text="Dashboard" Icon="dashboard" Path="/" Compact="@(!sidebarExpanded)" Exact="true" />
+                <SidebarItem Roles="Admin" Text="Projects" Icon="work" Path="/projects-super-admin" Compact="@(!sidebarExpanded)" />
+                <SidebarItem Roles="Admin" Text="Employees" Icon="people" Path="/employees-super-admin" Compact="@(!sidebarExpanded)" />
             </div>
         </div>
 
@@ -159,41 +161,7 @@
             </Authorized>
         </AuthorizeView>
 
-        <AuthorizeView Roles="Admin">
-            <Authorized>
-                <div class="menu-group @MenuGroupStateClass(adminExpanded)">
-                    <button type="button" class="menu-group-toggle" aria-expanded="@adminExpanded" @onclick='() => ToggleMenuGroup("admin")' disabled="@(!sidebarExpanded)">
-                        <span class="menu-group-meta">
-                            <span class="menu-group-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 3l2 3.2 3.7.6-2.4 2.6.6 3.6-3.9-1.7-3.9 1.7.6-3.6-2.4-2.6 3.7-.6z" />
-                                    <path d="M5 14v5h14v-5" />
-                                </svg>
-                            </span>
-                            @if (sidebarExpanded)
-                            {
-                                <span class="menu-group-title">ADMINISTRATION</span>
-                            }
-                        </span>
-                        @if (sidebarExpanded)
-                        {
-                            <span class="menu-group-chevron"><RadzenIcon Icon="@(adminExpanded ? "expand_less" : "expand_more")" /></span>
-                        }
-                    </button>
-                    <div class="menu-links">
-                        <SidebarItem Text="Materials" Icon="category" Path="/materiels-super-admin" Compact="@(!sidebarExpanded)" />
-                        <SidebarItem Text="Assignments" Icon="assignment_turned_in" Path="/assignments-super-admin" Compact="@(!sidebarExpanded)" />
-                        <SidebarItem Text="Assignment Materials" Icon="assignment_late" Path="/assignment-materiels-super-admin" Compact="@(!sidebarExpanded)" />
-                        <SidebarItem Text="Delivery Orders" Icon="receipt_long" Path="/delivery-orders-super-admin" Compact="@(!sidebarExpanded)" />
-                        <SidebarItem Text="Delivery Orders Mats" Icon="receipt" Path="/delivery-order-materiels-super-admin" Compact="@(!sidebarExpanded)" />
-                        <SidebarItem Text="Requests" Icon="description" Path="/requests-super-admin" Compact="@(!sidebarExpanded)" />
-                        <SidebarItem Text="Employees" Icon="people" Path="/employees-super-admin" Compact="@(!sidebarExpanded)" />
-                        <SidebarItem Text="Projects" Icon="work" Path="/projects-super-admin" Compact="@(!sidebarExpanded)" />
-                        <SidebarItem Text="Suppliers" Icon="store" Path="/suppliers-super-admin" Compact="@(!sidebarExpanded)" />
-                    </div>
-                </div>
-            </Authorized>
-        </AuthorizeView>
+
     </nav>
 
     <div class="footer-container">

@@ -2,52 +2,57 @@
 @page "/materials-view-interface-pdr"
 @using ITStockM.Domain.Entities
 @using ITStockM.Services.Assignments
+@using ITStockM.Services.AssignmentMateriels
 @using ITStockM.Services.Materiels
 @using ITStockM.Services.Employees
-@using ITStockM.Services.Projects
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,IT,Infrastructure,Employee")]
 @inject IAssignmentService AssignmentService
+@inject IAssignmentMaterielService AssignmentMaterielService
 @inject IMaterielService MaterielService
 @inject IEmployeeService EmployeeService
-@inject IProjectService ProjectService
 @inject NotificationService NotificationService
 
-<PageTitle>Assignment Standby - IT Stock Management</PageTitle>
+<PageTitle>Provisional Loans - IT Stock Management</PageTitle>
 
 <div class="page-container">
     <div class="page-header">
         <div class="flex-between page-header-wrap">
             <div>
-                <h1>Assignment Standby</h1>
-                <p class="page-subtitle">Materials assigned and waiting — not yet deployed on mission.</p>
+                <h1>Provisional Equipment Loans</h1>
+                <p class="page-subtitle">Temporary device loans — e.g., a loaner laptop while an employee's machine is being repaired.</p>
             </div>
+            <RadzenButton Icon="add_circle"
+                          Text="New Provisional Loan"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Shade="Shade.Lighter"
+                          Click="@OpenCreateModal" />
         </div>
     </div>
 
     <div class="grid-3">
         <div class="content-section metric-card">
-            <span class="metric-label">Standby Assignments</span>
-            <span class="metric-value">@standbyRows.Count</span>
+            <span class="metric-label">Active Loans</span>
+            <span class="metric-value">@rows.Count</span>
         </div>
         <div class="content-section metric-card">
-            <span class="metric-label">Total Items Waiting</span>
-            <span class="metric-value">@standbyRows.Sum(r => r.TotalQty)</span>
+            <span class="metric-label">Items on Loan</span>
+            <span class="metric-value text-primary">@rows.Sum(r => r.TotalQty)</span>
         </div>
         <div class="content-section metric-card">
-            <span class="metric-label">With Return Deadline</span>
-            <span class="metric-value text-warning">@standbyRows.Count(r => r.RestoreDateLimit.HasValue)</span>
+            <span class="metric-label">Overdue Returns</span>
+            <span class="metric-value text-danger">@rows.Count(r => r.RestoreDateLimit.HasValue && r.RestoreDateLimit < DateTime.Today)</span>
         </div>
     </div>
 
     @if (loadError is not null)
     {
-        <div class="alert alert-danger">@loadError</div>
+        <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Text="@loadError" />
     }
 
     <div class="content-section">
         <div class="filters-bar">
-            <input class="search-input" placeholder="Search by person, project or material…"
+            <input class="search-input" placeholder="Search by employee or material…"
                    @bind="searchText" @bind:event="oninput" />
         </div>
 
@@ -58,8 +63,9 @@
         else if (filteredRows.Count == 0)
         {
             <div class="empty-state">
-                <span class="material-icons">hourglass_empty</span>
-                <p>No standby assignments found.</p>
+                <RadzenIcon Icon="devices" Style="font-size:3rem;opacity:.35;" />
+                <p>No active provisional loans.</p>
+                <p class="text-muted" style="font-size:.88rem;">Create a loan when an employee needs temporary equipment.</p>
             </div>
         }
         else
@@ -68,21 +74,21 @@
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Assigned To</th>
-                        <th>Project</th>
-                        <th>Materials</th>
-                        <th>Return Deadline</th>
-                        <th>Description</th>
+                        <th>Loaned To</th>
+                        <th>Items</th>
+                        <th>Expected Return</th>
+                        <th>Reason</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var row in filteredRows)
                     {
+                        var isOverdue = row.RestoreDateLimit.HasValue && row.RestoreDateLimit < DateTime.Today;
                         <tr>
                             <td>@row.Date.ToString("dd/MM/yyyy")</td>
-                            <td>@(row.AssignedToName ?? "—")</td>
-                            <td>@(row.ProjectName ?? "—")</td>
+                            <td><strong>@(row.EmployeeName ?? "—")</strong></td>
                             <td>
                                 @foreach (var item in row.MaterialLines)
                                 {
@@ -92,23 +98,25 @@
                             <td>
                                 @if (row.RestoreDateLimit.HasValue)
                                 {
-                                    <span class="@(row.RestoreDateLimit < DateTime.Today ? "text-danger" : "text-warning")">
+                                    <span class="@(isOverdue ? "text-danger fw-bold" : "text-warning")">
                                         @row.RestoreDateLimit.Value.ToString("dd/MM/yyyy")
+                                        @if (isOverdue) { <span> ⚠ Overdue</span> }
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="text-muted">—</span>
+                                    <span class="text-muted">Not set</span>
                                 }
                             </td>
-                            <td>@(string.IsNullOrWhiteSpace(row.Description) ? "—" : row.Description)</td>
+                            <td>@(string.IsNullOrWhiteSpace(row.Reason) ? "—" : row.Reason)</td>
+                            <td><span class="badge-chip badge-warning">On Loan</span></td>
                             <td>
-                                <RadzenButton Icon="rocket_launch"
-                                              Text="Deploy"
+                                <RadzenButton Icon="assignment_return"
+                                              Text="Return"
                                               ButtonStyle="ButtonStyle.Success"
                                               Shade="Shade.Lighter"
                                               Size="ButtonSize.Small"
-                                              Click="@(() => OpenDeployModal(row))" />
+                                              Click="@(() => OpenReturnModal(row))" />
                             </td>
                         </tr>
                     }
@@ -118,103 +126,182 @@
     </div>
 </div>
 
-@if (showDeployModal && deployTarget is not null)
+@* ===== NEW PROVISIONAL LOAN MODAL ===== *@
+@if (showCreateModal)
 {
-    <div class="modal-overlay" @onclick="CloseDeployModal">
+    <div class="modal-overlay" @onclick="CloseCreateModal">
+        <div class="modal-content modal-lg" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2>New Provisional Loan</h2>
+                <button type="button" class="modal-close" @onclick="CloseCreateModal">×</button>
+            </div>
+
+            @if (createError is not null)
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Text="@createError" />
+            }
+
+            <div class="form-field">
+                <label>Loaned To (Employee) <span class="text-danger">*</span></label>
+                <select class="filter-select" value="@newLoan.EmployeeId" @onchange="OnEmployeeChanged">
+                    <option value="">— Select employee —</option>
+                    @foreach (var emp in employees)
+                    {
+                        <option value="@emp.Id">@emp.FullName (@emp.Post)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label>Managed By <span class="text-danger">*</span></label>
+                <select class="filter-select" value="@newLoan.ManagedById" @onchange="OnManagedByChanged">
+                    <option value="">— Select manager —</option>
+                    @foreach (var emp in employees)
+                    {
+                        <option value="@emp.Id">@emp.FullName</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label>Reason / Note</label>
+                <input type="text" class="form-control" placeholder="e.g. PC crashed, awaiting repair…"
+                       @bind="newLoan.Reason" />
+            </div>
+
+            <div class="form-field">
+                <label>Expected Return Date</label>
+                <input type="date" class="form-control"
+                       value="@(newLoan.ExpectedReturn?.ToString("yyyy-MM-dd") ?? "")"
+                       @onchange="OnExpectedReturnChanged" />
+            </div>
+
+            <div class="form-field">
+                <label>Add Material</label>
+                <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+                    <select class="filter-select" style="flex:1;min-width:160px;" value="@newMaterialId" @onchange="OnNewMaterialChanged">
+                        <option value="">— Select material —</option>
+                        @foreach (var m in materiels)
+                        {
+                            <option value="@m.Id">@m.MaterielName (@m.Type)</option>
+                        }
+                    </select>
+                    <input type="number" min="1" max="999" style="width:70px;"
+                           @bind="newMaterialQty" class="form-control" />
+                    <RadzenButton Icon="add" Text="Add" ButtonStyle="ButtonStyle.Light" Shade="Shade.Lighter"
+                                  Click="@AddMaterialLine" />
+                </div>
+
+                @if (newLoan.Lines.Count > 0)
+                {
+                    <div style="margin-top:.6rem;display:flex;flex-wrap:wrap;gap:.4rem;">
+                        @foreach (var line in newLoan.Lines)
+                        {
+                            <span class="badge-chip">
+                                @line.MaterialName × @line.Qty
+                                <button type="button" @onclick="@(() => RemoveMaterialLine(line))"
+                                        style="background:none;border:none;cursor:pointer;padding:0 0 0 .3rem;color:inherit;">✕</button>
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="form-actions">
+                <RadzenButton Icon="save" Text="Create Loan" ButtonStyle="ButtonStyle.Primary"
+                              Shade="Shade.Lighter" Click="@SaveLoanAsync" />
+                <RadzenButton Icon="cancel" Text="Cancel" ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter" Click="@CloseCreateModal" />
+            </div>
+        </div>
+    </div>
+}
+
+@* ===== RETURN MODAL ===== *@
+@if (showReturnModal && returnTarget is not null)
+{
+    <div class="modal-overlay" @onclick="CloseReturnModal">
         <div class="modal-content" @onclick:stopPropagation="true">
             <div class="modal-header">
-                <h2>Deploy Assignment</h2>
-                <button type="button" class="modal-close" @onclick="CloseDeployModal">×</button>
+                <h2>Return Equipment</h2>
+                <button type="button" class="modal-close" @onclick="CloseReturnModal">×</button>
             </div>
             <p>
-                Mark assignment for <strong>@(deployTarget.AssignedToName ?? deployTarget.ProjectName ?? "this assignment")</strong> as <em>On Mission</em>?
+                Mark equipment loaned to <strong>@returnTarget.EmployeeName</strong> as <em>returned</em>?
             </p>
-            <p class="text-muted">This will set <strong>OnMission = true</strong> and remove it from Standby.</p>
-            @if (deployError is not null)
+            <p class="text-muted" style="font-size:.88rem;">This removes the active loan and frees the items.</p>
+            @if (returnError is not null)
             {
-                <div class="alert alert-danger">@deployError</div>
+                <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Text="@returnError" />
             }
             <div class="form-actions">
-                <RadzenButton Icon="rocket_launch"
-                              Text="Confirm Deploy"
-                              ButtonStyle="ButtonStyle.Success"
-                              Shade="Shade.Lighter"
-                              Click="@DeployAssignmentAsync" />
-                <RadzenButton Icon="cancel"
-                              Text="Cancel"
-                              ButtonStyle="ButtonStyle.Light"
-                              Shade="Shade.Lighter"
-                              Click="@CloseDeployModal" />
+                <RadzenButton Icon="assignment_return" Text="Confirm Return" ButtonStyle="ButtonStyle.Success"
+                              Shade="Shade.Lighter" Click="@ConfirmReturnAsync" />
+                <RadzenButton Icon="cancel" Text="Cancel" ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter" Click="@CloseReturnModal" />
             </div>
         </div>
     </div>
 }
 
 @code {
-    private List<StandbyRow> standbyRows = [];
-    private List<StandbyRow> filteredRows = [];
+    private List<ProvisionalRow> rows = [];
+    private List<ProvisionalRow> filteredRows = [];
+    private List<Employee> employees = [];
+    private List<Materiel> materiels = [];
 
     private bool isLoading = true;
-    private bool showDeployModal;
-
     private string searchText = string.Empty;
     private string? loadError;
-    private string? deployError;
 
-    private StandbyRow? deployTarget;
+    // Create
+    private bool showCreateModal;
+    private string? createError;
+    private NewLoanModel newLoan = new();
+    private int? newMaterialId;
+    private int newMaterialQty = 1;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await ReloadAsync();
-    }
+    // Return
+    private bool showReturnModal;
+    private string? returnError;
+    private ProvisionalRow? returnTarget;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
 
     private async Task ReloadAsync()
     {
         isLoading = true;
         loadError = null;
-
         try
         {
             var assignments = (await AssignmentService.GetAssignments()).ToList();
-            var materiels = (await MaterielService.GetMateriels()).ToList();
-            var employees = (await EmployeeService.GetEmployees()).ToList();
-            var projects = (await ProjectService.GetProjects()).ToList();
+            employees = (await EmployeeService.GetEmployees()).ToList();
+            materiels = (await MaterielService.GetMateriels()).ToList();
+            var empById = employees.ToDictionary(e => e.Id);
+            var matById = materiels.ToDictionary(m => m.Id);
 
-            standbyRows = assignments
-                .Where(a => !a.OnMission && a.RestoreDate == null)
+            rows = assignments
+                .Where(a => a.IsProvisional && a.RestoreDate == null)
                 .Select(a =>
                 {
-                    var empName = a.AssignedTo.HasValue
-                        ? employees.FirstOrDefault(e => e.Id == a.AssignedTo)?.FullName
-                        : null;
-                    var projName = a.ProjectId.HasValue
-                        ? projects.FirstOrDefault(p => p.Id == a.ProjectId)?.ProjectName
-                        : null;
+                    var empName = a.AssignedTo.HasValue && empById.TryGetValue(a.AssignedTo.Value, out var emp)
+                        ? emp.FullName : null;
                     var lines = (a.AssignmentMateriels ?? [])
-                        .Select(am =>
-                        {
-                            var mat = materiels.FirstOrDefault(m => m.Id == am.MaterielId);
-                            return new MaterialLine(mat?.MaterielName ?? $"ID {am.MaterielId}", am.Qte);
-                        })
+                        .Select(am => new MatLine(
+                            matById.TryGetValue(am.MaterielId, out var m) ? m.MaterielName : $"ID {am.MaterielId}",
+                            am.Qte))
                         .ToList();
-                    return new StandbyRow(
-                        a.Id,
-                        a.Date,
-                        empName,
-                        projName,
-                        lines,
-                        a.RestoreDateLimit,
-                        a.Descipriton);
+                    return new ProvisionalRow(a.Id, a.Date, empName, lines, a.RestoreDateLimit, a.Descipriton);
                 })
                 .OrderBy(r => r.RestoreDateLimit ?? DateTime.MaxValue)
                 .ThenBy(r => r.Date)
                 .ToList();
 
-            ApplyFilters();
+            ApplyFilter();
         }
         catch (Exception ex)
         {
-            loadError = $"Failed to load standby assignments: {ex.Message}";
+            loadError = $"Failed to load provisional loans: {ex.Message}";
         }
         finally
         {
@@ -222,86 +309,180 @@
         }
     }
 
-    private void ApplyFilters()
+    private void ApplyFilter()
     {
         if (string.IsNullOrWhiteSpace(searchText))
         {
-            filteredRows = [.. standbyRows];
+            filteredRows = [.. rows];
             return;
         }
-
-        var term = searchText.Trim();
-        filteredRows = standbyRows
-            .Where(r =>
-                Contains(r.AssignedToName, term) ||
-                Contains(r.ProjectName, term) ||
-                r.MaterialLines.Any(m => Contains(m.MaterialName, term)) ||
-                Contains(r.Description, term))
+        var t = searchText.Trim();
+        filteredRows = rows.Where(r =>
+            Contains(r.EmployeeName, t) ||
+            r.MaterialLines.Any(m => Contains(m.MaterialName, t)) ||
+            Contains(r.Reason, t))
             .ToList();
     }
 
-    private void OpenDeployModal(StandbyRow row)
+    // ── Create Modal ──
+    private void OpenCreateModal()
     {
-        deployTarget = row;
-        deployError = null;
-        showDeployModal = true;
+        newLoan = new();
+        newMaterialId = null;
+        newMaterialQty = 1;
+        createError = null;
+        showCreateModal = true;
     }
 
-    private void CloseDeployModal()
+    private void CloseCreateModal() => showCreateModal = false;
+
+    private void OnEmployeeChanged(ChangeEventArgs e) =>
+        newLoan.EmployeeId = int.TryParse(e.Value?.ToString(), out var v) ? v : null;
+
+    private void OnManagedByChanged(ChangeEventArgs e) =>
+        newLoan.ManagedById = int.TryParse(e.Value?.ToString(), out var v) ? v : null;
+
+    private void OnExpectedReturnChanged(ChangeEventArgs e)
     {
-        showDeployModal = false;
-        deployTarget = null;
-        deployError = null;
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+            newLoan.ExpectedReturn = d;
+        else
+            newLoan.ExpectedReturn = null;
     }
 
-    private async Task DeployAssignmentAsync()
+    private void OnNewMaterialChanged(ChangeEventArgs e) =>
+        newMaterialId = int.TryParse(e.Value?.ToString(), out var v) ? v : null;
+
+    private void AddMaterialLine()
     {
-        if (deployTarget is null) return;
+        if (newMaterialId is null) return;
+        var mat = materiels.FirstOrDefault(m => m.Id == newMaterialId);
+        if (mat is null) return;
+        var existing = newLoan.Lines.FirstOrDefault(l => l.MaterielId == newMaterialId);
+        if (existing is not null)
+            existing.Qty += newMaterialQty;
+        else
+            newLoan.Lines.Add(new LoanLine { MaterielId = mat.Id, MaterialName = mat.MaterielName, Qty = newMaterialQty });
+        newMaterialId = null;
+        newMaterialQty = 1;
+    }
+
+    private void RemoveMaterialLine(LoanLine line) => newLoan.Lines.Remove(line);
+
+    private async Task SaveLoanAsync()
+    {
+        createError = null;
+        if (newLoan.EmployeeId is null)  { createError = "Please select an employee."; return; }
+        if (newLoan.ManagedById is null) { createError = "Please select who manages this loan."; return; }
+        if (newLoan.Lines.Count == 0)    { createError = "Add at least one material item."; return; }
 
         try
         {
-            var assignment = await AssignmentService.GetAssignmentById(deployTarget.Id);
-            if (assignment is null)
+            var assignment = new Assignment
             {
-                deployError = "Assignment not found.";
-                return;
+                Date = DateTime.Today,
+                AssignedTo = newLoan.EmployeeId,
+                AssignedBy = newLoan.ManagedById!.Value,
+                Descipriton = string.IsNullOrWhiteSpace(newLoan.Reason) ? "Provisional loan" : newLoan.Reason,
+                IsProvisional = true,
+                OnMission = false,
+                RestoreDateLimit = newLoan.ExpectedReturn
+            };
+
+            var created = await AssignmentService.CreateAssignment(assignment);
+
+            foreach (var line in newLoan.Lines)
+            {
+                await AssignmentMaterielService.CreateAssignmentMateriel(new AssignmentMateriel
+                {
+                    AssignmentId = created.Id,
+                    MaterielId = line.MaterielId,
+                    Qte = line.Qty
+                });
             }
 
-            assignment.OnMission = true;
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Loan created",
+                Detail = "Provisional loan recorded successfully.",
+                Duration = 3000
+            });
+
+            CloseCreateModal();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            createError = $"Failed to create loan: {ex.Message}";
+        }
+    }
+
+    // ── Return Modal ──
+    private void OpenReturnModal(ProvisionalRow row)
+    {
+        returnTarget = row;
+        returnError = null;
+        showReturnModal = true;
+    }
+
+    private void CloseReturnModal()
+    {
+        showReturnModal = false;
+        returnTarget = null;
+    }
+
+    private async Task ConfirmReturnAsync()
+    {
+        if (returnTarget is null) return;
+        try
+        {
+            var assignment = await AssignmentService.GetAssignmentById(returnTarget.Id);
+            if (assignment is null) { returnError = "Assignment not found."; return; }
+            assignment.RestoreDate = DateTime.Today;
+            assignment.IsProvisional = false;
             await AssignmentService.UpdateAssignment(assignment.Id, assignment);
 
             NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Success,
-                Summary = "Deployed",
-                Detail = "Assignment is now marked as On Mission.",
+                Summary = "Returned",
+                Detail = "Equipment marked as returned.",
                 Duration = 3000
             });
 
-            CloseDeployModal();
+            CloseReturnModal();
             await ReloadAsync();
         }
         catch (Exception ex)
         {
-            deployError = $"Failed to deploy: {ex.Message}";
+            returnError = $"Failed to process return: {ex.Message}";
         }
     }
 
-    private static bool Contains(string? source, string term) =>
-        !string.IsNullOrWhiteSpace(source) &&
-        source.Contains(term, StringComparison.OrdinalIgnoreCase);
+    private static bool Contains(string? s, string t) =>
+        !string.IsNullOrWhiteSpace(s) && s.Contains(t, StringComparison.OrdinalIgnoreCase);
 
-    private sealed record MaterialLine(string MaterialName, int Qty);
-
-    private sealed record StandbyRow(
-        int Id,
-        DateTime Date,
-        string? AssignedToName,
-        string? ProjectName,
-        List<MaterialLine> MaterialLines,
-        DateTime? RestoreDateLimit,
-        string Description)
+    private sealed record MatLine(string MaterialName, int Qty);
+    private sealed record ProvisionalRow(int Id, DateTime Date, string? EmployeeName,
+        List<MatLine> MaterialLines, DateTime? RestoreDateLimit, string Reason)
     {
         public int TotalQty => MaterialLines.Sum(m => m.Qty);
+    }
+
+    private sealed class LoanLine
+    {
+        public int MaterielId { get; set; }
+        public string MaterialName { get; set; } = string.Empty;
+        public int Qty { get; set; } = 1;
+    }
+
+    private sealed class NewLoanModel
+    {
+        public int? EmployeeId { get; set; }
+        public int? ManagedById { get; set; }
+        public string Reason { get; set; } = string.Empty;
+        public DateTime? ExpectedReturn { get; set; }
+        public List<LoanLine> Lines { get; set; } = [];
     }
 }

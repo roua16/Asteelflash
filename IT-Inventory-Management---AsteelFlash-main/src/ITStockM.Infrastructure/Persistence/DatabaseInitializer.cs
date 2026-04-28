@@ -1036,6 +1036,17 @@ namespace ITStockM.Data
                     END
                     """, cancellationToken);
 
+                // Add IsProvisional column to Assignment if it doesn't exist (added in v5)
+                await context.Database.ExecuteSqlRawAsync("""
+                    IF NOT EXISTS (
+                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                        WHERE TABLE_NAME = 'Assignment' AND COLUMN_NAME = 'IsProvisional'
+                    )
+                    BEGIN
+                        ALTER TABLE [dbo].[Assignment] ADD [IsProvisional] BIT NOT NULL DEFAULT 0;
+                    END
+                    """, cancellationToken);
+
                 logger.LogInformation("Schema updates applied.");
             }
             catch (Exception ex)

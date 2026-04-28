@@ -24,12 +24,12 @@
         <button type="button"
                 class="purchase-tab @(purchaseTab == "new" ? "purchase-tab-active" : "")"
                 @onclick="@(() => purchaseTab = "new")">
-            <span class="material-icons">add_circle</span> New Request
+            <RadzenIcon Icon="add_circle" /> New Request
         </button>
         <button type="button"
                 class="purchase-tab @(purchaseTab == "list" ? "purchase-tab-active" : "")"
                 @onclick="@(() => purchaseTab = "list")">
-            <span class="material-icons">list_alt</span> View &amp; Accept Requests
+            <RadzenIcon Icon="list_alt" /> View &amp; Accept Requests
         </button>
     </div>
 

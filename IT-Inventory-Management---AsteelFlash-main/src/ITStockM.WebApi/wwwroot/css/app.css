@@ -923,6 +923,13 @@ body.theme-light {
     min-height: 100vh;
 }
 
+.app-scroll-area {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1.5rem 1.5rem 3rem;
+}
+
 .app-content-shell {
     display: block;
     width: min(100%, 1600px);

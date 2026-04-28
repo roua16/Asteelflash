@@ -30,6 +30,9 @@ namespace ITStockM.Domain.Entities
 
         public bool OnMission { get; set; }
 
+        /// <summary>Provisional (standby) assignment — temporary loan until the employee's own equipment is available.</summary>
+        public bool IsProvisional { get; set; }
+
         [Column(TypeName="datetime2")]
         public DateTime? RestoreDateLimit { get; set; }
 
