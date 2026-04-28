@@ -19,6 +19,9 @@ namespace ITStockM.Components.Layout
         protected ProtectedLocalStorage LocalStorage { get; set; } = default!;
 
         [Inject]
+        protected IJSRuntime JS { get; set; } = default!;
+
+        [Inject]
         public IDeliveryOrderService DeliveryOrderService { get; set; } = default!;
 
         [Inject]
@@ -70,16 +73,36 @@ namespace ITStockM.Components.Layout
                 return;
             }
 
-            user = await LoadUserNameAsync();
-
-            var persistedSidebarState = await LoadSidebarStateAsync();
-            if (persistedSidebarState.HasValue)
+            try
             {
-                sidebarExpanded = persistedSidebarState.Value;
-            }
+                user = await LoadUserNameAsync();
 
-            await AppThemeService.InitializeAsync();
-            StateHasChanged();
+                var persistedSidebarState = await LoadSidebarStateAsync();
+                if (persistedSidebarState.HasValue)
+                {
+                    sidebarExpanded = persistedSidebarState.Value;
+                }
+
+                await AppThemeService.InitializeAsync();
+                StateHasChanged();
+            }
+            catch (System.Security.Cryptography.CryptographicException ex)
+            {
+                // Browser has localStorage entries encrypted with a previous Data Protection key
+                // (e.g., after a container restart with a new ephemeral key ring).
+                // Clear all stale entries and reload so the user gets a clean session.
+                Logger.LogWarning(ex, "Stale Data Protection key in browser storage; clearing and reloading.");
+                try
+                {
+                    await JS.InvokeVoidAsync("localStorage.clear");
+                    await JS.InvokeVoidAsync("sessionStorage.clear");
+                }
+                catch (Exception jsEx)
+                {
+                    Logger.LogDebug(jsEx, "Could not clear browser storage via JS.");
+                }
+                NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+            }
         }
 
         async Task SidebarToggleClick()
