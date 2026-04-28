@@ -1,0 +1,266 @@
+@page "/lansweeper"
+@using ITStockM.Application.Common.Models
+@using ITStockM.Services.LanSweeper
+@using ITStockM.Services.Materiels
+@using ITStockM.Domain.Entities
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,IT,Infrastructure")]
+@inject ILanSweeperService LanSweeperService
+@inject IMaterielService MaterielService
+@inject NotificationService NotificationService
+
+<PageTitle>LanSweeper — Network Assets</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>LanSweeper — Network Assets</h1>
+                <p class="page-subtitle">Devices discovered by LanSweeper network scanning. Import any device to inventory.</p>
+            </div>
+            <div class="header-actions">
+                <RadzenButton Icon="refresh" Text="Refresh" ButtonStyle="ButtonStyle.Light"
+                              Click="@LoadDevices" Disabled="@isLoading" />
+            </div>
+        </div>
+    </div>
+
+    @if (!isConfigured)
+    {
+        <div class="info-banner info-banner-warn">
+            <RadzenIcon Icon="warning" class="info-banner-icon" />
+            <div>
+                <strong>LanSweeper not configured.</strong>
+                Set the <code>ConnectionStrings:LanSweeperConnection</code> key in <code>appsettings.json</code>
+                to point to your LanSweeper SQL Server instance.
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="panel">
+            <div class="panel-header flex-between">
+                <div class="panel-meta">
+                    <RadzenIcon Icon="device_hub" class="panel-icon-sm" />
+                    <span>@filteredDevices.Count device@(filteredDevices.Count != 1 ? "s" : "") found</span>
+                    @if (onlineCount > 0)
+                    {
+                        <span class="badge-chip badge-success ms-2">@onlineCount online</span>
+                    }
+                </div>
+                <div class="search-row">
+                    <RadzenTextBox Placeholder="Search name, IP, user, model…"
+                                   @bind-Value="searchTerm"
+                                   @oninput="OnSearch"
+                                   Class="search-input" />
+                </div>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="loading-center">
+                    <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Medium" />
+                    <p>Querying LanSweeper database…</p>
+                </div>
+            }
+            else if (filteredDevices.Count == 0)
+            {
+                <div class="empty-state">
+                    <RadzenIcon Icon="search_off" class="empty-icon" />
+                    <p>No devices found@(string.IsNullOrWhiteSpace(searchTerm) ? "." : " matching your search.")</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Device Name</th>
+                                <th>IP Address</th>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>OS</th>
+                                <th>Manufacturer / Model</th>
+                                <th>Serial</th>
+                                <th>Memory</th>
+                                <th>Last Seen</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var device in filteredDevices)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="status-dot @(device.IsOnline ? "status-online" : "status-offline")"
+                                              title="@(device.IsOnline ? "Online" : "Offline")"></span>
+                                    </td>
+                                    <td class="fw-medium">@device.AssetName</td>
+                                    <td class="font-mono">@(device.IpAddress ?? "—")</td>
+                                    <td>@(device.Username ?? "—")</td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(device.AssetType))
+                                        {
+                                            <span class="badge-chip badge-info">@device.AssetType</span>
+                                        }
+                                        else
+                                        {
+                                            <span>—</span>
+                                        }
+                                    </td>
+                                    <td class="text-sm">@(device.OsName ?? "—")</td>
+                                    <td class="text-sm">
+                                        @if (!string.IsNullOrWhiteSpace(device.Manufacturer) || !string.IsNullOrWhiteSpace(device.Model))
+                                        {
+                                            <span>@device.Manufacturer @device.Model</span>
+                                        }
+                                        else
+                                        {
+                                            <span>—</span>
+                                        }
+                                    </td>
+                                    <td class="font-mono text-sm">@(device.SerialNumber ?? "—")</td>
+                                    <td>@device.MemoryDisplay</td>
+                                    <td class="text-sm text-muted">
+                                        @if (device.LastSeen.HasValue)
+                                        {
+                                            <span title="@device.LastSeen.Value.ToString("yyyy-MM-dd HH:mm")">
+                                                @FormatRelativeTime(device.LastSeen.Value)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span>—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <RadzenButton Icon="add_box"
+                                                      ButtonStyle="ButtonStyle.Success"
+                                                      Size="ButtonSize.Small"
+                                                      Variant="Variant.Flat"
+                                                      Text="Import"
+                                                      title="Import this device to inventory"
+                                                      Disabled="@(importingId == device.AssetId)"
+                                                      Click="@(() => ImportToInventoryAsync(device))" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<LanSweeperDevice> allDevices = [];
+    private List<LanSweeperDevice> filteredDevices = [];
+    private string searchTerm = string.Empty;
+    private bool isLoading = false;
+    private bool isConfigured = false;
+    private int? importingId = null;
+    private int onlineCount => filteredDevices.Count(d => d.IsOnline);
+
+    protected override async Task OnInitializedAsync()
+    {
+        isConfigured = LanSweeperService.IsConfigured;
+        if (isConfigured)
+            await LoadDevices();
+    }
+
+    private async Task LoadDevices()
+    {
+        isLoading = true;
+        StateHasChanged();
+        try
+        {
+            allDevices = await LanSweeperService.GetDevicesAsync();
+            ApplyFilter();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnSearch(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredDevices = allDevices;
+            return;
+        }
+
+        var term = searchTerm.Trim().ToLower();
+        filteredDevices = allDevices.Where(d =>
+            (d.AssetName?.ToLower().Contains(term) ?? false) ||
+            (d.IpAddress?.ToLower().Contains(term) ?? false) ||
+            (d.Username?.ToLower().Contains(term) ?? false) ||
+            (d.OsName?.ToLower().Contains(term) ?? false) ||
+            (d.Manufacturer?.ToLower().Contains(term) ?? false) ||
+            (d.Model?.ToLower().Contains(term) ?? false) ||
+            (d.AssetType?.ToLower().Contains(term) ?? false) ||
+            (d.SerialNumber?.ToLower().Contains(term) ?? false)
+        ).ToList();
+    }
+
+    private async Task ImportToInventoryAsync(LanSweeperDevice device)
+    {
+        importingId = device.AssetId;
+        StateHasChanged();
+
+        try
+        {
+            var materiel = new Materiel
+            {
+                MaterielName = device.AssetName,
+                Type = device.AssetType ?? "Computer",
+                SerialNumber = device.SerialNumber,
+                QuantityITStock = 1,
+                QuantityPDRStock = 0,
+                Warranty = DateTime.Now.AddYears(1)
+            };
+
+            await MaterielService.CreateMateriel(materiel);
+            NotificationService.Notify(NotificationSeverity.Success, "Imported",
+                $"{device.AssetName} added to inventory.", duration: 4000);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Import failed", ex.Message, duration: 5000);
+        }
+        finally
+        {
+            importingId = null;
+        }
+    }
+
+    private static string BuildDescription(LanSweeperDevice d)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(d.Manufacturer)) parts.Add(d.Manufacturer!);
+        if (!string.IsNullOrWhiteSpace(d.Model)) parts.Add(d.Model!);
+        if (!string.IsNullOrWhiteSpace(d.OsName)) parts.Add(d.OsName!);
+        if (!string.IsNullOrWhiteSpace(d.IpAddress)) parts.Add($"IP: {d.IpAddress}");
+        if (!string.IsNullOrWhiteSpace(d.Domain)) parts.Add($"Domain: {d.Domain}");
+        return string.Join(" | ", parts);
+    }
+
+    private static string FormatRelativeTime(DateTime dt)
+    {
+        var diff = DateTime.UtcNow - dt.ToUniversalTime();
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        return dt.ToString("dd MMM yyyy");
+    }
+}

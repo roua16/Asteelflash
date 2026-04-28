@@ -10,6 +10,7 @@ using ITStockM.Services.DeliveryOrders;
 using ITStockM.Services.Employees;
 using ITStockM.Services.Implementation;
 using ITStockM.Services.Interfaces;
+using ITStockM.Services.LanSweeper;
 using ITStockM.Services.Maintenance;
 using ITStockM.Services.Materiels;
 using ITStockM.Services.Offers;
@@ -91,6 +92,7 @@ public static class InfrastructureLayerServiceCollectionExtensions
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IOperationNotificationService, OperationNotificationService>();
         services.AddScoped<IWarrantyAlertService, WarrantyAlertService>();
+        services.AddScoped<ILanSweeperService, LanSweeperService>();
 
         services.AddSingleton<SmtpHealthChecker>();
         services.AddSingleton<SmtpHealthHostedService>();
