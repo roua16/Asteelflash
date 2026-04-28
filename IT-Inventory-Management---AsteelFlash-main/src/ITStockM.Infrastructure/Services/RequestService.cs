@@ -24,7 +24,9 @@ public class RequestService : BaseCrudService<Request, IRequestRepository>, IReq
     /// </summary>
     protected override IQueryable<Request> ApplyIncludes(IQueryable<Request> query)
     {
-        return query.Include(r => r.Employee);
+        return query
+            .Include(r => r.Employee)
+            .Include(r => r.Offers);
     }
 
     /// <summary>

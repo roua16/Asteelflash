@@ -3,11 +3,15 @@
 @using ITStockM.Services.Employees
 @using ITStockM.Services.Requests
 @using ITStockM.Services.Projects
+@using ITStockM.Services.Offers
+@using ITStockM.Services.Suppliers
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,Purchasing")]
 @inject IRequestService RequestService
 @inject IEmployeeService EmployeeService
 @inject IProjectService ProjectService
+@inject IOfferService OfferService
+@inject ISupplierService SupplierService
 @inject NotificationService NotificationService
 
 <PageTitle>Purchase Requests - IT Stock Management</PageTitle>
@@ -115,6 +119,37 @@
                 <div class="form-group">
                     <label for="req-description">Description</label>
                     <InputTextArea id="req-description" @bind-Value="editorModel.Description" />
+                </div>
+
+                <div class="offer-section">
+                    <button type="button" class="offer-toggle" @onclick="() => editorModel.IncludeOffer = !editorModel.IncludeOffer">
+                        <RadzenIcon Icon="@(editorModel.IncludeOffer ? "expand_less" : "local_offer")" />
+                        @(editorModel.IncludeOffer ? "Remove Offer Details" : "Attach Offer Details (optional)")
+                    </button>
+
+                    @if (editorModel.IncludeOffer)
+                    {
+                        <div class="offer-fields form-grid-3">
+                            <div class="form-group">
+                                <label for="req-offer-supplier">Supplier</label>
+                                <select id="req-offer-supplier" class="filter-select" @bind="editorModel.OfferSupplierName">
+                                    <option value="">— Select supplier —</option>
+                                    @foreach (var s in suppliers)
+                                    {
+                                        <option value="@s.SupplierName">@s.SupplierName</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="req-offer-price">Unit Price (€)</label>
+                                <InputNumber id="req-offer-price" @bind-Value="editorModel.OfferPrice" class="form-control" />
+                            </div>
+                            <div class="form-group">
+                                <label for="req-offer-delivery">Expected Delivery</label>
+                                <InputDate id="req-offer-delivery" @bind-Value="editorModel.OfferDeliveryDate" />
+                            </div>
+                        </div>
+                    }
                 </div>
 
                 <div class="form-actions">
@@ -236,12 +271,34 @@
                                 <span class="badge @StatusBadge(r.Status)">@NormalizeStatus(r.Status)</span>
                             </Template>
                         </RadzenDataGridColumn>
-                        <RadzenDataGridColumn TItem="Request" Title="Actions" Filterable="false" Sortable="false" Width="280px">
+                        <RadzenDataGridColumn TItem="Request" Title="Offers" Filterable="false" Sortable="false" Width="90px">
+                            <Template Context="r">
+                                @if (r.Offers?.Count > 0)
+                                {
+                                    var accepted = r.Offers.Count(o => o.Selected == true);
+                                    <span class="badge @(accepted > 0 ? "badge-success" : "badge-primary")">
+                                        @r.Offers.Count offer@(r.Offers.Count != 1 ? "s" : "")
+                                        @if (accepted > 0) { <text> ✓</text> }
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-light">no offers</span>
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="Request" Title="Actions" Filterable="false" Sortable="false" Width="220px">
                             <Template Context="r">
                                 <div class="table-actions">
-                                    <RadzenButton Icon="edit"
+                                    <RadzenButton Icon="visibility"
+                                                  Text="Details"
                                                   Size="ButtonSize.Small"
                                                   ButtonStyle="ButtonStyle.Primary"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => OpenDetailModal(r))" />
+                                    <RadzenButton Icon="edit"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Light"
                                                   Shade="Shade.Lighter"
                                                   Click="@(() => OpenEditModal(r))" />
                                     <RadzenButton Icon="delete"
@@ -252,11 +309,17 @@
                                     @if (IsStatus(r.Status, "Pending"))
                                     {
                                         <RadzenButton Icon="check_circle"
-                                                      Text="Accept"
+                                                      Text="Approve"
                                                       Size="ButtonSize.Small"
                                                       ButtonStyle="ButtonStyle.Success"
                                                       Shade="Shade.Lighter"
                                                       Click="@(() => SetStatusAsync(r, "Approved"))" />
+                                        <RadzenButton Icon="cancel"
+                                                      Text="Reject"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Danger"
+                                                      Shade="Shade.Lighter"
+                                                      Click="@(() => SetStatusAsync(r, "Rejected"))" />
                                     }
                                     @if (ShowAdminStatusTools && IsStatus(r.Status, "Approved"))
                                     {
@@ -385,6 +448,186 @@
     </div>
 }
 
+@if (showDetailModal && detailRequest != null)
+{
+    <div class="modal-overlay" @onclick="CloseDetailModal">
+        <div class="modal-content modal-content-wide modal-content-xl" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2><RadzenIcon Icon="description" /> Request #@detailRequest.Id — @detailRequest.Title</h2>
+                <button type="button" class="modal-close" @onclick="CloseDetailModal">×</button>
+            </div>
+
+            <div class="detail-section">
+                <div class="detail-grid">
+                    <div class="detail-field">
+                        <span class="detail-label">Employee</span>
+                        <span class="detail-value">@detailRequest.Employee?.FullName</span>
+                    </div>
+                    <div class="detail-field">
+                        <span class="detail-label">Project</span>
+                        <span class="detail-value">@detailRequest.ProjectName</span>
+                    </div>
+                    <div class="detail-field">
+                        <span class="detail-label">Material Type</span>
+                        <span class="detail-value">@detailRequest.MaterialType</span>
+                    </div>
+                    <div class="detail-field">
+                        <span class="detail-label">Date</span>
+                        <span class="detail-value">@detailRequest.Date.ToString("yyyy-MM-dd")</span>
+                    </div>
+                    <div class="detail-field">
+                        <span class="detail-label">Status</span>
+                        <span class="badge @StatusBadge(detailRequest.Status)">@NormalizeStatus(detailRequest.Status)</span>
+                    </div>
+                    @if (detailRequest.ApprovedAt.HasValue)
+                    {
+                        <div class="detail-field">
+                            <span class="detail-label">Approved At</span>
+                            <span class="detail-value">@detailRequest.ApprovedAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+                        </div>
+                    }
+                </div>
+                <div class="detail-field detail-field-full">
+                    <span class="detail-label">Description</span>
+                    <p class="detail-value detail-description">@detailRequest.Description</p>
+                </div>
+            </div>
+
+            <div class="offers-section">
+                <div class="offers-header">
+                    <h3><RadzenIcon Icon="local_offer" /> Offers</h3>
+                    <button type="button" class="btn-add-offer" @onclick="() => showAddOfferForm = !showAddOfferForm">
+                        <RadzenIcon Icon="add_circle" /> Add Offer
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(offerError))
+                {
+                    <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Text="@offerError" />
+                }
+
+                @if (showAddOfferForm)
+                {
+                    <div class="add-offer-form form-grid-3">
+                        <div class="form-group">
+                            <label>Supplier</label>
+                            <select class="filter-select" @bind="newOfferModel.SupplierName">
+                                <option value="">— Select supplier —</option>
+                                @foreach (var s in suppliers)
+                                {
+                                    <option value="@s.SupplierName">@s.SupplierName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Unit Price (€)</label>
+                            <input type="number" step="0.01" min="0" class="form-control"
+                                   value="@newOfferModel.Price"
+                                   @onchange="e => newOfferModel.Price = decimal.TryParse(e.Value?.ToString(), out var v) ? v : 0" />
+                        </div>
+                        <div class="form-group">
+                            <label>Expected Delivery</label>
+                            <input type="date" class="form-control"
+                                   value="@newOfferModel.DeliveryDate.ToString("yyyy-MM-dd")"
+                                   @onchange="e => newOfferModel.DeliveryDate = DateTime.TryParse(e.Value?.ToString(), out var d) ? d : DateTime.UtcNow.AddDays(7)" />
+                        </div>
+                        <div class="form-group form-group-actions">
+                            <RadzenButton Icon="save" Text="Save Offer" ButtonStyle="ButtonStyle.Primary" Shade="Shade.Lighter" Click="SaveNewOfferAsync" />
+                            <RadzenButton Icon="cancel" Text="Cancel" ButtonStyle="ButtonStyle.Light" Shade="Shade.Lighter" Click="() => { showAddOfferForm = false; offerError = null; }" />
+                        </div>
+                    </div>
+                }
+
+                @if (detailRequest.Offers == null || detailRequest.Offers.Count == 0)
+                {
+                    <div class="offers-empty">
+                        <RadzenIcon Icon="local_offer" Style="font-size: 28px; opacity: 0.3;" />
+                        <p>No offers attached to this request yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="offers-list">
+                        @foreach (var offer in detailRequest.Offers.OrderBy(o => o.CreatedAt))
+                        {
+                            <div class="offer-card @OfferCardClass(offer.Selected)">
+                                <div class="offer-card-body">
+                                    <div class="offer-card-field">
+                                        <span class="offer-label">Supplier</span>
+                                        <span class="offer-value">@offer.SupplierName</span>
+                                    </div>
+                                    <div class="offer-card-field">
+                                        <span class="offer-label">Price</span>
+                                        <span class="offer-value offer-price">€@offer.Price.ToString("N2")</span>
+                                    </div>
+                                    <div class="offer-card-field">
+                                        <span class="offer-label">Delivery Date</span>
+                                        <span class="offer-value">@offer.DeliveryDate.ToString("yyyy-MM-dd")</span>
+                                    </div>
+                                    <div class="offer-card-field">
+                                        <span class="offer-label">Status</span>
+                                        <span class="badge @OfferBadge(offer.Selected)">@OfferStatus(offer.Selected)</span>
+                                    </div>
+                                </div>
+                                <div class="offer-card-actions">
+                                    @if (offer.Selected != true)
+                                    {
+                                        <RadzenButton Icon="check_circle"
+                                                      Text="Accept"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Success"
+                                                      Shade="Shade.Lighter"
+                                                      Click="@(() => SetOfferSelectedAsync(offer, true))" />
+                                    }
+                                    @if (offer.Selected != false)
+                                    {
+                                        <RadzenButton Icon="cancel"
+                                                      Text="Reject"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Danger"
+                                                      Shade="Shade.Lighter"
+                                                      Click="@(() => SetOfferSelectedAsync(offer, false))" />
+                                    }
+                                    @if (offer.Selected != null)
+                                    {
+                                        <RadzenButton Icon="undo"
+                                                      Text="Reset"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Light"
+                                                      Shade="Shade.Lighter"
+                                                      Click="@(() => SetOfferSelectedAsync(offer, null))" />
+                                    }
+                                    <RadzenButton Icon="delete"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Danger"
+                                                  Shade="Shade.Lighter"
+                                                  Click="@(() => DeleteOfferAsync(offer))" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="modal-footer-actions">
+                @if (IsStatus(detailRequest.Status, "Pending"))
+                {
+                    <RadzenButton Icon="check_circle" Text="Approve Request" ButtonStyle="ButtonStyle.Success" Shade="Shade.Lighter"
+                                  Click="@(async () => { await SetStatusAsync(detailRequest, "Approved"); detailRequest = requests.FirstOrDefault(r => r.Id == detailRequest.Id) ?? detailRequest; })" />
+                    <RadzenButton Icon="cancel" Text="Reject Request" ButtonStyle="ButtonStyle.Danger" Shade="Shade.Lighter"
+                                  Click="@(async () => { await SetStatusAsync(detailRequest, "Rejected"); CloseDetailModal(); })" />
+                }
+                @if (ShowAdminStatusTools && IsStatus(detailRequest.Status, "Approved"))
+                {
+                    <RadzenButton Icon="done_all" Text="Mark Done" ButtonStyle="ButtonStyle.Light" Shade="Shade.Lighter"
+                                  Click="@(async () => { await SetStatusAsync(detailRequest, "Done"); CloseDetailModal(); })" />
+                }
+                <RadzenButton Icon="close" Text="Close" ButtonStyle="ButtonStyle.Light" Shade="Shade.Lighter" Click="CloseDetailModal" />
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public string InitialScope { get; set; } = "active";
     [Parameter] public bool ShowAdminStatusTools { get; set; }
@@ -394,13 +637,20 @@
     private readonly List<Request> requests = [];
     private readonly List<Employee> employees = [];
     private readonly List<Project> projects = [];
+    private readonly List<Supplier> suppliers = [];
     private List<Request> filteredRequests = [];
 
     private bool isLoading = true;
     private bool showEditorModal;
+    private bool showDetailModal;
     private bool isEditMode;
     private bool initializedScope;
     private bool newRequestSuccess;
+    private bool showAddOfferForm;
+
+    private Request? detailRequest;
+    private OfferEditorModel newOfferModel = new();
+    private string? offerError;
 
     private string purchaseTab = "new";
     private string searchText = string.Empty;
@@ -444,6 +694,10 @@
             var projectList = await ProjectService.GetProjectsList();
             projects.Clear();
             projects.AddRange(projectList.OrderBy(p => p.ProjectName));
+
+            var supplierList = await SupplierService.GetSuppliersList();
+            suppliers.Clear();
+            suppliers.AddRange(supplierList.OrderBy(s => s.SupplierName));
 
             var requestList = await RequestService.GetRequestsList();
             requests.Clear();
@@ -575,7 +829,20 @@
             }
             else
             {
-                await RequestService.CreateRequest(payload);
+                var created = await RequestService.CreateRequest(payload);
+
+                if (editorModel.IncludeOffer && !string.IsNullOrWhiteSpace(editorModel.OfferSupplierName))
+                {
+                    await OfferService.CreateOffer(new Offer
+                    {
+                        RequestId = created.Id,
+                        SupplierName = editorModel.OfferSupplierName.Trim(),
+                        Price = editorModel.OfferPrice,
+                        DeliveryDate = editorModel.OfferDeliveryDate,
+                        Selected = null
+                    });
+                }
+
                 NotifySuccess("Request submitted", $"{payload.Title} submitted successfully.");
                 newRequestSuccess = true;
                 editorModel = new RequestEditorModel
@@ -643,6 +910,128 @@
         showEditorModal = false;
         editorError = null;
     }
+
+    private void OpenDetailModal(Request request)
+    {
+        detailRequest = request;
+        showDetailModal = true;
+        showAddOfferForm = false;
+        offerError = null;
+        newOfferModel = new OfferEditorModel();
+    }
+
+    private void CloseDetailModal()
+    {
+        showDetailModal = false;
+        detailRequest = null;
+        showAddOfferForm = false;
+        offerError = null;
+    }
+
+    private async Task SaveNewOfferAsync()
+    {
+        if (detailRequest == null) return;
+        offerError = null;
+
+        if (string.IsNullOrWhiteSpace(newOfferModel.SupplierName))
+        {
+            offerError = "Please select a supplier.";
+            return;
+        }
+        if (newOfferModel.Price <= 0)
+        {
+            offerError = "Price must be greater than zero.";
+            return;
+        }
+
+        try
+        {
+            await OfferService.CreateOffer(new Offer
+            {
+                RequestId = detailRequest.Id,
+                SupplierName = newOfferModel.SupplierName.Trim(),
+                Price = newOfferModel.Price,
+                DeliveryDate = newOfferModel.DeliveryDate,
+                Selected = null
+            });
+
+            NotifySuccess("Offer added", $"Offer from {newOfferModel.SupplierName} added.");
+            showAddOfferForm = false;
+            newOfferModel = new OfferEditorModel();
+            await ReloadAsync();
+            detailRequest = requests.FirstOrDefault(r => r.Id == detailRequest.Id) ?? detailRequest;
+        }
+        catch (Exception ex)
+        {
+            offerError = ex.Message;
+        }
+    }
+
+    private async Task SetOfferSelectedAsync(Offer offer, bool? selected)
+    {
+        if (detailRequest == null) return;
+        offerError = null;
+
+        try
+        {
+            var updated = new Offer
+            {
+                Id = offer.Id,
+                RequestId = offer.RequestId,
+                SupplierName = offer.SupplierName,
+                Price = offer.Price,
+                DeliveryDate = offer.DeliveryDate,
+                Selected = selected
+            };
+            await OfferService.UpdateOffer(offer.Id, updated);
+            NotifySuccess("Offer updated", selected switch { true => "Offer accepted.", false => "Offer rejected.", _ => "Offer reset." });
+            await ReloadAsync();
+            detailRequest = requests.FirstOrDefault(r => r.Id == detailRequest.Id) ?? detailRequest;
+        }
+        catch (Exception ex)
+        {
+            offerError = ex.Message;
+        }
+    }
+
+    private async Task DeleteOfferAsync(Offer offer)
+    {
+        if (detailRequest == null) return;
+        offerError = null;
+
+        try
+        {
+            await OfferService.DeleteOffer(offer.Id);
+            NotifySuccess("Offer deleted", "Offer removed.");
+            await ReloadAsync();
+            detailRequest = requests.FirstOrDefault(r => r.Id == detailRequest.Id) ?? detailRequest;
+        }
+        catch (Exception ex)
+        {
+            offerError = ex.Message;
+        }
+    }
+
+    private static string OfferCardClass(bool? selected) => selected switch
+    {
+        true => "offer-card-accepted",
+        false => "offer-card-rejected",
+        _ => "offer-card-pending"
+    };
+
+    private static string OfferBadge(bool? selected) => selected switch
+    {
+        true => "badge-success",
+        false => "badge-danger",
+        _ => "badge-warning"
+    };
+
+    private static string OfferStatus(bool? selected) => selected switch
+    {
+        true => "Accepted",
+        false => "Rejected",
+        _ => "Pending"
+    };
 
     private string? ValidateEditor()
     {
@@ -773,5 +1162,18 @@
         public string MaterialType { get; set; } = string.Empty;
         public DateTime Date { get; set; } = DateTime.UtcNow.Date;
         public string Status { get; set; } = "Pending";
+
+        // Optional offer to attach when creating
+        public bool IncludeOffer { get; set; }
+        public string OfferSupplierName { get; set; } = string.Empty;
+        public decimal OfferPrice { get; set; }
+        public DateTime OfferDeliveryDate { get; set; } = DateTime.UtcNow.AddDays(14).Date;
+    }
+
+    private sealed class OfferEditorModel
+    {
+        public string SupplierName { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public DateTime DeliveryDate { get; set; } = DateTime.UtcNow.AddDays(14).Date;
     }
 }
