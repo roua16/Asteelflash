@@ -5,6 +5,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject IEmployeeService EmployeeService
 @inject NotificationService NotificationService
+@inject IJSRuntime JS
 
 <PageTitle>Employees Administration - IT Stock Management</PageTitle>
 
@@ -60,6 +61,11 @@
                 </select>
             </div>
             <div class="toolbar-group toolbar-group-end">
+                <RadzenButton Icon="file_download"
+                              Text="Export Excel"
+                              ButtonStyle="ButtonStyle.Success"
+                              Shade="Shade.Lighter"
+                              Click="@ExportExcelAsync" />
                 <RadzenButton Icon="refresh"
                               Text="Refresh"
                               ButtonStyle="ButtonStyle.Light"
@@ -474,5 +480,28 @@
         public string Service { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string Role { get; set; } = "Employee";
+    }
+
+    private async Task ExportExcelAsync()
+    {
+        try
+        {
+            var bytes = ITStockM.Services.ExcelExportService.ExportEmployees(filteredEmployees);
+            var b64 = Convert.ToBase64String(bytes);
+            await JS.InvokeVoidAsync("downloadFileFromBase64",
+                $"Employees_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                b64);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Export failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
     }
 }

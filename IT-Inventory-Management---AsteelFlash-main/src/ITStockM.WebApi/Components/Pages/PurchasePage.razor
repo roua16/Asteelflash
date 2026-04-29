@@ -13,6 +13,7 @@
 @inject IOfferService OfferService
 @inject ISupplierService SupplierService
 @inject NotificationService NotificationService
+@inject IJSRuntime JS
 
 <PageTitle>Purchase Requests - IT Stock Management</PageTitle>
 
@@ -121,35 +122,52 @@
                     <InputTextArea id="req-description" @bind-Value="editorModel.Description" />
                 </div>
 
-                <div class="offer-section">
-                    <button type="button" class="offer-toggle" @onclick="() => editorModel.IncludeOffer = !editorModel.IncludeOffer">
-                        <RadzenIcon Icon="@(editorModel.IncludeOffer ? "expand_less" : "local_offer")" />
-                        @(editorModel.IncludeOffer ? "Remove Offer Details" : "Attach Offer Details (optional)")
-                    </button>
-
-                    @if (editorModel.IncludeOffer)
-                    {
-                        <div class="offer-fields form-grid-3">
-                            <div class="form-group">
-                                <label for="req-offer-supplier">Supplier</label>
-                                <select id="req-offer-supplier" class="filter-select" @bind="editorModel.OfferSupplierName">
-                                    <option value="">— Select supplier —</option>
-                                    @foreach (var s in suppliers)
+                <div class="offers-form-section">
+                    <div class="offers-form-header">
+                        <RadzenIcon Icon="local_offer" />
+                        <span>Offers <em class="offers-optional-hint">(attach up to 3 supplier offers — optional)</em></span>
+                    </div>
+                    <div class="offers-form-grid">
+                        @for (int i = 0; i < 3; i++)
+                        {
+                            var idx = i;
+                            var offer = editorModel.Offers[idx];
+                            <div class="offer-slot @(offer.IsFilled ? "offer-slot-active" : "")">
+                                <div class="offer-slot-label">
+                                    <span class="offer-slot-number">Offer @(idx + 1)</span>
+                                    @if (offer.IsFilled)
                                     {
-                                        <option value="@s.SupplierName">@s.SupplierName</option>
+                                        <span class="badge badge-primary">filled</span>
                                     }
-                                </select>
+                                </div>
+                                <div class="form-grid-3">
+                                    <div class="form-group">
+                                        <label>Supplier</label>
+                                        <select class="filter-select" value="@offer.SupplierName"
+                                                @onchange="e => offer.SupplierName = e.Value?.ToString() ?? string.Empty">
+                                            <option value="">— Select supplier —</option>
+                                            @foreach (var s in suppliers)
+                                            {
+                                                <option value="@s.SupplierName" selected="@(offer.SupplierName == s.SupplierName)">@s.SupplierName</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Unit Price (€)</label>
+                                        <input type="number" step="0.01" min="0" class="form-control"
+                                               value="@(offer.Price == 0 ? "" : offer.Price.ToString())"
+                                               @onchange="e => offer.Price = decimal.TryParse(e.Value?.ToString(), out var v) ? v : 0" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Expected Delivery</label>
+                                        <input type="date" class="form-control"
+                                               value="@offer.DeliveryDate.ToString("yyyy-MM-dd")"
+                                               @onchange="e => offer.DeliveryDate = DateTime.TryParse(e.Value?.ToString(), out var d) ? d : DateTime.UtcNow.AddDays(14)" />
+                                    </div>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="req-offer-price">Unit Price (€)</label>
-                                <InputNumber id="req-offer-price" @bind-Value="editorModel.OfferPrice" class="form-control" />
-                            </div>
-                            <div class="form-group">
-                                <label for="req-offer-delivery">Expected Delivery</label>
-                                <InputDate id="req-offer-delivery" @bind-Value="editorModel.OfferDeliveryDate" />
-                            </div>
-                        </div>
-                    }
+                        }
+                    </div>
                 </div>
 
                 <div class="form-actions">
@@ -213,6 +231,11 @@
                 </div>
 
                 <div class="toolbar-group toolbar-group-end">
+                    <RadzenButton Icon="file_download"
+                                  Text="Export Excel"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Shade="Shade.Lighter"
+                                  Click="@ExportExcelAsync" />
                     <RadzenButton Icon="refresh"
                                   Text="Refresh"
                                   ButtonStyle="ButtonStyle.Light"
@@ -831,14 +854,14 @@
             {
                 var created = await RequestService.CreateRequest(payload);
 
-                if (editorModel.IncludeOffer && !string.IsNullOrWhiteSpace(editorModel.OfferSupplierName))
+                foreach (var offerSlot in editorModel.Offers.Where(o => o.IsFilled))
                 {
                     await OfferService.CreateOffer(new Offer
                     {
                         RequestId = created.Id,
-                        SupplierName = editorModel.OfferSupplierName.Trim(),
-                        Price = editorModel.OfferPrice,
-                        DeliveryDate = editorModel.OfferDeliveryDate,
+                        SupplierName = offerSlot.SupplierName.Trim(),
+                        Price = offerSlot.Price,
+                        DeliveryDate = offerSlot.DeliveryDate,
                         Selected = null
                     });
                 }
@@ -1163,11 +1186,18 @@
         public DateTime Date { get; set; } = DateTime.UtcNow.Date;
         public string Status { get; set; } = "Pending";
 
-        // Optional offer to attach when creating
-        public bool IncludeOffer { get; set; }
-        public string OfferSupplierName { get; set; } = string.Empty;
-        public decimal OfferPrice { get; set; }
-        public DateTime OfferDeliveryDate { get; set; } = DateTime.UtcNow.AddDays(14).Date;
+        public List<OfferSlotModel> Offers { get; set; } =
+        [
+            new(), new(), new()
+        ];
+    }
+
+    private sealed class OfferSlotModel
+    {
+        public string SupplierName { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public DateTime DeliveryDate { get; set; } = DateTime.UtcNow.AddDays(14).Date;
+        public bool IsFilled => !string.IsNullOrWhiteSpace(SupplierName) && Price > 0;
     }
 
     private sealed class OfferEditorModel
@@ -1175,5 +1205,28 @@
         public string SupplierName { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public DateTime DeliveryDate { get; set; } = DateTime.UtcNow.AddDays(14).Date;
+    }
+
+    private async Task ExportExcelAsync()
+    {
+        try
+        {
+            var bytes = ITStockM.Services.ExcelExportService.ExportRequests(filteredRequests);
+            var b64 = Convert.ToBase64String(bytes);
+            await JS.InvokeVoidAsync("downloadFileFromBase64",
+                $"PurchaseRequests_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                b64);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Export failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
     }
 }

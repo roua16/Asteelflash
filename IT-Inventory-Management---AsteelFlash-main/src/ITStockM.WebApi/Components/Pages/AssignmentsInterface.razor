@@ -13,6 +13,7 @@
 @inject IProjectService ProjectService
 @inject IMaterielService MaterielService
 @inject NotificationService NotificationService
+@inject IJSRuntime JS
 
 <PageTitle>Materials Assignments - IT Stock Management</PageTitle>
 
@@ -68,6 +69,11 @@
             </div>
 
             <div class="toolbar-group toolbar-group-end">
+                <RadzenButton Icon="file_download"
+                              Text="Export Excel"
+                              ButtonStyle="ButtonStyle.Success"
+                              Shade="Shade.Lighter"
+                              Click="@ExportExcelAsync" />
                 <RadzenButton Icon="refresh"
                               Text="Refresh"
                               ButtonStyle="ButtonStyle.Light"
@@ -946,4 +952,27 @@
         string ProjectName,
         int LinkedMaterialLines,
         int LinkedMaterialQuantity);
+
+    private async Task ExportExcelAsync()
+    {
+        try
+        {
+            var bytes = ITStockM.Services.ExcelExportService.ExportAssignments(assignments);
+            var b64 = Convert.ToBase64String(bytes);
+            await JS.InvokeVoidAsync("downloadFileFromBase64",
+                $"Assignments_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                b64);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Export failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+    }
 }

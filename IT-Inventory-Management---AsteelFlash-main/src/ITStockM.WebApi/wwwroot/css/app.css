@@ -3298,3 +3298,72 @@ body.theme-light {
     background: rgba(148,163,184,0.15);
     color: var(--app-text-soft);
 }
+
+/* ─── 3-Offer Slots in New Request Form ─────────────────────────────────── */
+.offers-form-section {
+    border: 1px solid var(--app-border);
+    border-radius: 14px;
+    padding: 1.1rem 1.15rem;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+    margin-bottom: 0.5rem;
+}
+
+.offers-form-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.93rem;
+    font-weight: 680;
+    color: var(--app-text);
+    margin-bottom: 1rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid var(--app-border);
+}
+
+.offers-form-header em.offers-optional-hint {
+    font-style: normal;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--app-muted);
+}
+
+.offers-form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+@media (max-width: 900px) {
+    .offers-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.offer-slot {
+    border: 1px dashed var(--app-border);
+    border-radius: 11px;
+    padding: 0.9rem 0.9rem 0.75rem;
+    background: var(--app-surface-soft);
+    transition: border-color 180ms ease;
+}
+
+.offer-slot-active {
+    border-color: rgba(34, 211, 238, 0.4);
+    border-style: solid;
+    background: rgba(34, 211, 238, 0.04);
+}
+
+.offer-slot-label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.6rem;
+}
+
+.offer-slot-number {
+    font-size: 0.78rem;
+    font-weight: 720;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--app-muted);
+}
