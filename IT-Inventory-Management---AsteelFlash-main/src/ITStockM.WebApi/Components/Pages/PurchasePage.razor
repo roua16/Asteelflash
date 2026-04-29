@@ -140,7 +140,7 @@
                                         <span class="badge badge-primary">filled</span>
                                     }
                                 </div>
-                                <div class="form-grid-3">
+                                <div class="offer-slot-fields">
                                     <div class="form-group">
                                         <label>Supplier</label>
                                         <select class="filter-select" value="@offer.SupplierName"
@@ -158,7 +158,7 @@
                                                value="@(offer.Price == 0 ? "" : offer.Price.ToString())"
                                                @onchange="e => offer.Price = decimal.TryParse(e.Value?.ToString(), out var v) ? v : 0" />
                                     </div>
-                                    <div class="form-group">
+                                    <div class="form-group offer-delivery-group">
                                         <label>Expected Delivery</label>
                                         <input type="date" class="form-control"
                                                value="@offer.DeliveryDate.ToString("yyyy-MM-dd")"
