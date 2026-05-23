@@ -3,6 +3,7 @@
 @using ITStockM.Services.LanSweeper
 @using ITStockM.Services.Materiels
 @using ITStockM.Domain.Entities
+@using ITStockM.Domain.Enums
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin,IT,Infrastructure")]
 @inject ILanSweeperService LanSweeperService
@@ -20,7 +21,7 @@
             </div>
             <div class="header-actions">
                 <RadzenButton Icon="refresh" Text="Refresh" ButtonStyle="ButtonStyle.Light"
-                              Click="@LoadDevices" Disabled="@(isLoading || !isConfigured)" />
+                              Click="@RefreshAll" Disabled="@(isLoading || !isConfigured)" />
             </div>
         </div>
     </div>
@@ -48,11 +49,35 @@
         </div>
     }
 
+    @* Stats Summary *@
+    <div class="ls-stats-row">
+        <div class="ls-stat-card">
+            <RadzenIcon Icon="device_hub" class="ls-stat-icon" />
+            <span class="ls-stat-value">@allDevices.Count</span>
+            <span class="ls-stat-label">Total Devices</span>
+        </div>
+        <div class="ls-stat-card ls-stat-online">
+            <RadzenIcon Icon="wifi" class="ls-stat-icon" />
+            <span class="ls-stat-value">@allDevices.Count(d => d.IsOnline)</span>
+            <span class="ls-stat-label">Online</span>
+        </div>
+        <div class="ls-stat-card ls-stat-offline">
+            <RadzenIcon Icon="wifi_off" class="ls-stat-icon" />
+            <span class="ls-stat-value">@allDevices.Count(d => !d.IsOnline)</span>
+            <span class="ls-stat-label">Offline</span>
+        </div>
+        <div class="ls-stat-card ls-stat-imported">
+            <RadzenIcon Icon="inventory" class="ls-stat-icon" />
+            <span class="ls-stat-value">@importedCount</span>
+            <span class="ls-stat-label">In Inventory</span>
+        </div>
+    </div>
+
     <div class="panel">
         <div class="panel-header flex-between">
             <div class="panel-meta">
-                <RadzenIcon Icon="device_hub" class="panel-icon-sm" />
-                <span>@filteredDevices.Count device@(filteredDevices.Count != 1 ? "s" : "") found
+                <RadzenIcon Icon="list" class="panel-icon-sm" />
+                <span>@filteredDevices.Count device@(filteredDevices.Count != 1 ? "s" : "")
                     @if (!isConfigured) { <span class="demo-badge">demo</span> }
                 </span>
                 @if (onlineCount > 0)
@@ -62,10 +87,23 @@
             </div>
             <div class="search-row">
                 <RadzenTextBox Placeholder="Search name, IP, user, model…"
-                               @bind-Value="searchTerm"
+                               Value="@searchTerm"
                                @oninput="OnSearch"
                                Class="search-input" />
             </div>
+        </div>
+
+        @* Type filter tabs *@
+        <div class="ls-type-filter">
+            @foreach (var t in typeFilters)
+            {
+                <button class="ls-type-btn @(activeTypeFilter == t ? "ls-type-btn-active" : "")"
+                        @onclick="@(() => SetTypeFilter(t))">
+                    <RadzenIcon Icon="@GetTypeIcon(t)" />
+                    <span>@t</span>
+                    <span class="ls-type-count">@GetTypeCount(t)</span>
+                </button>
+            }
         </div>
 
         @if (isLoading)
@@ -79,7 +117,7 @@
         {
             <div class="empty-state">
                 <RadzenIcon Icon="search_off" class="empty-icon" />
-                <p>No devices found@(string.IsNullOrWhiteSpace(searchTerm) ? "." : " matching your search.")</p>
+                <p>No devices found@(string.IsNullOrWhiteSpace(searchTerm) && activeTypeFilter == "All" ? "." : " matching your filters.")</p>
             </div>
         }
         else
@@ -104,7 +142,8 @@
                     <tbody>
                         @foreach (var device in filteredDevices)
                         {
-                            <tr>
+                            var alreadyImported = IsAlreadyImported(device);
+                            <tr class="@(alreadyImported ? "ls-row-imported" : "")">
                                 <td>
                                     <span class="status-dot @(device.IsOnline ? "status-online" : "status-offline")"
                                           title="@(device.IsOnline ? "Online" : "Offline")"></span>
@@ -115,12 +154,9 @@
                                 <td>
                                     @if (!string.IsNullOrWhiteSpace(device.AssetType))
                                     {
-                                        <span class="badge-chip badge-info">@device.AssetType</span>
+                                        <span class="badge-chip @GetTypeBadgeClass(device.AssetType)">@MapDisplayType(device.AssetType)</span>
                                     }
-                                    else
-                                    {
-                                        <span>—</span>
-                                    }
+                                    else { <span>—</span> }
                                 </td>
                                 <td class="text-sm">@(device.OsName ?? "—")</td>
                                 <td class="text-sm">
@@ -128,10 +164,7 @@
                                     {
                                         <span>@device.Manufacturer @device.Model</span>
                                     }
-                                    else
-                                    {
-                                        <span>—</span>
-                                    }
+                                    else { <span>—</span> }
                                 </td>
                                 <td class="font-mono text-sm">@(device.SerialNumber ?? "—")</td>
                                 <td>@device.MemoryDisplay</td>
@@ -142,19 +175,23 @@
                                             @FormatRelativeTime(device.LastSeen.Value)
                                         </span>
                                     }
-                                    else
-                                    {
-                                        <span>—</span>
-                                    }
+                                    else { <span>—</span> }
                                 </td>
                                 <td>
-                                    @if (isConfigured)
+                                    @if (alreadyImported)
+                                    {
+                                        <span class="ls-imported-badge" title="Already in inventory">
+                                            <RadzenIcon Icon="check_circle" />
+                                            In Inventory
+                                        </span>
+                                    }
+                                    else if (isConfigured)
                                     {
                                         <RadzenButton Icon="add_box"
                                                       ButtonStyle="ButtonStyle.Success"
                                                       Size="ButtonSize.Small"
                                                       Variant="Variant.Flat"
-                                                      Text="Import"
+                                                      Text="@(importingId == device.AssetId ? "Importing…" : "Import")"
                                                       title="Import this device to inventory"
                                                       Disabled="@(importingId == device.AssetId)"
                                                       Click="@(() => ImportToInventoryAsync(device))" />
@@ -177,19 +214,63 @@
     private List<LanSweeperDevice> allDevices = [];
     private List<LanSweeperDevice> filteredDevices = [];
     private string searchTerm = string.Empty;
+    private string activeTypeFilter = "All";
     private bool isLoading = false;
     private bool isConfigured = false;
     private int? importingId = null;
+
     private int onlineCount => filteredDevices.Count(d => d.IsOnline);
+    private int importedCount => allDevices.Count(d => IsAlreadyImported(d));
+
+    // Track devices already in inventory (SerialNumber and AssetName sets)
+    private readonly HashSet<string> importedSerials = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> importedNames   = new(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly string[] typeFilters = ["All", "Computer", "Laptop", "Server", "Switch", "Router", "Printer"];
 
     protected override async Task OnInitializedAsync()
     {
         isConfigured = LanSweeperService.IsConfigured;
+        await LoadExistingInventoryAsync();
+
         if (isConfigured)
             await LoadDevices();
         else
             LoadDemoDevices();
     }
+
+    // ── Inventory duplicate tracking ─────────────────────────────────────────
+
+    private async Task LoadExistingInventoryAsync()
+    {
+        try
+        {
+            var queryable = await MaterielService.GetMateriels();
+            var pairs = queryable.Select(m => new { m.SerialNumber, m.MaterielName }).ToList();
+            importedSerials.Clear();
+            importedNames.Clear();
+            foreach (var p in pairs)
+            {
+                if (!string.IsNullOrWhiteSpace(p.SerialNumber))
+                    importedSerials.Add(p.SerialNumber);
+                if (!string.IsNullOrWhiteSpace(p.MaterielName))
+                    importedNames.Add(p.MaterielName);
+            }
+        }
+        catch
+        {
+            // Non-critical — import tracking unavailable, continue
+        }
+    }
+
+    private bool IsAlreadyImported(LanSweeperDevice device)
+    {
+        if (!string.IsNullOrWhiteSpace(device.SerialNumber) && importedSerials.Contains(device.SerialNumber))
+            return true;
+        return importedNames.Contains(device.AssetName);
+    }
+
+    // ── Data loading ──────────────────────────────────────────────────────────
 
     private async Task LoadDevices()
     {
@@ -206,22 +287,32 @@
         }
     }
 
+    private async Task RefreshAll()
+    {
+        await LoadExistingInventoryAsync();
+        await LoadDevices();
+    }
+
     private void LoadDemoDevices()
     {
         var now = DateTime.UtcNow;
         allDevices =
         [
-            new() { AssetId=1, AssetName="PC-PROD-001", IpAddress="192.168.1.10", Username="ali.bensalem", AssetType="Computer", OsName="Windows 11 Pro", Manufacturer="Dell", Model="OptiPlex 7090", SerialNumber="DL7090A1", MemoryMb=16384, LastSeen=now.AddMinutes(-5)  },
-            new() { AssetId=2, AssetName="PC-PROD-002", IpAddress="192.168.1.11", Username="roua.chaouachi", AssetType="Computer", OsName="Windows 11 Pro", Manufacturer="HP", Model="EliteDesk 800 G8", SerialNumber="HP800G8B2", MemoryMb=8192, LastSeen=now.AddMinutes(-12) },
-            new() { AssetId=3, AssetName="LAP-DEV-003",  IpAddress="192.168.1.42", Username="tarek.mansouri",  AssetType="Laptop",   OsName="Windows 11 Home", Manufacturer="Lenovo", Model="ThinkPad T14s", SerialNumber="LNV14SA3", MemoryMb=32768, LastSeen=now.AddHours(-1)  },
-            new() { AssetId=4, AssetName="SRV-FILE-001", IpAddress="192.168.1.100", Username=null, AssetType="Server", OsName="Windows Server 2022", Manufacturer="Dell", Model="PowerEdge R750", SerialNumber="DPES750X1", MemoryMb=65536, LastSeen=now.AddMinutes(-2) },
-            new() { AssetId=5, AssetName="LAP-EXEC-004", IpAddress="192.168.1.55", Username="med.aloui", AssetType="Laptop", OsName="macOS 14 Sonoma", Manufacturer="Apple", Model="MacBook Pro 14", SerialNumber="C02X4ABCDEF", MemoryMb=16384, LastSeen=now.AddHours(-3) },
-            new() { AssetId=6, AssetName="PC-PROD-006", IpAddress="192.168.1.14", Username="sana.ferjani", AssetType="Computer", OsName="Windows 10 Pro", Manufacturer="HP", Model="ProDesk 400 G7", SerialNumber="HP400G7C4", MemoryMb=8192, LastSeen=now.AddDays(-2) },
-            new() { AssetId=7, AssetName="SWT-CORE-001", IpAddress="192.168.1.1", Username=null, AssetType="Switch", OsName=null, Manufacturer="Cisco", Model="Catalyst 9300", SerialNumber="FDO2142G5TH", MemoryMb=null, LastSeen=now.AddMinutes(-8) },
-            new() { AssetId=8, AssetName="PRT-FLOOR-002", IpAddress="192.168.1.201", Username=null, AssetType="Printer", OsName=null, Manufacturer="HP", Model="LaserJet Pro M404dn", SerialNumber="VNB3K12345", MemoryMb=null, LastSeen=now.AddHours(-6) },
+            new() { AssetId=1,  AssetName="PC-PROD-001",   IpAddress="192.168.1.10",  Username="ali.bensalem",    AssetType="Windows", OsName="Windows 11 Pro",      Manufacturer="Dell",   Model="OptiPlex 7090",     SerialNumber="DL7090A1",   MemoryMb=16384, LastSeen=now.AddMinutes(-5)  },
+            new() { AssetId=2,  AssetName="PC-PROD-002",   IpAddress="192.168.1.11",  Username="roua.chaouachi",  AssetType="Windows", OsName="Windows 11 Pro",      Manufacturer="HP",     Model="EliteDesk 800 G8",  SerialNumber="HP800G8B2",  MemoryMb=8192,  LastSeen=now.AddMinutes(-12) },
+            new() { AssetId=3,  AssetName="LAP-DEV-003",   IpAddress="192.168.1.42",  Username="tarek.mansouri",  AssetType="Laptop",  OsName="Windows 11 Home",     Manufacturer="Lenovo", Model="ThinkPad T14s",     SerialNumber="LNV14SA3",   MemoryMb=32768, LastSeen=now.AddHours(-1)   },
+            new() { AssetId=4,  AssetName="SRV-FILE-001",  IpAddress="192.168.1.100", Username=null,              AssetType="Server",  OsName="Windows Server 2022", Manufacturer="Dell",   Model="PowerEdge R750",    SerialNumber="DPES750X1",  MemoryMb=65536, LastSeen=now.AddMinutes(-2)  },
+            new() { AssetId=5,  AssetName="LAP-EXEC-004",  IpAddress="192.168.1.55",  Username="med.aloui",       AssetType="Laptop",  OsName="macOS 14 Sonoma",     Manufacturer="Apple",  Model="MacBook Pro 14",    SerialNumber="C02X4ABCDEF",MemoryMb=16384, LastSeen=now.AddHours(-3)   },
+            new() { AssetId=6,  AssetName="PC-PROD-006",   IpAddress="192.168.1.14",  Username="sana.ferjani",    AssetType="Windows", OsName="Windows 10 Pro",      Manufacturer="HP",     Model="ProDesk 400 G7",    SerialNumber="HP400G7C4",  MemoryMb=8192,  LastSeen=now.AddDays(-2)    },
+            new() { AssetId=7,  AssetName="SWT-CORE-001",  IpAddress="192.168.1.1",   Username=null,              AssetType="Switch",  OsName=null,                  Manufacturer="Cisco",  Model="Catalyst 9300",     SerialNumber="FDO2142G5TH",MemoryMb=null,  LastSeen=now.AddMinutes(-8)  },
+            new() { AssetId=8,  AssetName="PRT-FLOOR-002", IpAddress="192.168.1.201", Username=null,              AssetType="Printer", OsName=null,                  Manufacturer="HP",     Model="LaserJet Pro M404dn",SerialNumber="VNB3K12345", MemoryMb=null,  LastSeen=now.AddHours(-6)   },
+            new() { AssetId=9,  AssetName="SRV-BACKUP-02", IpAddress="192.168.1.101", Username=null,              AssetType="Server",  OsName="Windows Server 2019", Manufacturer="HP",     Model="ProLiant DL380",    SerialNumber="HP380GN9",   MemoryMb=32768, LastSeen=now.AddMinutes(-15) },
+            new() { AssetId=10, AssetName="RT-GW-001",     IpAddress="192.168.1.254", Username=null,              AssetType="Router",  OsName=null,                  Manufacturer="Cisco",  Model="ASA 5506-X",        SerialNumber="CS5506X01",  MemoryMb=null,  LastSeen=now.AddMinutes(-1)  },
         ];
         ApplyFilter();
     }
+
+    // ── Filtering ─────────────────────────────────────────────────────────────
 
     private void OnSearch(ChangeEventArgs e)
     {
@@ -229,29 +320,48 @@
         ApplyFilter();
     }
 
+    private void SetTypeFilter(string type)
+    {
+        activeTypeFilter = type;
+        ApplyFilter();
+    }
+
     private void ApplyFilter()
     {
-        if (string.IsNullOrWhiteSpace(searchTerm))
+        IEnumerable<LanSweeperDevice> result = allDevices;
+
+        if (activeTypeFilter != "All")
+            result = result.Where(d => MapDisplayType(d.AssetType) == activeTypeFilter);
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            filteredDevices = allDevices;
-            return;
+            var term = searchTerm.Trim().ToLower();
+            result = result.Where(d =>
+                (d.AssetName?.ToLower().Contains(term)      ?? false) ||
+                (d.IpAddress?.ToLower().Contains(term)      ?? false) ||
+                (d.Username?.ToLower().Contains(term)       ?? false) ||
+                (d.OsName?.ToLower().Contains(term)         ?? false) ||
+                (d.Manufacturer?.ToLower().Contains(term)   ?? false) ||
+                (d.Model?.ToLower().Contains(term)          ?? false) ||
+                (d.AssetType?.ToLower().Contains(term)      ?? false) ||
+                (d.SerialNumber?.ToLower().Contains(term)   ?? false)
+            );
         }
 
-        var term = searchTerm.Trim().ToLower();
-        filteredDevices = allDevices.Where(d =>
-            (d.AssetName?.ToLower().Contains(term) ?? false) ||
-            (d.IpAddress?.ToLower().Contains(term) ?? false) ||
-            (d.Username?.ToLower().Contains(term) ?? false) ||
-            (d.OsName?.ToLower().Contains(term) ?? false) ||
-            (d.Manufacturer?.ToLower().Contains(term) ?? false) ||
-            (d.Model?.ToLower().Contains(term) ?? false) ||
-            (d.AssetType?.ToLower().Contains(term) ?? false) ||
-            (d.SerialNumber?.ToLower().Contains(term) ?? false)
-        ).ToList();
+        filteredDevices = result.ToList();
     }
+
+    // ── Import ────────────────────────────────────────────────────────────────
 
     private async Task ImportToInventoryAsync(LanSweeperDevice device)
     {
+        if (IsAlreadyImported(device))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "Already Imported",
+                $"{device.AssetName} is already in inventory.", duration: 4000);
+            return;
+        }
+
         importingId = device.AssetId;
         StateHasChanged();
 
@@ -259,15 +369,24 @@
         {
             var materiel = new Materiel
             {
-                MaterielName = device.AssetName,
-                Type = device.AssetType ?? "Computer",
-                SerialNumber = device.SerialNumber,
-                QuantityITStock = 1,
-                QuantityPDRStock = 0,
-                Warranty = DateTime.Now.AddYears(1)
+                MaterielName        = device.AssetName,
+                Type                = MapInventoryType(device.AssetType),
+                SerialNumber        = device.SerialNumber,
+                QuantityITStock     = 1,
+                QuantityPDRStock    = 0,
+                IrreparableQuantity = 0,
+                Repairing_Quantity  = 0,
+                Warranty            = DateTime.Now.AddYears(1),
+                PurchaseDate        = DateTime.Now,
             };
 
             await MaterielService.CreateMateriel(materiel);
+
+            // Update local tracking so the row reflects "In Inventory" immediately
+            if (!string.IsNullOrWhiteSpace(device.SerialNumber))
+                importedSerials.Add(device.SerialNumber);
+            importedNames.Add(device.AssetName);
+
             NotificationService.Notify(NotificationSeverity.Success, "Imported",
                 $"{device.AssetName} added to inventory.", duration: 4000);
         }
@@ -281,12 +400,64 @@
         }
     }
 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /// <summary>Maps LanSweeper AssetTypename to a friendly display name used for filtering.</summary>
+    private static string MapDisplayType(string? assetType) => assetType switch
+    {
+        "Windows" => "Computer",
+        "Laptop"  => "Laptop",
+        "Server"  => "Server",
+        "Switch"  => "Switch",
+        "Router"  => "Router",
+        "Printer" => "Printer",
+        _         => assetType ?? "Other"
+    };
+
+    /// <summary>Maps LanSweeper AssetTypename to the Materiel.Type stored in inventory.</summary>
+    private static string MapInventoryType(string? assetType) => assetType switch
+    {
+        "Windows" => "Computer",
+        "Laptop"  => "Laptop",
+        "Server"  => "Server",
+        "Switch"  => "Switch",
+        "Router"  => "Router",
+        "Printer" => "Printer",
+        _         => assetType ?? "Computer"
+    };
+
+    private int GetTypeCount(string type) => type == "All"
+        ? allDevices.Count
+        : allDevices.Count(d => MapDisplayType(d.AssetType) == type);
+
+    private static string GetTypeIcon(string type) => type switch
+    {
+        "Computer" => "computer",
+        "Laptop"   => "laptop",
+        "Server"   => "dns",
+        "Switch"   => "device_hub",
+        "Router"   => "router",
+        "Printer"  => "print",
+        _          => "grid_view"
+    };
+
+    private static string GetTypeBadgeClass(string? assetType) => assetType switch
+    {
+        "Server"  => "badge-danger",
+        "Switch"  => "badge-info",
+        "Router"  => "badge-info",
+        "Printer" => "badge-warning",
+        "Laptop"  => "badge-primary",
+        _         => "badge-success"
+    };
+
     private static string FormatRelativeTime(DateTime dt)
     {
         var diff = DateTime.UtcNow - dt.ToUniversalTime();
+        if (diff.TotalMinutes < 1)  return "just now";
         if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
-        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
-        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        if (diff.TotalHours   < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays    < 7)  return $"{(int)diff.TotalDays}d ago";
         return dt.ToString("dd MMM yyyy");
     }
 }

@@ -19,6 +19,7 @@ using ITStockM.Services.Projects;
 using ITStockM.Services.Requests;
 using ITStockM.Services.Suppliers;
 using ITStockM.Infrastructure.Services;
+using ITStockM.Infrastructure.Services.ActiveDirectory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,6 +65,11 @@ public static class InfrastructureLayerServiceCollectionExtensions
         services.AddScoped<IDateTimeService, DateTimeService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IEventPublisher, EventPublisher>();
+
+        // Active Directory / LDAP – configuration-driven; disabled by default in dev
+        services.Configure<ActiveDirectoryOptions>(
+            configuration.GetSection(ActiveDirectoryOptions.Section));
+        services.AddScoped<IActiveDirectoryService, ActiveDirectoryService>();
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IMaterielRepository, MaterielRepository>();

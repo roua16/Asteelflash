@@ -1,4 +1,4 @@
-using ITStockM.Services;
+using ITStockM.Application.Common.Interfaces;
 using ITStockM.Models.Constants;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;

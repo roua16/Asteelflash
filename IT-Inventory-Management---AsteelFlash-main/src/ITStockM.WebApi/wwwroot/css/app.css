@@ -3236,6 +3236,100 @@ body.theme-light {
     vertical-align: middle;
 }
 
+/* ── LanSweeper stats row ── */
+.ls-stats-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+.ls-stat-card {
+    flex: 1;
+    min-width: 130px;
+    background: var(--panel-bg, #fff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+.ls-stat-value {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary, #111827);
+}
+.ls-stat-label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.ls-stat-icon {
+    font-size: 1.1rem;
+    opacity: 0.5;
+}
+.ls-stat-online .ls-stat-value  { color: #16a34a; }
+.ls-stat-offline .ls-stat-value { color: #dc2626; }
+.ls-stat-imported .ls-stat-value { color: #2563eb; }
+
+/* ── LanSweeper type filter tabs ── */
+.ls-type-filter {
+    display: flex;
+    gap: 0.45rem;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    flex-wrap: wrap;
+    background: var(--app-surface-2, #f9fafb);
+}
+.ls-type-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #374151);
+    transition: all 0.15s;
+}
+.ls-type-btn:hover {
+    border-color: var(--primary-color, #3b82f6);
+    color: var(--primary-color, #3b82f6);
+}
+.ls-type-btn-active {
+    background: var(--primary-color, #3b82f6);
+    border-color: var(--primary-color, #3b82f6);
+    color: #fff !important;
+}
+.ls-type-count {
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
+/* ── LanSweeper "In Inventory" badge ── */
+.ls-imported-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: #16a34a;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* ── LanSweeper imported row highlight ── */
+.ls-row-imported {
+    opacity: 0.72;
+    background: rgba(220, 252, 231, 0.3) !important;
+}
+
 /* ===== OFFER / PURCHASE DETAIL STYLES ===== */
 
 /* Offer toggle button in new request form */

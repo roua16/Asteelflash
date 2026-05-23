@@ -1,18 +1,30 @@
 ﻿using ITStockM.Models.ViewModels;
 
-namespace ITStockM.Services
+namespace ITStockM.Application.Common.Interfaces;
+
+/// <summary>
+/// Application-layer contract for user authentication.
+///
+/// SOLID compliance:
+///   I – The interface exposes only what the Application layer needs.
+///       Low-level AD details (previously <c>ADAuthenticateUser</c>) belong
+///       to <see cref="IActiveDirectoryService"/> in the Infrastructure layer.
+///   D – Callers depend on this abstraction, never on <c>AuthService</c>.
+/// </summary>
+public interface IAuthService
 {
-    public interface IAuthService
-    {
-        Task<AppUser?> Authenticate(string email, string password);
+    /// <summary>
+    /// Validates the supplied credentials and returns the matching user,
+    /// or <c>null</c> when authentication fails.
+    ///
+    /// Authentication strategy (AD first, fallback seed credentials) is an
+    /// implementation concern hidden behind this interface.
+    /// </summary>
+    Task<AppUser?> Authenticate(string email, string password);
 
-        Task<AppUser?> GetUserByEmail(string email);
-
-        /// <summary>
-        /// Authenticates a user against the AsteelFlash Active Directory (LDAP).
-        /// Returns true if credentials are valid in AD. Returns false on any failure.
-        /// </summary>
-        bool ADAuthenticateUser(string username, string password);
-    }
-
+    /// <summary>
+    /// Retrieves a user by e-mail address without verifying credentials.
+    /// Returns <c>null</c> when no matching account exists.
+    /// </summary>
+    Task<AppUser?> GetUserByEmail(string email);
 }
