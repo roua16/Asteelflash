@@ -547,7 +547,7 @@ namespace ITStockM.Data
                             Title = "Additional Monitors Request",
                             ProjectName = "Website Redesign",
                             Description = "Need additional monitors for design team",
-                            MaterialType = "Monitors",
+                            MaterialType = "Monitor",
                             Date = DateTime.Now.AddDays(-15),
                             Status = "Approved",
                             File = Array.Empty<byte>()
@@ -558,7 +558,7 @@ namespace ITStockM.Data
                             Title = "Keyboard and Mouse Request",
                             ProjectName = "IT Support",
                             Description = "Request for new keyboard and mouse",
-                            MaterialType = "Peripherals",
+                            MaterialType = "Peripheral",
                             Date = DateTime.Now.AddDays(-7),
                             Status = "Pending",
                             File = Array.Empty<byte>()
@@ -571,7 +571,7 @@ namespace ITStockM.Data
                             Title = "Ergonomic Chairs Request",
                             ProjectName = "Office Ergonomics",
                             Description = "Purchase of 5 ergonomic chairs",
-                            MaterialType = "Furniture",
+                            MaterialType = "Other",
                             Date = DateTime.Now.AddDays(-40),
                             Status = "Done",
                             File = Array.Empty<byte>()
@@ -582,7 +582,7 @@ namespace ITStockM.Data
                             Title = "Spare Batteries Request",
                             ProjectName = "PDR Stock",
                             Description = "Spare batteries for hand tools",
-                            MaterialType = "Consumables",
+                            MaterialType = "Other",
                             Date = DateTime.Now.AddDays(-20),
                             Status = "Approved",
                             File = Array.Empty<byte>()
