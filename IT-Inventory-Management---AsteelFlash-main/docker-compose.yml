@@ -32,6 +32,18 @@ services:
       retries: 5
       start_period: 10s
 
+  # Database GUI (CloudBeaver) for SQL Server inspection/editing in browser
+  db-gui:
+    image: dbeaver/cloudbeaver:latest
+    container_name: itstockm-db-gui
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    ports:
+      - "8978:8978"
+    volumes:
+      - itstockm-cloudbeaver-data:/opt/cloudbeaver/workspace
+
   # AD/LDAP simulation for local AD-enabled auth (demo users + groups)
   ldap:
     image: osixia/openldap:1.5.0
@@ -177,3 +189,4 @@ volumes:
   itstockm-dpkeys:
   itstockm-ldap-data:
   itstockm-ldap-config:
+  itstockm-cloudbeaver-data:

@@ -7,6 +7,7 @@
 | Service | External Port | Internal Port | Protocol | Status |
 |---------|---------------|-----------------|----------|--------|
 | **Application (WebAPI)** | 8080 | 8080 | HTTP | ✅ Running |
+| **Database GUI (CloudBeaver)** | 8978 | 8978 | HTTP | ✅ Running |
 | **SMTP4Dev Web UI** | 5080 | 80 | HTTP | ✅ Running |
 | **SMTP Server** | 5025 | 25 | SMTP | ✅ Running |
 
@@ -52,6 +53,20 @@ http://localhost:5080
 ├── Settings               ← SMTP configuration
 └── Messages               ← Email history
 ```
+
+### 3. **Database GUI (CloudBeaver)** (Port 8978)
+
+```text
+http://localhost:8978
+```
+
+Use these connection settings inside CloudBeaver:
+
+- Host: `sqlserver`
+- Port: `1433`
+- Database: `ITStockM`
+- Username: `sa`
+- Password: `${MSSQL_SA_PASSWORD}` (default: `AsteelFlash@2026`)
 
 ---
 
