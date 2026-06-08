@@ -1,0 +1,97 @@
+@startuml
+title ITStockM AI Architecture (Current Implementation)
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam ArrowThickness 1.2
+skinparam linetype ortho
+left to right direction
+
+actor User
+
+package "Web API Layer" {
+  [RecommendationsController\nPOST /api/v1/recommendations/hardware] as RecController
+  [MaintenanceController\nPOST /api/v1/maintenance/prioritize] as MaintController
+  [PredictionsController\nGET/POST /api/v1/predictions/*] as PredController
+  [GeminiChatController\nPOST /api/geminichat/send] as GeminiController
+  [HealthController\nGET /api/v1/health/ai-models] as HealthController
+}
+
+package "Application Layer (MediatR)" {
+  [GetHardwareRecommendationsHandler] as RecHandler
+  [PredictTicketPriorityHandler] as TicketHandler
+  [PredictionHandlers\n(latest/high-risk/recalculate)] as PredHandler
+}
+
+package "Infrastructure AI Services" {
+  [HardwareRecommendationService\nML.NET BinaryClassification\nTrainer: LbfgsLogisticRegression] as HardwareSvc
+  [TicketPrioritizationService\nML.NET MulticlassClassification\nTrainer: SdcaMaximumEntropy] as TicketSvc
+  [PredictionService\nRule/Heuristic scoring\n(no ML trainer)] as PredictionSvc
+  [GeminiChatService\nExternal LLM call\nModel default: gemini-1.5-flash] as GeminiSvc
+}
+
+package "Background Jobs" {
+  [AiModelRetrainingBackgroundService\n(retrain hardware + ticket models)] as RetrainBg
+  [AssetHealthBackgroundService\n(daily prediction recalculation)] as AssetBg
+}
+
+database "SQL DB\n(Materiels, MaintenanceTickets,\nAssignments, AssetPredictions...)" as SQL
+folder "Model Artifacts\nml-models/*.zip + manifest.json" as ModelStore
+cloud "Google Gemini API\nhttps://generativelanguage.googleapis.com" as GeminiApi
+
+User --> RecController
+User --> MaintController
+User --> PredController
+User --> GeminiController
+User --> HealthController
+
+RecController --> RecHandler
+MaintController --> TicketHandler
+PredController --> PredHandler
+
+RecHandler --> HardwareSvc
+TicketHandler --> TicketSvc
+PredHandler --> PredictionSvc
+GeminiController --> GeminiSvc
+HealthController --> HardwareSvc : GetModelStatusAsync()
+HealthController --> TicketSvc : GetModelStatusAsync()
+
+HardwareSvc --> SQL : training/inference data
+TicketSvc --> SQL : training/inference data
+PredictionSvc --> SQL : asset health inputs
+GeminiSvc --> GeminiApi : generateContent
+
+HardwareSvc --> ModelStore : load/save active+previous versions
+TicketSvc --> ModelStore : load/save active+previous versions
+
+RetrainBg --> HardwareSvc : RetrainAsync()
+RetrainBg --> TicketSvc : RetrainAsync()
+AssetBg --> PredictionSvc : RecalculateAllPredictionsAsync()
+
+note right of HardwareSvc
+Produces ranked hardware matches
+with probability-based match score.
+end note
+
+note right of TicketSvc
+Outputs priority class then combines
+with business severity rules.
+end note
+
+note bottom of HealthController
+Operational AI metrics:
+- active/previous versions
+- last trained time
+- validation metric
+- drift score and level
+end note
+
+legend left
+  = Model Inventory =
+  1) Hardware Recommendation -> ML.NET LbfgsLogisticRegression
+  2) Ticket Prioritization  -> ML.NET SdcaMaximumEntropy
+  3) Asset Prediction       -> deterministic heuristic formula
+  4) Chat Assistant         -> Gemini model (default gemini-1.5-flash)
+endlegend
+
+@enduml
