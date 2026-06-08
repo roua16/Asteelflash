@@ -68,6 +68,14 @@ Use these connection settings inside CloudBeaver:
 - Username: `sa`
 - Password: `${MSSQL_SA_PASSWORD}` (default: `AsteelFlash@2026`)
 
+Preconfigured connection:
+
+- A default SQL Server connection is preloaded from `cloudbeaver/initial-data-sources.conf`.
+- If CloudBeaver was already initialized before this change, reset only DB GUI state to load the preset:
+  - `docker compose stop db-gui`
+  - `docker volume rm it-inventory-management---asteelflash-main_itstockm-cloudbeaver-data`
+  - `docker compose up -d db-gui`
+
 ---
 
 ## ✅ Endpoint Verification Checklist
