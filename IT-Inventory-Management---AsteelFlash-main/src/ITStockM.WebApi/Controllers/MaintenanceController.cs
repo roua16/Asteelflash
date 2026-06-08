@@ -157,4 +157,22 @@ public class MaintenanceController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Predict maintenance ticket priority with AI scoring.
+    /// </summary>
+    /// <param name="request">Ticket details for scoring</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Predicted priority and explainability signals</returns>
+    [HttpPost("prioritize")]
+    [ProducesResponseType(typeof(TicketPriorityPredictionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> PredictTicketPriority(
+        [FromBody] TicketPriorityRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await Mediator.Send(new PredictTicketPriorityQuery(request), cancellationToken);
+        return Ok(result);
+    }
 }

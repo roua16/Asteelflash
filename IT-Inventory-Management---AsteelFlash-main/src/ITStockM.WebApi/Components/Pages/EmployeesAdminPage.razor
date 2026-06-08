@@ -1,4 +1,5 @@
 @page "/employees-super-admin"
+@using ITStockM.Models.Constants
 @using ITStockM.Domain.Entities
 @using ITStockM.Services.Employees
 @using Microsoft.AspNetCore.Authorization
@@ -209,7 +210,7 @@
 }
 
 @code {
-    private static readonly string[] RoleOptions = ["Admin", "PDR", "Purchasing", "IT", "Infrastructure", "Employee", "Guest"];
+    private static readonly string[] RoleOptions = UserRoles.All;
 
     private readonly List<Employee> employees = [];
     private List<Employee> filteredEmployees = [];

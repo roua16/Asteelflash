@@ -6,7 +6,7 @@
 @using ITStockM.Services.Materiels
 @using ITStockM.Services.Employees
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize(Roles = "Admin,IT,Infrastructure,Employee")]
+@attribute [Authorize(Roles = "Admin,PDR,IT,Infrastructure,Employee")]
 @inject IAssignmentService AssignmentService
 @inject IAssignmentMaterielService AssignmentMaterielService
 @inject IMaterielService MaterielService

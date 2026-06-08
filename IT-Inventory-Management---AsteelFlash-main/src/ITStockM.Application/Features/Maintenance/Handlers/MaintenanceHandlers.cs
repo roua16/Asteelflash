@@ -130,3 +130,16 @@ public sealed class GetOpenTicketCountHandler : IRequestHandler<GetOpenTicketCou
     public async Task<int> Handle(GetOpenTicketCountQuery request, CancellationToken cancellationToken)
         => await _service.GetOpenTicketCountAsync(cancellationToken);
 }
+
+public sealed class PredictTicketPriorityHandler : IRequestHandler<PredictTicketPriorityQuery, TicketPriorityPredictionDto>
+{
+    private readonly ITicketPrioritizationService _service;
+
+    public PredictTicketPriorityHandler(ITicketPrioritizationService service)
+    {
+        _service = service;
+    }
+
+    public Task<TicketPriorityPredictionDto> Handle(PredictTicketPriorityQuery request, CancellationToken cancellationToken)
+        => _service.PredictPriorityAsync(request.Request, cancellationToken);
+}

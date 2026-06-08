@@ -42,6 +42,8 @@ namespace ITStockM.Components.Layout
 
         protected bool purchasingExpanded = true;
 
+        protected bool aiExpanded = true;
+
         protected bool archivesExpanded = false;
 
         protected bool adminExpanded = false;
@@ -130,6 +132,7 @@ namespace ITStockM.Components.Layout
 
             coreExpanded = false;
             inventoryExpanded = false;
+            aiExpanded = false;
             purchasingExpanded = false;
             archivesExpanded = false;
             adminExpanded = false;
@@ -143,6 +146,7 @@ namespace ITStockM.Components.Layout
             {
                 "core" => coreExpanded,
                 "inventory" => inventoryExpanded,
+                "ai" => aiExpanded,
                 "purchasing" => purchasingExpanded,
                 "archives" => archivesExpanded,
                 "admin" => adminExpanded,
@@ -159,6 +163,9 @@ namespace ITStockM.Components.Layout
                     break;
                 case "inventory":
                     inventoryExpanded = expanded;
+                    break;
+                case "ai":
+                    aiExpanded = expanded;
                     break;
                 case "purchasing":
                     purchasingExpanded = expanded;

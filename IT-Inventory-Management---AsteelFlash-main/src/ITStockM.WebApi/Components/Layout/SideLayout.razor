@@ -94,8 +94,40 @@
             <div class="menu-links">
                 <SidebarItem Roles="Admin,Purchasing,IT" Text="Materials View" Icon="inventory_2" Path="/materials-view-interface" Compact="@(!sidebarExpanded)" />
                 <SidebarItem Roles="Admin,IT,Infrastructure,Employee" Text="Materials Assignments" Icon="assignment" Path="/assignments-interface" Compact="@(!sidebarExpanded)" />
-                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Assignment Standby" Icon="hourglass_empty" Path="/standby" Compact="@(!sidebarExpanded)" />
+                <SidebarItem Roles="Admin,PDR,IT,Infrastructure,Employee" Text="Provisional Loans" Icon="hourglass_empty" Path="/standby" Compact="@(!sidebarExpanded)" />
                 <SidebarItem Roles="Admin,IT,Infrastructure" Text="LanSweeper Assets" Icon="device_hub" Path="/lansweeper" Compact="@(!sidebarExpanded)" />
+            </div>
+        </div>
+
+        <div class="menu-group @MenuGroupStateClass(aiExpanded)">
+            <button type="button" class="menu-group-toggle" aria-expanded="@aiExpanded" @onclick='() => ToggleMenuGroup("ai")' disabled="@(!sidebarExpanded)">
+                <span class="menu-group-meta">
+                    <span class="menu-group-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v4" />
+                            <path d="M12 17v4" />
+                            <path d="M4.22 6.22l2.83 2.83" />
+                            <path d="M16.95 16.95l2.83 2.83" />
+                            <path d="M3 12h4" />
+                            <path d="M17 12h4" />
+                            <path d="M6.22 19.78l2.83-2.83" />
+                            <path d="M16.95 7.05l2.83-2.83" />
+                            <circle cx="12" cy="12" r="3.5" />
+                        </svg>
+                    </span>
+                    @if (sidebarExpanded)
+                    {
+                        <span class="menu-group-title">AI INSIGHTS</span>
+                    }
+                </span>
+                @if (sidebarExpanded)
+                {
+                    <span class="menu-group-chevron"><RadzenIcon Icon="@(aiExpanded ? "expand_less" : "expand_more")" /></span>
+                }
+            </button>
+            <div class="menu-links">
+                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Asset Predictions" Icon="monitoring" Path="/asset-predictions" Compact="@(!sidebarExpanded)" />
+                <SidebarItem Roles="Admin,IT,Infrastructure" Text="Maintenance AI Queue" Icon="build_circle" Path="/maintenance" Compact="@(!sidebarExpanded)" />
             </div>
         </div>
 

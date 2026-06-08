@@ -36,6 +36,11 @@ namespace ITStockM.Models.Constants
         public const string Employee = "Employee";
 
         /// <summary>
+        /// Guest - Authenticated user without application permissions
+        /// </summary>
+        public const string Guest = "Guest";
+
+        /// <summary>
         /// Returns all available roles
         /// </summary>
         public static string[] All => new[]
@@ -45,7 +50,8 @@ namespace ITStockM.Models.Constants
             Purchasing,
             IT,
             Infrastructure,
-            Employee
+            Employee,
+            Guest
         };
 
         /// <summary>

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ITStockM.Application.Common.Models;
+using ITStockM.Services.Interfaces;
 
 namespace ITStockM.WebApi.Controllers;
 
@@ -12,6 +14,17 @@ namespace ITStockM.WebApi.Controllers;
 [Produces("application/json")]
 public class HealthController : ControllerBase
 {
+    private readonly IHardwareRecommendationService _hardwareRecommendationService;
+    private readonly ITicketPrioritizationService _ticketPrioritizationService;
+
+    public HealthController(
+        IHardwareRecommendationService hardwareRecommendationService,
+        ITicketPrioritizationService ticketPrioritizationService)
+    {
+        _hardwareRecommendationService = hardwareRecommendationService;
+        _ticketPrioritizationService = ticketPrioritizationService;
+    }
+
     /// <summary>
     /// Simple health check endpoint.
     /// </summary>
@@ -63,5 +76,33 @@ public class HealthController : ControllerBase
             timestamp = DateTime.UtcNow,
             uptime = "See logs for detailed uptime"
         });
+    }
+
+    /// <summary>
+    /// Get AI model metrics including version metadata, freshness, and drift indicators.
+    /// </summary>
+    [HttpGet("ai-models")]
+    [ProducesResponseType(typeof(AiModelMetricsSnapshotDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAiModelMetrics(CancellationToken cancellationToken = default)
+    {
+        var hardware = await _hardwareRecommendationService.GetModelStatusAsync(cancellationToken);
+        var tickets = await _ticketPrioritizationService.GetModelStatusAsync(cancellationToken);
+
+        var models = new List<AiModelStatusDto> { hardware, tickets };
+        var maxDrift = models.Max(m => m.DriftScore);
+        var fleetLevel = maxDrift switch
+        {
+            >= 60 => "high",
+            >= 35 => "medium",
+            _ => "low"
+        };
+
+        var snapshot = new AiModelMetricsSnapshotDto(
+            GeneratedAtUtc: DateTime.UtcNow,
+            Models: models,
+            MaxDriftScore: maxDrift,
+            FleetDriftLevel: fleetLevel);
+
+        return Ok(snapshot);
     }
 }

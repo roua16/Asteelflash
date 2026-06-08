@@ -14,6 +14,50 @@ public class RoleAccessTests : IClassFixture<PlaywrightFixture>
         this.fixture = fixture;
     }
 
+    public sealed record RoleScenario(string Role, string Email, string Password, string[] AllowedRoutes, string[] DeniedRoutes);
+
+    private static readonly RoleScenario[] Scenarios =
+    [
+        new(
+            "Admin",
+            "admin@asteelflash.com",
+            "admin1234",
+            ["/projects-super-admin", "/purchase-page", "/asset-predictions"],
+            []),
+        new(
+            "PDR",
+            "pdr@asteelflash.com",
+            "pdr1234",
+            ["/standby", "/suppliers", "/delivery-order"],
+            ["/purchase-page"]),
+        new(
+            "Purchasing",
+            "purchasing@asteelflash.com",
+            "purchasing1234",
+            ["/purchase-page", "/suppliers", "/archived-requests-page"],
+            ["/asset-predictions"]),
+        new(
+            "IT",
+            "it@asteelflash.com",
+            "it1234",
+            ["/assignments-interface", "/infra-interface", "/asset-predictions"],
+            ["/purchase-page"]),
+        new(
+            "Infrastructure",
+            "infrastructure@asteelflash.com",
+            "infrastructure1234",
+            ["/assignments-interface", "/infra-interface", "/asset-predictions"],
+            ["/purchase-page"]),
+        new(
+            "Employee",
+            "employee@asteelflash.com",
+            "employee1234",
+            ["/dashboard", "/assignments-interface", "/standby"],
+            ["/suppliers"])
+    ];
+
+    public static IEnumerable<object[]> RoleScenarios() => Scenarios.Select(s => new object[] { s });
+
     private async Task<IPage> LoginAsync(IBrowserContext context, string email, string password)
     {
         var page = await context.NewPageAsync();
@@ -32,94 +76,54 @@ public class RoleAccessTests : IClassFixture<PlaywrightFixture>
             var errorText = await page.Locator(".rz-alert").TextContentAsync();
             throw new Exception($"Login failed or UI not ready. Error: {errorText ?? "(none)"}");
         }
-
-        await page.WaitForSelectorAsync("text=IT Inventory");
         return page;
     }
 
-    [UiFact]
-    [Trait("Category", "UI")]
-    public async Task Admin_Sees_Administration_Menu()
+    private static async Task<bool> IsAccessDeniedAsync(IPage page)
     {
-        await using var context = await fixture.Browser.NewContextAsync();
-        var page = await LoginAsync(context, "admin@asteelflash.com", "admin123");
+        if (page.Url.Contains("/access-denied", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
 
-        Assert.True(await page.GetByText("Dashboard", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await page.GetByText("Administration", new() { Exact = true }).IsVisibleAsync());
-
-        await page.GotoAsync($"{BaseUrl}/materiels-super-admin");
-        Assert.False(await page.GetByText("Access Denied").IsVisibleAsync());
+        var deniedBanner = page.GetByText("Access Denied", new() { Exact = false });
+        return await deniedBanner.IsVisibleAsync();
     }
 
-    [UiFact]
-    [Trait("Category", "UI")]
-    public async Task Pdr_Sees_Pdr_Materials_And_Suppliers()
+    private static async Task AssertAccessAsync(IPage page, string route, bool shouldAllow, string role)
     {
-        await using var context = await fixture.Browser.NewContextAsync();
-        var page = await LoginAsync(context, "john.smith@asteelflash.com", "password123");
+        await page.GotoAsync($"{BaseUrl}{route}");
+        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-        Assert.True(await page.GetByText("Materials View (PDR)", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await page.GetByText("Suppliers", new() { Exact = true }).IsVisibleAsync());
-        Assert.False(await page.GetByText("Administration", new() { Exact = true }).IsVisibleAsync());
+        var denied = await IsAccessDeniedAsync(page);
+        if (shouldAllow)
+        {
+            Assert.False(denied, $"Role '{role}' should be allowed on '{route}' but was denied.");
+            return;
+        }
 
-        await page.GotoAsync($"{BaseUrl}/materials-view-interface-pdr");
-        Assert.False(await page.GetByText("Access Denied").IsVisibleAsync());
+        Assert.True(denied, $"Role '{role}' should be denied on '{route}' but access was granted.");
     }
 
-    [UiFact]
+    [UiTheory]
     [Trait("Category", "UI")]
-    public async Task Purchasing_Sees_Purchasing_Pages()
+    [MemberData(nameof(RoleScenarios))]
+    public async Task Role_Access_Matrix_Is_Enforced(RoleScenario scenario)
     {
         await using var context = await fixture.Browser.NewContextAsync();
-        var page = await LoginAsync(context, "sarah.johnson@asteelflash.com", "password123");
-
-        Assert.True(await page.GetByText("Purchase Requests", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await page.GetByText("Archived Requests", new() { Exact = true }).IsVisibleAsync());
-        Assert.False(await page.GetByText("Administration", new() { Exact = true }).IsVisibleAsync());
-
-        await page.GotoAsync($"{BaseUrl}/purchase-page");
-        Assert.False(await page.GetByText("Access Denied").IsVisibleAsync());
-    }
-
-    [UiFact]
-    [Trait("Category", "UI")]
-    public async Task It_Sees_Assignments_And_Infrastructure()
-    {
-        await using var context = await fixture.Browser.NewContextAsync();
-        var page = await LoginAsync(context, "mike.davis@asteelflash.com", "password123");
-
-        Assert.True(await page.GetByText("Materials Assignments", new() { Exact = true }).IsVisibleAsync());
-        Assert.True(await page.GetByText("Infrastructure", new() { Exact = true }).IsVisibleAsync());
-        Assert.False(await page.GetByText("Administration", new() { Exact = true }).IsVisibleAsync());
-
-        await page.GotoAsync($"{BaseUrl}/assignments-interface");
-        Assert.False(await page.GetByText("Access Denied").IsVisibleAsync());
-    }
-
-    [UiFact]
-    [Trait("Category", "UI")]
-    public async Task Infrastructure_Sees_Infrastructure_Page()
-    {
-        await using var context = await fixture.Browser.NewContextAsync();
-        var page = await LoginAsync(context, "alice.brown@asteelflash.com", "password123");
-
-        Assert.True(await page.GetByText("Infrastructure", new() { Exact = true }).IsVisibleAsync());
-        Assert.False(await page.GetByText("Administration", new() { Exact = true }).IsVisibleAsync());
-
-        await page.GotoAsync($"{BaseUrl}/infra-interface");
-        Assert.False(await page.GetByText("Access Denied").IsVisibleAsync());
-    }
-
-    [UiFact]
-    [Trait("Category", "UI")]
-    public async Task Employee_Can_Login()
-    {
-        await using var context = await fixture.Browser.NewContextAsync();
-        var page = await LoginAsync(context, "thomas.miller@asteelflash.com", "password123");
+        var page = await LoginAsync(context, scenario.Email, scenario.Password);
 
         Assert.True(await page.Locator("a[href='/logout']").IsVisibleAsync());
-        Assert.False(await page.GetByText("Administration", new() { Exact = true }).IsVisibleAsync());
-        // new: employee should see a limited dashboard
-        Assert.True(await page.GetByText("Employee Dashboard", new() { Exact = true }).IsVisibleAsync());
+        await AssertAccessAsync(page, "/dashboard", shouldAllow: true, scenario.Role);
+
+        foreach (var route in scenario.AllowedRoutes)
+        {
+            await AssertAccessAsync(page, route, shouldAllow: true, scenario.Role);
+        }
+
+        foreach (var route in scenario.DeniedRoutes)
+        {
+            await AssertAccessAsync(page, route, shouldAllow: false, scenario.Role);
+        }
     }
 }

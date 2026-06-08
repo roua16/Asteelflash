@@ -13,6 +13,15 @@ RUN dotnet publish ./src/ITStockM.WebApi/ITStockM.WebApi.csproj -c Release -o /a
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
+# Required by System.DirectoryServices.Protocols on Linux.
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends libldap2 libsasl2-2 ca-certificates \
+		&& for d in /lib/*-linux-gnu /usr/lib/*-linux-gnu; do \
+				 if [ -e "$d/libldap.so.2" ]; then ln -sf "$d/libldap.so.2" "$d/libldap-2.5.so.0"; fi; \
+				 if [ -e "$d/liblber.so.2" ]; then ln -sf "$d/liblber.so.2" "$d/liblber-2.5.so.0"; fi; \
+			 done \
+	&& rm -rf /var/lib/apt/lists/*
+
 # Blazor Server/ASP.NET Core will listen on this port
 ENV ASPNETCORE_HTTP_PORTS=8080
 # Ensure Kestrel binds to the expected port

@@ -1,0 +1,65 @@
+using ITStockM.Services.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace ITStockM.Services;
+
+public sealed class AiModelRetrainingBackgroundService : BackgroundService
+{
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<AiModelRetrainingBackgroundService> _logger;
+    private readonly AiModelRetrainingOptions _options;
+
+    public AiModelRetrainingBackgroundService(
+        IServiceScopeFactory scopeFactory,
+        IOptions<AiModelRetrainingOptions> options,
+        ILogger<AiModelRetrainingBackgroundService> logger)
+    {
+        _scopeFactory = scopeFactory;
+        _logger = logger;
+        _options = options.Value;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        if (!_options.Enabled)
+        {
+            _logger.LogInformation("AI model retraining scheduler is disabled.");
+            return;
+        }
+
+        var initialDelay = TimeSpan.FromMinutes(Math.Max(1, _options.InitialDelayMinutes));
+        var interval = TimeSpan.FromMinutes(Math.Max(15, _options.IntervalMinutes));
+
+        _logger.LogInformation("AI model retraining scheduler started. First run in {Delay} minutes, then every {Interval} minutes.", initialDelay.TotalMinutes, interval.TotalMinutes);
+
+        await Task.Delay(initialDelay, stoppingToken);
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await RunCycleAsync(stoppingToken);
+            await Task.Delay(interval, stoppingToken);
+        }
+    }
+
+    private async Task RunCycleAsync(CancellationToken ct)
+    {
+        using var scope = _scopeFactory.CreateScope();
+
+        var recommendationService = scope.ServiceProvider.GetRequiredService<IHardwareRecommendationService>();
+        var ticketService = scope.ServiceProvider.GetRequiredService<ITicketPrioritizationService>();
+
+        try
+        {
+            await recommendationService.RetrainAsync(ct);
+            await ticketService.RetrainAsync(ct);
+            _logger.LogInformation("AI model retraining cycle completed successfully at {Time}", DateTime.UtcNow);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "AI model retraining cycle failed");
+        }
+    }
+}

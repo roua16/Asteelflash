@@ -45,6 +45,53 @@ public sealed class ActiveDirectoryOptions
     public int TimeoutSeconds { get; set; } = 5;
 
     /// <summary>
+    /// Optional service account DN used for LDAP searches.
+    /// Example: <c>cn=admin,dc=asteelflash,dc=com</c>
+    /// </summary>
+    public string BindDn { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Password for <see cref="BindDn"/>.
+    /// Leave empty to use direct user bind for searches.
+    /// </summary>
+    public string BindPassword { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional DN pattern used to bind users in generic LDAP directories.
+    /// Use <c>{0}</c> for username and <c>{1}</c> for search base.
+    /// Example: <c>uid={0},ou=people,{1}</c>
+    /// </summary>
+    public string UserDnPattern { get; set; } = string.Empty;
+
+    /// <summary>
+    /// RBAC role mappings based on AD group membership.
+    /// Each entry maps a group (matched by substring, case-insensitive)
+    /// to an application role name.
+    ///
+    /// Example:
+    /// ActiveDirectory:
+    ///   RoleMappings:
+    ///     - Group: "IT-Admin"
+    ///       Role: "Admin"
+    /// </summary>
+    public List<RoleMapping> RoleMappings { get; set; } = new();
+
+    public sealed class RoleMapping
+    {
+        /// <summary>
+        /// AD group identifier to match against group names/DNs.
+        /// Matching is substring + case-insensitive.
+        /// </summary>
+        public string Group { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Application role to assign when the group is present.
+        /// Must be one of the app roles (e.g. Admin, PDR, Purchasing, IT, Infrastructure, Employee).
+        /// </summary>
+        public string Role { get; set; } = string.Empty;
+    }
+
+    /// <summary>
     /// Derives the LDAP search base from <see cref="Domain"/> when
     /// <see cref="SearchBase"/> has not been set explicitly.
     /// </summary>

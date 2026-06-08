@@ -18,6 +18,18 @@ public sealed record ActiveDirectoryAuthResult
     /// <summary>The sAMAccountName used for authentication.</summary>
     public string? SamAccountName { get; init; }
 
+    /// <summary>
+    /// The AD group names (best-effort, may be empty) discovered from membership.
+    /// Used for RBAC mapping/seeding.
+    /// </summary>
+    public IReadOnlyList<string> GroupNames { get; init; } = Array.Empty<string>();
+
+    /// <summary>
+    /// The resolved application role name after mapping AD groups to roles.
+    /// When role mapping is not possible, this will be <c>null</c>.
+    /// </summary>
+    public string? ResolvedAppRole { get; init; }
+
     // ── Convenience factory members ──────────────────────────────────────────
 
     /// <summary>Returned when AD is disabled in configuration.</summary>
@@ -29,6 +41,17 @@ public sealed record ActiveDirectoryAuthResult
         new() { IsAuthenticated = false };
 
     /// <summary>Creates a successful result with user attributes from AD.</summary>
-    public static ActiveDirectoryAuthResult Success(string samAccountName, string? displayName) =>
-        new() { IsAuthenticated = true, SamAccountName = samAccountName, DisplayName = displayName };
+    public static ActiveDirectoryAuthResult Success(
+        string samAccountName,
+        string? displayName,
+        IReadOnlyList<string> groupNames,
+        string? resolvedAppRole) =>
+        new()
+        {
+            IsAuthenticated = true,
+            SamAccountName = samAccountName,
+            DisplayName = displayName,
+            GroupNames = groupNames ?? Array.Empty<string>(),
+            ResolvedAppRole = resolvedAppRole
+        };
 }

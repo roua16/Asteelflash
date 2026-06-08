@@ -16,6 +16,7 @@ using ITStockM.Services.Materiels;
 using ITStockM.Services.Offers;
 using ITStockM.Services.Prediction;
 using ITStockM.Services.Projects;
+using ITStockM.Services.Recommendations;
 using ITStockM.Services.Requests;
 using ITStockM.Services.Suppliers;
 using ITStockM.Infrastructure.Services;
@@ -40,6 +41,9 @@ public static class InfrastructureLayerServiceCollectionExtensions
             configuration.GetSection(EmailOptions.Section).Bind(options);
             options.ApplyEnvironmentOverrides();
         });
+
+        services.Configure<AiModelRetrainingOptions>(
+            configuration.GetSection(AiModelRetrainingOptions.Section));
 
         services.AddDbContext<ITStockManagmentContext>(options =>
         {
@@ -90,7 +94,9 @@ public static class InfrastructureLayerServiceCollectionExtensions
 
         services.AddScoped<IAssetLifecycleService, AssetLifecycleService>();
         services.AddScoped<IMaintenanceService, MaintenanceService>();
+        services.AddScoped<ITicketPrioritizationService, TicketPrioritizationService>();
         services.AddScoped<IPredictionService, PredictionService>();
+        services.AddScoped<IHardwareRecommendationService, HardwareRecommendationService>();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
@@ -106,6 +112,7 @@ public static class InfrastructureLayerServiceCollectionExtensions
 
         services.AddHostedService<EmailBackgroundService>();
         services.AddHostedService<AssetHealthBackgroundService>();
+        services.AddHostedService<AiModelRetrainingBackgroundService>();
 
         return services;
     }
