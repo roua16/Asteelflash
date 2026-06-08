@@ -1,0 +1,7 @@
+# Optional LDIF placeholder.
+# The application can resolve roles from either:
+# 1) memberOf attribute on users, or
+# 2) group entries (groupOfNames) that reference the user as member.
+#
+# For this local OpenLDAP setup, role groups are defined in seed.ldif and
+# membership is resolved from group searches. No extra overlay changes needed.

@@ -1,0 +1,138 @@
+dn: dc=asteelflash,dc=com
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+dc: asteelflash
+o: Asteelflash
+
+
+dn: ou=people,dc=asteelflash,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: people
+
+
+dn: ou=groups,dc=asteelflash,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: groups
+
+
+dn: uid=admin,ou=people,dc=asteelflash,dc=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: admin
+cn: Admin User
+sn: User
+displayName: Admin User
+mail: admin@asteelflash.com
+userPassword: admin1234
+
+
+dn: uid=pdr,ou=people,dc=asteelflash,dc=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: pdr
+cn: PDR User
+sn: User
+displayName: PDR User
+mail: pdr@asteelflash.com
+userPassword: pdr1234
+
+
+dn: uid=purchasing,ou=people,dc=asteelflash,dc=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: purchasing
+cn: Purchasing User
+sn: User
+displayName: Purchasing User
+mail: purchasing@asteelflash.com
+userPassword: purchasing1234
+
+
+dn: uid=it,ou=people,dc=asteelflash,dc=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: it
+cn: IT User
+sn: User
+displayName: IT User
+mail: it@asteelflash.com
+userPassword: it1234
+
+
+dn: uid=infrastructure,ou=people,dc=asteelflash,dc=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: infrastructure
+cn: Infrastructure User
+sn: User
+displayName: Infrastructure User
+mail: infrastructure@asteelflash.com
+userPassword: infrastructure1234
+
+
+dn: uid=employee,ou=people,dc=asteelflash,dc=com
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: employee
+cn: Employee User
+sn: User
+displayName: Employee User
+mail: employee@asteelflash.com
+userPassword: employee1234
+
+
+dn: cn=Admin,ou=groups,dc=asteelflash,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: Admin
+member: uid=admin,ou=people,dc=asteelflash,dc=com
+
+
+dn: cn=PDR,ou=groups,dc=asteelflash,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: PDR
+member: uid=pdr,ou=people,dc=asteelflash,dc=com
+
+
+dn: cn=Purchasing,ou=groups,dc=asteelflash,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: Purchasing
+member: uid=purchasing,ou=people,dc=asteelflash,dc=com
+
+
+dn: cn=IT,ou=groups,dc=asteelflash,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: IT
+member: uid=it,ou=people,dc=asteelflash,dc=com
+
+
+dn: cn=Infrastructure,ou=groups,dc=asteelflash,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: Infrastructure
+member: uid=infrastructure,ou=people,dc=asteelflash,dc=com
+
+
+dn: cn=Employee,ou=groups,dc=asteelflash,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: Employee
+member: uid=employee,ou=people,dc=asteelflash,dc=com

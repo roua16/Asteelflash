@@ -32,6 +32,65 @@ services:
       retries: 5
       start_period: 10s
 
+  # AD/LDAP simulation for local AD-enabled auth (demo users + groups)
+  ldap:
+    image: osixia/openldap:1.5.0
+    container_name: itstockm-ldap
+    environment:
+      LDAP_ORGANISATION: "Asteelflash"
+      LDAP_DOMAIN: "asteelflash.com"
+      LDAP_BASE_DN: "dc=asteelflash,dc=com"
+      LDAP_ADMIN_PASSWORD: "admin1234"
+      # Base DB backend
+      LDAP_CONFIG_PASSWORD: "config1234"
+    ports:
+      - "389:389"
+    volumes:
+      - itstockm-ldap-data:/var/lib/ldap
+      - itstockm-ldap-config:/etc/ldap/slapd.d
+    healthcheck:
+      test: ["CMD-SHELL", "ldapsearch -x -H ldap://localhost:389 -b '' -s base -LL '(objectClass=*)' dn >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  # One-shot LDIF importer.
+  # Rationale: avoid bind-mounting into osixia bootstrap paths (breaks startup with "Device or resource busy").
+  ldap-seed:
+    image: osixia/openldap:1.5.0
+    container_name: itstockm-ldap-seed
+    entrypoint: ["/bin/bash", "-lc"]
+    depends_on:
+      ldap:
+        condition: service_healthy
+    volumes:
+      - ./ldap:/seeds:ro
+    environment:
+      LDAP_ADMIN_PASSWORD: "admin1234"
+      LDAP_BASE_DN: "dc=asteelflash,dc=com"
+    command:
+      - >
+        set -euo pipefail;
+        ADMIN_DN="cn=admin,$$LDAP_BASE_DN";
+        command -v ldapadd >/dev/null 2>&1 || { echo 'ldapadd not found in image'; exit 1; };
+        until ldapsearch -x -H ldap://ldap:389 -D "$$ADMIN_DN" -w "$$LDAP_ADMIN_PASSWORD" -b '' -s base dn >/dev/null 2>&1; do
+          echo 'Waiting for LDAP...'; sleep 2;
+        done;
+        if ldapsearch -x -H ldap://ldap:389 -D "$$ADMIN_DN" -w "$$LDAP_ADMIN_PASSWORD" -b "$$LDAP_BASE_DN" "(uid=admin)" dn >/dev/null 2>&1 &&
+           ldapsearch -x -H ldap://ldap:389 -D "$$ADMIN_DN" -w "$$LDAP_ADMIN_PASSWORD" -b "$$LDAP_BASE_DN" "(uid=admin)" dn | grep -q '^dn:'; then
+          echo 'LDAP baseline already present; skipping seed import.';
+        else
+          ldapadd -c -x -H ldap://ldap:389 -D "$$ADMIN_DN" -w "$$LDAP_ADMIN_PASSWORD" -f /seeds/seed.ldif || true;
+          ldapsearch -x -H ldap://ldap:389 -D "$$ADMIN_DN" -w "$$LDAP_ADMIN_PASSWORD" -b "$$LDAP_BASE_DN" "(uid=admin)" dn | grep -q '^dn:' || { echo 'LDAP seed failed: admin account not found'; exit 1; };
+        fi;
+        if [ -f /seeds/memberof-overlay.ldif ] && grep -Eq '^[[:space:]]*dn:' /seeds/memberof-overlay.ldif; then
+          ldapadd -x -H ldap://ldap:389 -D "$$ADMIN_DN" -w "$$LDAP_ADMIN_PASSWORD" -f /seeds/memberof-overlay.ldif || true;
+        fi;
+        echo 'LDAP seeding completed.'
+    restart: "no"
+
+
   app:
     build:
       context: .
@@ -45,7 +104,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
       ASPNETCORE_URLS: "http://+:8080"
-      # Required Gemini API key (set in shell/.env, do not hardcode secrets here)
+      # Optional Gemini API key (set in shell/.env; never hardcode secrets here)
       GEMINI_API_KEY: "${GEMINI_API_KEY:-AQ.Ab8RN6InJW7kBI6E4MBapdPZzL2kNWXfWiVe13jKmB06XvEwmA}"
       
       # SQL Server 2022
@@ -56,8 +115,21 @@ services:
       
       # Application Settings
       DEV_ALLOW_TEST_EMAIL: "${DEV_ALLOW_TEST_EMAIL:-true}"
+
+      # Active Directory (LDAP) configuration for AD-only authentication + auto-provisioning
+      # Enable with ACTIVE_DIRECTORY_ENABLED=true and provide the LDAP connection details.
+      # Defaults are set for local Docker LDAP simulation.
+      ActiveDirectory__Enabled: "${ACTIVE_DIRECTORY_ENABLED:-true}"
+      ActiveDirectory__LdapPath: "${ACTIVE_DIRECTORY_LDAP_PATH:-ldap://ldap:389}"
+      ActiveDirectory__Domain: "${ACTIVE_DIRECTORY_DOMAIN:-asteelflash.com}"
+      ActiveDirectory__SearchBase: "${ACTIVE_DIRECTORY_SEARCH_BASE:-dc=asteelflash,dc=com}"
+      ActiveDirectory__BindDn: "${ACTIVE_DIRECTORY_BIND_DN:-cn=admin,dc=asteelflash,dc=com}"
+      ActiveDirectory__BindPassword: "${ACTIVE_DIRECTORY_BIND_PASSWORD:-admin1234}"
+      ActiveDirectory__UserDnPattern: "${ACTIVE_DIRECTORY_USER_DN_PATTERN:-uid={0},ou=people,dc=asteelflash,dc=com}"
+      ActiveDirectory__TimeoutSeconds: "${ACTIVE_DIRECTORY_TIMEOUT_SECONDS:-5}"
       
-      # Seed (demo/admin) - enabled by default for container-first runs
+      # Seed (demo/admin)
+      # Business DB seed is separate from LDAP directory seed.
       Seed__Enabled: "${SEED_ENABLED:-true}"
       Seed__DemoData: "${SEED_DEMO_DATA:-true}"
       Seed__ClearOldData: "${SEED_CLEAR_OLD_DATA:-false}"
@@ -103,3 +175,5 @@ services:
 volumes:
   itstockm-sqlserver-data:
   itstockm-dpkeys:
+  itstockm-ldap-data:
+  itstockm-ldap-config:
