@@ -1,6 +1,8 @@
 using ITStockM.Domain.Entities;
 using ITStockM.Domain.Enums;
+using ITStockM.Infrastructure.Identity;
 using ITStockM.Models.Constants;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -15,6 +17,8 @@ namespace ITStockM.Data
             IHostEnvironment environment,
             IConfiguration configuration,
             ILogger logger,
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole<int>> roleManager,
             CancellationToken cancellationToken = default)
         {
             // Use migrations for relational providers (SQL Server). For file-based DBs like
@@ -64,7 +68,7 @@ namespace ITStockM.Data
 
             // Clearing is destructive; only do it on first run in development and if explicitly enabled
             var clearOldData = seedSection.GetValue("ClearOldData", false);
-            if (clearOldData && environment.IsDevelopment() && isFirstRun)
+            if (clearOldData && environment.IsDevelopment())
             {
                 await ClearOldDataAsync(context, logger, cancellationToken);
             }
@@ -81,11 +85,14 @@ namespace ITStockM.Data
                     : "Database exists. Ensuring seed baseline data is present...");
 
             await SeedAdminAsync(context, seedSection, logger, cancellationToken);
+            await SeedIdentityAdminAsync(context, seedSection, logger, userManager, roleManager, cancellationToken);
+            await MirrorEmployeesToIdentityAsync(context, configuration, logger, userManager, roleManager, cancellationToken);
 
             if (seedDemoData)
             {
                 // Safe to run on every startup: SeedDemoDataAsync checks each table before insert.
                 await SeedDemoDataAsync(context, logger, cancellationToken);
+                await MirrorEmployeesToIdentityAsync(context, configuration, logger, userManager, roleManager, cancellationToken);
                 await EnsureUiBaselineDataAsync(context, logger, cancellationToken);
             }
             else
@@ -133,6 +140,202 @@ namespace ITStockM.Data
                     admin.Role = UserRoles.Admin;
                     await context.SaveChangesAsync(cancellationToken);
                     logger.LogInformation("Updated existing user to Admin: {AdminEmail}", adminEmail);
+                }
+            }
+        }
+
+        private static async Task SeedIdentityAdminAsync(
+            ITStockManagmentContext context,
+            IConfiguration seedSection,
+            ILogger logger,
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole<int>> roleManager,
+            CancellationToken cancellationToken)
+        {
+            var adminEmail = seedSection["AdminEmail"] ?? "admin@asteelflash.com";
+            var adminFullName = seedSection["AdminFullName"] ?? "Admin User";
+            var adminPhoneNumber = seedSection["AdminPhoneNumber"] ?? "+0000000000";
+            var adminService = seedSection["AdminService"] ?? "IT";
+            var adminPost = "Admin";
+            var targetRole = UserRoles.Admin;
+
+            await EnsureIdentityRolesExistAsync(roleManager, logger, cancellationToken);
+
+            var existingUser = await userManager.FindByEmailAsync(adminEmail);
+            if (existingUser == null)
+            {
+                var employee = await context.Employees.FirstOrDefaultAsync(e => e.Email == adminEmail, cancellationToken);
+                var created = new AppUser
+                {
+                    UserName = adminEmail,
+                    Email = adminEmail,
+                    FullName = adminFullName,
+                    Post = adminPost,
+                    Role = targetRole,
+                    EmployeeId = employee?.Id ?? 0,
+                    PhoneNumber = adminPhoneNumber
+                };
+
+                var createResult = await userManager.CreateAsync(created);
+                if (!createResult.Succeeded)
+                {
+                    logger.LogWarning("Failed to create Identity admin user: {Errors}", string.Join(", ", createResult.Errors.Select(e => e.Description)));
+                }
+                else
+                {
+                    existingUser = created;
+                    logger.LogInformation("Seeded Identity admin user: {AdminEmail}", adminEmail);
+                }
+            }
+            else
+            {
+                existingUser.FullName = adminFullName;
+                existingUser.Post = adminPost;
+                existingUser.Role = targetRole;
+                existingUser.PhoneNumber = adminPhoneNumber;
+
+                var employee = await context.Employees.FirstOrDefaultAsync(e => e.Email == adminEmail, cancellationToken);
+                if (employee != null)
+                {
+                    existingUser.EmployeeId = employee.Id;
+                }
+
+                await userManager.UpdateAsync(existingUser);
+                logger.LogInformation("Updated existing Identity admin user: {AdminEmail}", adminEmail);
+            }
+
+            if (existingUser != null && !await userManager.IsInRoleAsync(existingUser, targetRole))
+            {
+                if (!await roleManager.RoleExistsAsync(targetRole))
+                {
+                    await roleManager.CreateAsync(new IdentityRole<int>(targetRole));
+                }
+
+                await userManager.AddToRoleAsync(existingUser, targetRole);
+            }
+        }
+
+        private static async Task EnsureIdentityRolesExistAsync(
+            RoleManager<IdentityRole<int>> roleManager,
+            ILogger logger,
+            CancellationToken cancellationToken)
+        {
+            foreach (var roleName in UserRoles.All)
+            {
+                if (!await roleManager.RoleExistsAsync(roleName))
+                {
+                    await roleManager.CreateAsync(new IdentityRole<int>(roleName));
+                    logger.LogInformation("Created identity role: {RoleName}", roleName);
+                }
+            }
+        }
+
+        private static async Task MirrorEmployeesToIdentityAsync(
+            ITStockManagmentContext context,
+            IConfiguration configuration,
+            ILogger logger,
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole<int>> roleManager,
+            CancellationToken cancellationToken)
+        {
+            await EnsureIdentityRolesExistAsync(roleManager, logger, cancellationToken);
+
+            var employees = await context.Employees
+                .Where(e => !string.IsNullOrWhiteSpace(e.Email))
+                .ToListAsync(cancellationToken);
+
+            logger.LogInformation("Mirroring {EmployeeCount} seeded Employee records into AspNetUsers.", employees.Count);
+
+            foreach (var employee in employees)
+            {
+                var normalizedRole = string.IsNullOrWhiteSpace(employee.Role)
+                    ? UserRoles.Employee
+                    : UserRoles.NormalizeRole(employee.Role);
+
+                var identityUser = await userManager.FindByEmailAsync(employee.Email!);
+                if (identityUser == null)
+                {
+                    identityUser = new AppUser
+                    {
+                        UserName = employee.Email!,
+                        Email = employee.Email!,
+                        FullName = string.IsNullOrWhiteSpace(employee.FullName) ? employee.Email : employee.FullName,
+                        Post = string.IsNullOrWhiteSpace(employee.Post) ? normalizedRole : employee.Post,
+                        Service = employee.Service,
+                        Role = normalizedRole,
+                        EmployeeId = employee.Id,
+                        PhoneNumber = employee.PhoneNumber
+                    };
+
+                    var createResult = await userManager.CreateAsync(identityUser);
+                    if (!createResult.Succeeded)
+                    {
+                        logger.LogWarning(
+                            "Failed to create Identity user for employee {EmployeeEmail}: {Errors}",
+                            employee.Email,
+                            string.Join(", ", createResult.Errors.Select(e => e.Description)));
+                        continue;
+                    }
+
+                    logger.LogInformation("Created identity user for employee {EmployeeEmail}", employee.Email);
+                }
+                else
+                {
+                    var updated = false;
+
+                    if (identityUser.FullName != employee.FullName && !string.IsNullOrWhiteSpace(employee.FullName))
+                    {
+                        identityUser.FullName = employee.FullName;
+                        updated = true;
+                    }
+
+                    var postValue = string.IsNullOrWhiteSpace(employee.Post) ? normalizedRole : employee.Post;
+                    if (identityUser.Post != postValue)
+                    {
+                        identityUser.Post = postValue;
+                        updated = true;
+                    }
+
+                    if (identityUser.Service != employee.Service)
+                    {
+                        identityUser.Service = employee.Service;
+                        updated = true;
+                    }
+
+                    if (identityUser.Role != normalizedRole)
+                    {
+                        identityUser.Role = normalizedRole;
+                        updated = true;
+                    }
+
+                    if (identityUser.EmployeeId != employee.Id)
+                    {
+                        identityUser.EmployeeId = employee.Id;
+                        updated = true;
+                    }
+
+                    if (identityUser.PhoneNumber != employee.PhoneNumber)
+                    {
+                        identityUser.PhoneNumber = employee.PhoneNumber;
+                        updated = true;
+                    }
+
+                    if (updated)
+                    {
+                        await userManager.UpdateAsync(identityUser);
+                        logger.LogInformation("Updated identity user for employee {EmployeeEmail}", employee.Email);
+                    }
+                }
+
+                if (!await userManager.IsInRoleAsync(identityUser, normalizedRole))
+                {
+                    if (!await roleManager.RoleExistsAsync(normalizedRole))
+                    {
+                        await roleManager.CreateAsync(new IdentityRole<int>(normalizedRole));
+                    }
+
+                    await userManager.AddToRoleAsync(identityUser, normalizedRole);
+                    logger.LogInformation("Assigned role {Role} to identity user {EmployeeEmail}", normalizedRole, employee.Email);
                 }
             }
         }
@@ -1017,13 +1220,22 @@ namespace ITStockM.Data
             // Destructive, intended for developer convenience only.
             using var tx = await context.Database.BeginTransactionAsync(cancellationToken);
 
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AspNetUserRoles]", cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AspNetUserClaims]", cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AspNetUserLogins]", cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AspNetUserTokens]", cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AspNetRoleClaims]", cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AspNetUsers]", cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AspNetRoles]", cancellationToken);
+
             await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Offer]", cancellationToken);
             await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[DeliveryOrderMateriel]", cancellationToken);
             await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[DeliveryOrder]", cancellationToken);
             await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AssignmentMateriel]", cancellationToken);
             await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Assignment]", cancellationToken);
             await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Request]", cancellationToken);
-
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AssetLifecycleRecord]", cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[AssetPrediction]", cancellationToken);
             await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Materiel]", cancellationToken);
             await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Supplier]", cancellationToken);
             await context.Database.ExecuteSqlRawAsync("DELETE FROM [dbo].[Project]", cancellationToken);
@@ -1035,9 +1247,11 @@ namespace ITStockM.Data
             await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Assignment]', RESEED, 0)", cancellationToken);
             await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Request]', RESEED, 0)", cancellationToken);
             await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Offer]', RESEED, 0)", cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[AspNetUsers]', RESEED, 0)", cancellationToken);
+            await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[AspNetRoles]', RESEED, 0)", cancellationToken);
 
             await tx.CommitAsync(cancellationToken);
-            logger.LogInformation("Cleared old data (development-only).");
+            logger.LogInformation("Cleared old data and Identity seed tables (development-only).");
         }
 
         /// <summary>

@@ -60,6 +60,7 @@ Default local Docker seed behavior:
 - `SEED_ENABLED=true`
 - `SEED_DEMO_DATA=true`
 - `ACTIVE_DIRECTORY_ENABLED=false`
+- `SEED_CLEAR_OLD_DATA=false` (development-only cleanup of demo and Identity tables)
 
 Default seeded admin:
 
