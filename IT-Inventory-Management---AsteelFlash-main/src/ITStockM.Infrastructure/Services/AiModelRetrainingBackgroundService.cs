@@ -55,11 +55,50 @@ public sealed class AiModelRetrainingBackgroundService : BackgroundService
         {
             await recommendationService.RetrainAsync(ct);
             await ticketService.RetrainAsync(ct);
+
+            var hardwareStatus = await recommendationService.GetModelStatusAsync(ct);
+            var ticketStatus = await ticketService.GetModelStatusAsync(ct);
+
+            LogGateStatus(hardwareStatus.ModelName, hardwareStatus.LastRetrainStatus, hardwareStatus.ValidationMetric);
+            LogGateStatus(ticketStatus.ModelName, ticketStatus.LastRetrainStatus, ticketStatus.ValidationMetric);
+
             _logger.LogInformation("AI model retraining cycle completed successfully at {Time}", DateTime.UtcNow);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "AI model retraining cycle failed");
+        }
+    }
+
+    private void LogGateStatus(string modelName, string status, double validationMetric)
+    {
+        if (status.StartsWith("blocked_data_quality", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning(
+                "AI retraining blocked by data quality gate. Model={Model}, Status={Status}, ValidationMetric={Metric}",
+                modelName,
+                status,
+                validationMetric);
+            return;
+        }
+
+        if (status.StartsWith("blocked_acceptance", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning(
+                "AI retraining blocked by acceptance gate. Model={Model}, Status={Status}, ValidationMetric={Metric}",
+                modelName,
+                status,
+                validationMetric);
+            return;
+        }
+
+        if (status.Equals("rolled_over_to_previous", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation(
+                "AI retraining kept previous model. Model={Model}, Status={Status}, ValidationMetric={Metric}",
+                modelName,
+                status,
+                validationMetric);
         }
     }
 }

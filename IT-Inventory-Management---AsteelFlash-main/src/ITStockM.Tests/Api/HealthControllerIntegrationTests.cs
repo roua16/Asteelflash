@@ -3,8 +3,10 @@ using FluentAssertions;
 using ITStockM.Application.Common.Models;
 using ITStockM.Application.Features.Maintenance.DTOs;
 using ITStockM.Application.Features.Recommendations.DTOs;
+using ITStockM.Services;
 using ITStockM.Services.Interfaces;
 using ITStockM.WebApi.Controllers;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ITStockM.Tests.Api;
@@ -43,7 +45,8 @@ public sealed class HealthControllerIntegrationTests
 
         var controller = new HealthController(
             new FakeHardwareRecommendationService(hardwareStatus),
-            new FakeTicketPrioritizationService(ticketStatus));
+            new FakeTicketPrioritizationService(ticketStatus),
+            Options.Create(new AiModelRetrainingOptions()));
 
         // Act
         var result = await controller.GetAiModelMetrics();
@@ -81,6 +84,57 @@ public sealed class HealthControllerIntegrationTests
         firstModel.TryGetProperty("driftLevel", out _).Should().BeTrue();
         firstModel.TryGetProperty("lastRetrainStatus", out _).Should().BeTrue();
         firstModel.TryGetProperty("activeModelPath", out _).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetAiReadiness_ReturnsExpectedGateStatus()
+    {
+        var options = Options.Create(new AiModelRetrainingOptions
+        {
+            MinimumHardwareValidationMetric = 0.70,
+            MinimumTicketValidationMetric = 0.70
+        });
+
+        var hardwareStatus = new AiModelStatusDto(
+            ModelName: "hardware-recommendation",
+            ActiveVersion: "20260530010000",
+            PreviousVersion: "20260529010000",
+            LastTrainedUtc: DateTime.UtcNow.AddMinutes(-30),
+            RetrainIntervalMinutes: 240,
+            TrainingSampleCount: 120,
+            ValidationMetric: 0.82,
+            DriftScore: 28,
+            DriftLevel: "low",
+            LastRetrainStatus: "activated",
+            ActiveModelPath: "ml-models/hardware/model_20260530010000.zip");
+
+        var ticketStatus = new AiModelStatusDto(
+            ModelName: "ticket-prioritization",
+            ActiveVersion: "20260530020000",
+            PreviousVersion: "20260529020000",
+            LastTrainedUtc: DateTime.UtcNow.AddMinutes(-45),
+            RetrainIntervalMinutes: 240,
+            TrainingSampleCount: 220,
+            ValidationMetric: 0.61,
+            DriftScore: 41,
+            DriftLevel: "medium",
+            LastRetrainStatus: "blocked_acceptance_min_metric",
+            ActiveModelPath: "ml-models/tickets/model_20260530020000.zip");
+
+        var controller = new HealthController(
+            new FakeHardwareRecommendationService(hardwareStatus),
+            new FakeTicketPrioritizationService(ticketStatus),
+            options);
+
+        var result = await controller.GetAiReadiness();
+
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        var payload = ok.Value.Should().BeOfType<AiReadinessSnapshotDto>().Subject;
+
+        payload.ReadyForProduction.Should().BeFalse();
+        payload.Models.Should().HaveCount(2);
+        payload.Models.Should().Contain(m => m.ModelName == "hardware-recommendation" && m.IsOperational);
+        payload.Models.Should().Contain(m => m.ModelName == "ticket-prioritization" && !m.IsOperational && m.RetrainBlockedByAcceptanceGate);
     }
 
     private sealed class FakeHardwareRecommendationService : IHardwareRecommendationService

@@ -18,3 +18,19 @@ public sealed record AiModelMetricsSnapshotDto(
     IReadOnlyList<AiModelStatusDto> Models,
     double MaxDriftScore,
     string FleetDriftLevel);
+
+public sealed record AiReadinessModelGateDto(
+    string ModelName,
+    string LastRetrainStatus,
+    double ValidationMetric,
+    double MinimumRequiredMetric,
+    bool MeetsMinimumMetric,
+    bool RetrainBlockedByQualityGate,
+    bool RetrainBlockedByAcceptanceGate,
+    bool IsOperational);
+
+public sealed record AiReadinessSnapshotDto(
+    DateTime GeneratedAtUtc,
+    bool ReadyForProduction,
+    IReadOnlyList<AiReadinessModelGateDto> Models,
+    string Summary);

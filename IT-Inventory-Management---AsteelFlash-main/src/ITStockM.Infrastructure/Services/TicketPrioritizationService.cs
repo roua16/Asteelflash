@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
+using System.Text;
 using ITStockM.Services.Interfaces;
 
 namespace ITStockM.Services.Maintenance;
@@ -168,6 +170,27 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
                 return;
             }
 
+            var distinctLabels = trainingRows
+                .Select(r => r.Label)
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count();
+
+            if (distinctLabels < _options.MinimumTicketDistinctLabels)
+            {
+                _lastTrainingUtc = DateTime.UtcNow;
+                _lastRetrainStatus = "blocked_data_quality_low_label_diversity";
+                return;
+            }
+
+            var missingTextRate = trainingRows.Average(r => string.IsNullOrWhiteSpace(r.Text) ? 1.0 : 0.0);
+            if (missingTextRate > _options.MaximumTicketMissingTextRate)
+            {
+                _lastTrainingUtc = DateTime.UtcNow;
+                _lastRetrainStatus = "blocked_data_quality_missing_text";
+                return;
+            }
+
             var trainView = _mlContext.Data.LoadFromEnumerable(trainingRows);
             var split = _mlContext.Data.TrainTestSplit(trainView, testFraction: 0.2, seed: 17);
 
@@ -199,6 +222,14 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
                 scoreColumnName: nameof(TicketPriorityModelOutput.Score));
 
             var candidateMetric = candidateEval.MicroAccuracy;
+
+            if (candidateMetric < _options.MinimumTicketValidationMetric)
+            {
+                _lastTrainingUtc = DateTime.UtcNow;
+                _lastRetrainStatus = "blocked_acceptance_min_metric";
+                return;
+            }
+
             var currentMetric = _validationMetric;
             var tolerance = Math.Clamp(_options.ActivationMetricTolerance, 0, 0.5);
             var shouldActivate = _model is null || candidateMetric >= currentMetric - tolerance;
@@ -211,7 +242,7 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
                 _lastRetrainStatus = "activated";
 
                 UpdateBaseline(trainingRows);
-                SaveVersionedModelToDisk(candidateModel, split.TrainSet.Schema, trainingRows.Count, candidateMetric);
+                SaveVersionedModelToDisk(candidateModel, split.TrainSet.Schema, trainingRows, candidateMetric);
             }
             else
             {
@@ -274,7 +305,7 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
         }
     }
 
-    private void SaveVersionedModelToDisk(ITransformer model, DataViewSchema schema, int sampleCount, double validationMetric)
+    private void SaveVersionedModelToDisk(ITransformer model, DataViewSchema schema, IReadOnlyCollection<TicketPriorityModelInput> trainingRows, double validationMetric)
     {
         Directory.CreateDirectory(ScopedModelDirectory);
 
@@ -294,12 +325,15 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
         manifest.ActiveVersion = version;
         manifest.ActiveModelPath = filePath;
         manifest.LastTrainedUtc = DateTime.UtcNow;
-        manifest.TrainingSampleCount = sampleCount;
+        manifest.TrainingSampleCount = trainingRows.Count;
         manifest.ValidationMetric = validationMetric;
         manifest.BaselineUrgency = _baselineUrgency;
         manifest.BaselineImpactedUsers = _baselineImpactedUsers;
         manifest.BaselineEquipmentCriticality = _baselineEquipmentCriticality;
         manifest.LastRetrainStatus = _lastRetrainStatus;
+        manifest.DatasetSnapshotId = ComputeDatasetSnapshotId(trainingRows);
+        manifest.TrainingCommit = ResolveTrainingCommit();
+        manifest.ConfigHash = ComputeConfigHash();
 
         File.WriteAllText(ManifestPath, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
 
@@ -387,6 +421,44 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
                 // Retention cleanup is best effort and must not block serving predictions.
             }
         }
+    }
+
+    private static string ComputeDatasetSnapshotId(IEnumerable<TicketPriorityModelInput> trainingRows)
+    {
+        var materialized = trainingRows
+            .Select(r => $"{r.Label}|{r.Category}|{r.EquipmentType}|{r.UrgencyLevel:0.###}|{r.ImpactedUsers:0.###}|{r.EquipmentCriticality:0.###}|{r.Text}")
+            .OrderBy(x => x, StringComparer.Ordinal)
+            .Take(4000);
+
+        var payload = string.Join("\n", materialized);
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    private string ComputeConfigHash()
+    {
+        var payload = string.Join("|",
+            _options.IntervalMinutes,
+            _options.MinimumTicketTrainingSamples,
+            _options.ActivationMetricTolerance,
+            _options.MinimumTicketValidationMetric,
+            _options.MinimumTicketDistinctLabels,
+            _options.MaximumTicketMissingTextRate,
+            _options.MaxModelVersionsToKeep,
+            _options.DriftMediumThreshold,
+            _options.DriftHighThreshold);
+
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    private static string ResolveTrainingCommit()
+    {
+        var commit = Environment.GetEnvironmentVariable("GIT_COMMIT_SHA")
+            ?? Environment.GetEnvironmentVariable("SOURCE_VERSION")
+            ?? Environment.GetEnvironmentVariable("BUILD_SOURCEVERSION");
+
+        return string.IsNullOrWhiteSpace(commit) ? "unknown" : commit.Trim();
     }
 
     private async Task<List<TicketPriorityModelInput>> BuildTrainingSetAsync(CancellationToken ct)
@@ -544,5 +616,8 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
         public double BaselineImpactedUsers { get; set; } = 10;
         public double BaselineEquipmentCriticality { get; set; } = 3;
         public string LastRetrainStatus { get; set; } = "not_trained";
+        public string DatasetSnapshotId { get; set; } = string.Empty;
+        public string TrainingCommit { get; set; } = "unknown";
+        public string ConfigHash { get; set; } = string.Empty;
     }
 }

@@ -8,6 +8,8 @@ using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 
 namespace ITStockM.Services.Recommendations;
@@ -159,6 +161,14 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
                 return;
             }
 
+            var positiveRate = trainingSet.Average(t => t.Label ? 1.0 : 0.0);
+            if (positiveRate < _options.MinimumHardwarePositiveRate || positiveRate > _options.MaximumHardwarePositiveRate)
+            {
+                _lastTrainingUtc = DateTime.UtcNow;
+                _lastRetrainStatus = "blocked_data_quality_label_imbalance";
+                return;
+            }
+
             var trainView = _mlContext.Data.LoadFromEnumerable(trainingSet);
             var split = _mlContext.Data.TrainTestSplit(trainView, testFraction: 0.2, seed: 42);
             var pipeline = _mlContext.Transforms.Categorical.OneHotEncoding(new[]
@@ -189,6 +199,13 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
             var candidateModel = pipeline.Fit(split.TrainSet);
             var candidateMetric = EvaluateBinaryModelSafely(candidateModel, split.TestSet, trainView);
 
+            if (candidateMetric < _options.MinimumHardwareValidationMetric)
+            {
+                _lastTrainingUtc = DateTime.UtcNow;
+                _lastRetrainStatus = "blocked_acceptance_min_metric";
+                return;
+            }
+
             var currentMetric = _validationMetric;
             var tolerance = Math.Clamp(_options.ActivationMetricTolerance, 0, 0.5);
             var shouldActivate = _model is null || candidateMetric >= currentMetric - tolerance;
@@ -201,7 +218,7 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
                 _lastRetrainStatus = "activated";
 
                 UpdateBaseline(trainingSet);
-                SaveVersionedModelToDisk(candidateModel, split.TrainSet.Schema, trainingSet.Count, candidateMetric);
+                SaveVersionedModelToDisk(candidateModel, split.TrainSet.Schema, trainingSet, candidateMetric);
             }
             else
             {
@@ -264,7 +281,7 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
         }
     }
 
-    private void SaveVersionedModelToDisk(ITransformer model, DataViewSchema schema, int sampleCount, double validationMetric)
+    private void SaveVersionedModelToDisk(ITransformer model, DataViewSchema schema, IReadOnlyCollection<RecommendationModelInput> trainingSet, double validationMetric)
     {
         Directory.CreateDirectory(ScopedModelDirectory);
 
@@ -285,12 +302,15 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
         manifest.ActiveVersion = version;
         manifest.ActiveModelPath = filePath;
         manifest.LastTrainedUtc = DateTime.UtcNow;
-        manifest.TrainingSampleCount = sampleCount;
+        manifest.TrainingSampleCount = trainingSet.Count;
         manifest.ValidationMetric = validationMetric;
         manifest.BaselineUsageLevel = _baselineUsageLevel;
         manifest.BaselineNeedsHighPerformance = _baselineNeedsHighPerformance;
         manifest.BaselineNeedsGraphics = _baselineNeedsGraphics;
         manifest.LastRetrainStatus = _lastRetrainStatus;
+        manifest.DatasetSnapshotId = ComputeDatasetSnapshotId(trainingSet);
+        manifest.TrainingCommit = ResolveTrainingCommit();
+        manifest.ConfigHash = ComputeConfigHash();
 
         File.WriteAllText(ManifestPath, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
 
@@ -379,6 +399,44 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
                 // Retention cleanup is best effort and must not block serving predictions.
             }
         }
+    }
+
+    private static string ComputeDatasetSnapshotId(IEnumerable<RecommendationModelInput> trainingSet)
+    {
+        var materialized = trainingSet
+            .Select(t => $"{t.MaterielId}|{t.Role}|{t.Service}|{t.PreferredType}|{t.Label}|{t.UsageLevel:0.###}|{t.NeedsHighPerformance:0.###}|{t.NeedsGraphics:0.###}")
+            .OrderBy(x => x, StringComparer.Ordinal)
+            .Take(2000);
+
+        var payload = string.Join("\n", materialized);
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    private string ComputeConfigHash()
+    {
+        var payload = string.Join("|",
+            _options.IntervalMinutes,
+            _options.MinimumHardwareTrainingSamples,
+            _options.ActivationMetricTolerance,
+            _options.MinimumHardwareValidationMetric,
+            _options.MinimumHardwarePositiveRate,
+            _options.MaximumHardwarePositiveRate,
+            _options.MaxModelVersionsToKeep,
+            _options.DriftMediumThreshold,
+            _options.DriftHighThreshold);
+
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    private static string ResolveTrainingCommit()
+    {
+        var commit = Environment.GetEnvironmentVariable("GIT_COMMIT_SHA")
+            ?? Environment.GetEnvironmentVariable("SOURCE_VERSION")
+            ?? Environment.GetEnvironmentVariable("BUILD_SOURCEVERSION");
+
+        return string.IsNullOrWhiteSpace(commit) ? "unknown" : commit.Trim();
     }
 
     private double EvaluateBinaryModelSafely(ITransformer model, IDataView testSet, IDataView fullSet)
@@ -644,5 +702,8 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
         public double BaselineNeedsHighPerformance { get; set; } = 0.5;
         public double BaselineNeedsGraphics { get; set; } = 0.5;
         public string LastRetrainStatus { get; set; } = "not_trained";
+        public string DatasetSnapshotId { get; set; } = string.Empty;
+        public string TrainingCommit { get; set; } = "unknown";
+        public string ConfigHash { get; set; } = string.Empty;
     }
 }

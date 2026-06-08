@@ -4,6 +4,13 @@
 
 This runbook explains how to operate, tune, and verify the AI model lifecycle features added in Phase 3.
 
+## Production Readiness Documents
+
+For strict production-governance completion, use these companion documents:
+1. [AI_PRODUCTION_READINESS_CHECKLIST.md](AI_PRODUCTION_READINESS_CHECKLIST.md)
+2. [AI_MODEL_ACCEPTANCE_CRITERIA.md](AI_MODEL_ACCEPTANCE_CRITERIA.md)
+3. [AI_GOVERNANCE_MONITORING_PLAN.md](AI_GOVERNANCE_MONITORING_PLAN.md)
+
 ## Runtime Controls
 
 Configuration section:
