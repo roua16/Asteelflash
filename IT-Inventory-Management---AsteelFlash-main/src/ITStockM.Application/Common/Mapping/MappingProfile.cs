@@ -2,7 +2,6 @@ using AutoMapper;
 using ITStockM.Application.Features.AssetLifecycle.DTOs;
 using ITStockM.Application.Features.Common.DTOs;
 using ITStockM.Application.Features.Maintenance.DTOs;
-using ITStockM.Application.Features.Predictions.DTOs;
 using ITStockM.Domain.Entities;
 
 namespace ITStockM.Application.Common.Mapping
@@ -21,16 +20,6 @@ namespace ITStockM.Application.Common.Mapping
             CreateMap<UpdateMaintenanceTicketDto, MaintenanceTicket>();
 
             CreateMap<AssetLifecycleRecord, AssetLifecycleRecordDto>();
-            CreateMap<AssetPrediction, AssetPredictionDto>()
-                .ForMember(
-                    dest => dest.MaterielName,
-                    opt => opt.MapFrom(src => src.Materiel == null ? null : src.Materiel.MaterielName))
-                .ForMember(
-                    dest => dest.MaterielType,
-                    opt => opt.MapFrom(src => src.Materiel == null ? null : src.Materiel.Type))
-                .ForMember(
-                    dest => dest.MaterielSerialNumber,
-                    opt => opt.MapFrom(src => src.Materiel == null ? null : src.Materiel.SerialNumber));
         }
     }
 }

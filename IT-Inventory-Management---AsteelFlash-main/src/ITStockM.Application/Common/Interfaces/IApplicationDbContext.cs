@@ -17,7 +17,6 @@ public interface IApplicationDbContext
     DbSet<Supplier> Suppliers { get; }
     DbSet<MaintenanceTicket> MaintenanceTickets { get; }
     DbSet<AssetLifecycleRecord> AssetLifecycleRecords { get; }
-    DbSet<AssetPrediction> AssetPredictions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

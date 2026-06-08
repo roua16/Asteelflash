@@ -14,7 +14,6 @@ using ITStockM.Services.LanSweeper;
 using ITStockM.Services.Maintenance;
 using ITStockM.Services.Materiels;
 using ITStockM.Services.Offers;
-using ITStockM.Services.Prediction;
 using ITStockM.Services.Projects;
 using ITStockM.Services.Requests;
 using ITStockM.Services.Suppliers;
@@ -90,7 +89,6 @@ public static class InfrastructureLayerServiceCollectionExtensions
 
         services.AddScoped<IAssetLifecycleService, AssetLifecycleService>();
         services.AddScoped<IMaintenanceService, MaintenanceService>();
-        services.AddScoped<IPredictionService, PredictionService>();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
@@ -105,7 +103,6 @@ public static class InfrastructureLayerServiceCollectionExtensions
         services.AddHostedService(provider => provider.GetRequiredService<SmtpHealthHostedService>());
 
         services.AddHostedService<EmailBackgroundService>();
-        services.AddHostedService<AssetHealthBackgroundService>();
 
         return services;
     }
