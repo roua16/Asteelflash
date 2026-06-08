@@ -13,12 +13,19 @@ dotnet tool install --global dotnet-ef
 
 1) Start SQL Server (recommended: Docker)
 
+macOS / Linux:
 ```bash
 chmod +x scripts/start_mssql_docker.sh
 ./scripts/start_mssql_docker.sh
 ```
 
-This will run a SQL Server 2019 container bound to `localhost:1433` with SA password `AsteelFlash@2026`.
+Windows PowerShell:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+./scripts/start_mssql_docker.ps1
+```
+
+This will run a SQL Server 2019 container bound to `localhost:1433` with SA password `Asteelflash@2026`.
 
 2) Verify connection (optional)
 

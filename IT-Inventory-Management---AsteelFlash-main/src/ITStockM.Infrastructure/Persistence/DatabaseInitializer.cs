@@ -84,21 +84,26 @@ namespace ITStockM.Data
                     ? "First run detected. Starting database seeding..."
                     : "Database exists. Ensuring seed baseline data is present...");
 
+            // Ensure the baseline mirroring step doesn't accidentally rely on demo seeding order.
+            // We'll mirror employees exactly once after all seeding steps.
+            // (Employee->Identity mirroring is idempotent, but deterministic order avoids drift.)
+
             await SeedAdminAsync(context, seedSection, logger, cancellationToken);
             await SeedIdentityAdminAsync(context, seedSection, logger, userManager, roleManager, cancellationToken);
-            await MirrorEmployeesToIdentityAsync(context, configuration, logger, userManager, roleManager, cancellationToken);
 
             if (seedDemoData)
             {
-                // Safe to run on every startup: SeedDemoDataAsync checks each table before insert.
+                // Safe to run on every startup: SeedDemoDataAsync uses table+key guards.
                 await SeedDemoDataAsync(context, logger, cancellationToken);
-                await MirrorEmployeesToIdentityAsync(context, configuration, logger, userManager, roleManager, cancellationToken);
                 await EnsureUiBaselineDataAsync(context, logger, cancellationToken);
             }
             else
             {
                 logger.LogInformation("Demo data seeding disabled (Seed:DemoData=false).");
             }
+
+            // Employee -> Identity mirroring must happen once after all Employees are seeded.
+            await MirrorEmployeesToIdentityAsync(context, configuration, logger, userManager, roleManager, cancellationToken);
 
             logger.LogInformation("Database seeding complete.");
         }
@@ -423,6 +428,10 @@ namespace ITStockM.Data
             {
                 var suppliers = new[]
                 {
+                    // Note: seeded by SupplierName/Email later via EnsureUiBaselineDataAsync if needed.
+                    // Demo seeding itself is guarded by an empty-table check to avoid duplicates.
+                    
+                    // (Intentionally left as-is for the first run; subsequent runs are covered by other idempotent checks.)
                     new Supplier
                     {
                         SupplierName = "TechCorp Supplies",

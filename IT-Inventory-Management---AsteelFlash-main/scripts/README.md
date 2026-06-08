@@ -14,9 +14,16 @@ dotnet build ITStockM.sln
 
 2) Automatic full initialization and run (recommended for dev):
 
+macOS / Linux:
 ```bash
 chmod +x scripts/auto_init_and_run.sh
 ./scripts/auto_init_and_run.sh
+```
+
+Windows PowerShell:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+./scripts/auto_init_and_run.ps1
 ```
 
 This will start SQL Server, scaffold `InitialCreate` migration if none exists, apply migrations, build and run the Web API.
