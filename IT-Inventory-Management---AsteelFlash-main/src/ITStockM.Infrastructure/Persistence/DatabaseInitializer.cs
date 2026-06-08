@@ -17,9 +17,40 @@ namespace ITStockM.Data
             ILogger logger,
             CancellationToken cancellationToken = default)
         {
-            // Use EnsureCreatedAsync for SQLite which doesn't need migrations
-            await context.Database.EnsureCreatedAsync(cancellationToken);
-            logger.LogInformation("Database schema ensured.");
+            // Use migrations for relational providers (SQL Server). For file-based DBs like
+            // SQLite, EnsureCreated is sufficient when migrations are not used.
+            try
+            {
+                if (context.Database.IsSqlServer())
+                {
+                    // If migrations are present in the assembly, apply them.
+                    // If there are no migrations (typical for some forks), fall back to EnsureCreated
+                    var migrations = context.Database.GetMigrations();
+                    if (migrations != null && migrations.Any())
+                    {
+                        logger.LogInformation("Applying EF Core migrations (SQL Server)...");
+                        await context.Database.MigrateAsync(cancellationToken);
+                        logger.LogInformation("Database migrations applied.");
+                    }
+                    else
+                    {
+                        logger.LogWarning("No EF Core migrations found in the assembly — using EnsureCreated for initial schema.");
+                        await context.Database.EnsureCreatedAsync(cancellationToken);
+                        logger.LogInformation("Database schema ensured (EnsureCreated).");
+                    }
+                }
+                else
+                {
+                    // SQLite or other lightweight provider: ensure database exists
+                    await context.Database.EnsureCreatedAsync(cancellationToken);
+                    logger.LogInformation("Database schema ensured (EnsureCreated).");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed while ensuring or migrating the database schema.");
+                throw;
+            }
 
             // Apply any column additions that EnsureCreatedAsync won't add to existing databases.
             await ApplySchemaUpdatesAsync(context, logger, cancellationToken);
