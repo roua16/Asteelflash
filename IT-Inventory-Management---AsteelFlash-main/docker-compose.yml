@@ -114,10 +114,10 @@ services:
       # set in your environment:
       #   ConnectionStrings__ITStockManagmentConnection and ConnectionStrings__LanSweeperConnection
       # (or set DB_SERVER/DB_PORT variables if you use them in overrides).
-      ConnectionStrings__ITStockManagmentConnection: "${ConnectionStrings__ITStockManagmentConnection:-Server=localhost;Database=ITStockM;User Id=sa;Password=AsteelFlash@2026;TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True}"
+      ConnectionStrings__ITStockManagmentConnection: "${ConnectionStrings__ITStockManagmentConnection:-Server=host.docker.internal,1433;Database=ITStockM;User Id=sa;Password=AsteelFlash@2026;TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=True}"
 
       # LanSweeper – uses the same SQL Server, separate database auto-created on startup
-      ConnectionStrings__LanSweeperConnection: "${ConnectionStrings__LanSweeperConnection:-Server=localhost;Database=lansweeperdb;User Id=sa;Password=AsteelFlash@2026;TrustServerCertificate=True;Encrypt=False}"
+      ConnectionStrings__LanSweeperConnection: "${ConnectionStrings__LanSweeperConnection:-Server=host.docker.internal,1433;Database=lansweeperdb;User Id=sa;Password=AsteelFlash@2026;TrustServerCertificate=True;Encrypt=False}"
       
       # Application Settings
       DEV_ALLOW_TEST_EMAIL: "${DEV_ALLOW_TEST_EMAIL:-true}"
