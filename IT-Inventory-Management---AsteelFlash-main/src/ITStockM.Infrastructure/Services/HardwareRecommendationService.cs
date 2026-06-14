@@ -70,9 +70,14 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
             .Include(m => m.MaintenanceTickets)
             .ToListAsync(ct);
 
-        if (_model is null || materiels.Count == 0)
+        if (materiels.Count == 0)
         {
             return Array.Empty<HardwareRecommendationDto>();
+        }
+
+        if (_model is null)
+        {
+            return RecommendRuleBased(materiels, request, topN);
         }
 
         var modelInputs = materiels.Select(m => BuildInferenceInput(m, request)).ToList();
@@ -647,6 +652,62 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
         }
 
         return Math.Round(Math.Clamp(score, 0m, 100m), 2);
+    }
+
+    private static IReadOnlyList<HardwareRecommendationDto> RecommendRuleBased(
+        IReadOnlyList<Materiel> materiels,
+        HardwareRecommendationRequestDto request,
+        int topN)
+    {
+        var results = materiels
+            .Select(m =>
+            {
+                var text = $"{m.MaterielName} {m.Type}".ToLowerInvariant();
+                var score = 50m;
+
+                if (request.NeedsHighPerformance && ContainsAny(text, HighPerformanceTokens))
+                {
+                    score += 25m;
+                }
+                else if (request.NeedsHighPerformance)
+                {
+                    score -= 15m;
+                }
+
+                if (request.NeedsGraphics && ContainsAny(text, GraphicsTokens))
+                {
+                    score += 18m;
+                }
+                else if (request.NeedsGraphics)
+                {
+                    score -= 12m;
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.PreferredType) && text.Contains(request.PreferredType.ToLowerInvariant()))
+                {
+                    score += 12m;
+                }
+
+                score += Math.Clamp((decimal)(m.CurrentHealthScore ?? 70m) / 10m, 0m, 10m);
+                score += Math.Clamp(m.QuantityITStock / 5m, 0m, 10m);
+
+                score = Math.Round(Math.Clamp(score, 0m, 100m), 2);
+                var reason = BuildReason(m, request, score);
+
+                return new HardwareRecommendationDto(
+                    m.Id,
+                    m.MaterielName,
+                    m.Type,
+                    score,
+                    m.QuantityITStock,
+                    reason);
+            })
+            .OrderByDescending(x => x.MatchScore)
+            .ThenByDescending(x => x.AvailableQuantity)
+            .Take(topN)
+            .ToList();
+
+        return results;
     }
 
     private static bool RoleSuggestsHighPerformance(string role, string service)

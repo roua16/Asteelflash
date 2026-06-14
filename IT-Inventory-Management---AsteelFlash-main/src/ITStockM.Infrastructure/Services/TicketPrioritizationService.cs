@@ -101,7 +101,13 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
         {
             var engine = _mlContext.Model.CreatePredictionEngine<TicketPriorityModelInput, TicketPriorityModelOutput>(_model);
             var prediction = engine.Predict(input);
-            priority = string.IsNullOrWhiteSpace(prediction.PredictedLabel) ? "Moyenne" : prediction.PredictedLabel;
+            priority = string.IsNullOrWhiteSpace(prediction.PredictedLabel)
+                ? DetermineFallbackPriority(matchedKeywords, request)
+                : prediction.PredictedLabel;
+        }
+        else
+        {
+            priority = DetermineFallbackPriority(matchedKeywords, request);
         }
 
         var keywordScore = matchedKeywords.Sum(k => KeywordWeights[k]);
@@ -584,6 +590,24 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
         return Regex.Matches(text.ToLowerInvariant(), "[a-z0-9]+")
             .Select(m => m.Value)
             .ToList();
+    }
+
+    private static string DetermineFallbackPriority(IReadOnlyList<string> matchedKeywords, TicketPriorityRequestDto request)
+    {
+        var keywordScore = matchedKeywords.Sum(k => KeywordWeights[k]);
+        var urgencyScore = Math.Clamp(request.UrgencyLevel, 1, 5) * 10m;
+        var impactScore = (decimal)Math.Log10(Math.Max(request.ImpactedUsers, 1)) * 5m;
+        var criticalityScore = (Math.Clamp(request.EquipmentCriticality, 1, 5) - 3) * 6m;
+
+        var total = keywordScore + urgencyScore + impactScore + criticalityScore;
+
+        return total switch
+        {
+            >= 95m => "Critique",
+            >= 70m => "Haute",
+            >= 45m => "Moyenne",
+            _ => "Faible",
+        };
     }
 
     private sealed class TicketPriorityModelInput
