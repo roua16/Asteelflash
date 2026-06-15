@@ -19,4 +19,8 @@ public sealed class AiModelRetrainingOptions
     public int MaxModelVersionsToKeep { get; set; } = 8;
     public double DriftMediumThreshold { get; set; } = 35;
     public double DriftHighThreshold { get; set; } = 60;
+
+    // Drift-triggered retraining policy
+    public bool ForceRetrainOnHighDrift { get; set; } = true;
+    public int DriftHighConsecutiveCyclesToForceRetrain { get; set; } = 2;
 }

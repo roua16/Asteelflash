@@ -620,6 +620,61 @@ namespace ITStockM.Data
                         IrreparableQuantity = 0,
                         Repairing_Quantity = 0,
                         Warranty = DateTime.Now.AddYears(1)
+                    },
+                    new Materiel
+                    {
+                        MaterielName = "Lenovo ThinkPad P1 Gen 6",
+                        Type = "Laptop",
+                        SerialNumber = "LTP1G6-001",
+                        QuantityITStock = 3,
+                        QuantityPDRStock = 1,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(2)
+                    },
+                    new Materiel
+                    {
+                        MaterielName = "HP Z4 G5 Workstation",
+                        Type = "Workstation",
+                        SerialNumber = "HPZ4-001",
+                        QuantityITStock = 2,
+                        QuantityPDRStock = 0,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(3)
+                    },
+                    new Materiel
+                    {
+                        MaterielName = "NVIDIA RTX 4090 Graphics Card",
+                        Type = "GPU",
+                        SerialNumber = "RTX4090-001",
+                        QuantityITStock = 1,
+                        QuantityPDRStock = 0,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(2)
+                    },
+                    new Materiel
+                    {
+                        MaterielName = "Synology RackStation NAS",
+                        Type = "Storage",
+                        SerialNumber = "NAS-001",
+                        QuantityITStock = 1,
+                        QuantityPDRStock = 0,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(2)
+                    },
+                    new Materiel
+                    {
+                        MaterielName = "Fortinet FortiGate Firewall",
+                        Type = "Network Equipment",
+                        SerialNumber = "FW-001",
+                        QuantityITStock = 1,
+                        QuantityPDRStock = 0,
+                        IrreparableQuantity = 0,
+                        Repairing_Quantity = 0,
+                        Warranty = DateTime.Now.AddYears(2)
                     }
                 };
 
@@ -631,113 +686,74 @@ namespace ITStockM.Data
             if (!await context.Assignments.AnyAsync(cancellationToken))
             {
                 var admin = await context.Employees.FirstOrDefaultAsync(e => e.Email == "admin@asteelflash.com", cancellationToken);
-                var john = await context.Employees.FirstOrDefaultAsync(e => e.Email == "john.smith@asteelflash.com", cancellationToken);
-                var thomas = await context.Employees.FirstOrDefaultAsync(e => e.Email == "thomas.miller@asteelflash.com", cancellationToken);
-                var emma = await context.Employees.FirstOrDefaultAsync(e => e.Email == "emma.white@asteelflash.com", cancellationToken);
-                var paul = await context.Employees.FirstOrDefaultAsync(e => e.Email == "paul.green@asteelflash.com", cancellationToken);
+                var employees = await context.Employees
+                    .Where(e => e.Email != null && e.Email != "admin@asteelflash.com")
+                    .OrderBy(e => e.Id)
+                    .ToListAsync(cancellationToken);
                 var project = await context.Projects.OrderBy(p => p.Id).FirstOrDefaultAsync(cancellationToken);
+                var materiels = await context.Materiels
+                    .Where(m => (m.QuantityITStock + m.QuantityPDRStock) > 0)
+                    .ToListAsync(cancellationToken);
 
-                if (admin != null && john != null && project != null)
+                if (admin != null && project != null && employees.Count > 0 && materiels.Count > 0)
                 {
-                    // Active assignment (existing scenario)
-                    var assignment = new Assignment
+                    var rand = new Random(4242);
+                    var missionTemplates = new[]
                     {
-                        AssignedTo = john.Id,
-                        AssignedBy = admin.Id,
-                        ProjectId = project.Id,
-                        Date = DateTime.Now.AddDays(-30),
-                        Descipriton = "Laptop assignment for development work",
-                        OnMission = true,
-                        RestoreDateLimit = DateTime.Now.AddDays(30)
+                        (Description: "Infrastructure refresh rollout", OnMission: true),
+                        (Description: "Office hardware replacement", OnMission: false),
+                        (Description: "Project laptop deployment", OnMission: true),
+                        (Description: "Field mission equipment", OnMission: true),
+                        (Description: "Peripheral distribution", OnMission: false),
+                        (Description: "Temporary workstation allocation", OnMission: true),
+                        (Description: "Training device assignment", OnMission: false),
+                        (Description: "Urgent support equipment", OnMission: true)
                     };
-                    context.Assignments.Add(assignment);
 
-                    // Recently completed / archived assignment for Emma (Archived mission)
-                    var archivedAssignment = new Assignment
+                    var generatedAssignments = new List<Assignment>(capacity: 35);
+                    for (var i = 0; i < 30; i++)
                     {
-                        AssignedTo = emma != null ? emma.Id : john.Id,
-                        AssignedBy = admin.Id,
-                        ProjectId = project.Id,
-                        Date = DateTime.Now.AddDays(-45),
-                        Descipriton = "Returned equipment after PDR task",
-                        OnMission = false,
-                        RestoreDate = DateTime.Now.AddDays(-5),
-                        RestoreDateLimit = DateTime.Now.AddDays(-10)
-                    };
-                    context.Assignments.Add(archivedAssignment);
+                        var assignee = employees[rand.Next(employees.Count)];
+                        var template = missionTemplates[rand.Next(missionTemplates.Length)];
+                        var assignmentDate = DateTime.UtcNow.AddDays(-rand.Next(5, 180));
+                        var onMission = template.OnMission;
+                        var restoreLimit = onMission ? DateTime.UtcNow.AddDays(rand.Next(2, 45)) : (DateTime?)null;
+                        DateTime? restoreDate = onMission ? null : DateTime.UtcNow.AddDays(-rand.Next(1, 30));
 
-                    // On-mission assignment with near deadline for Paul
-                    var urgentAssignment = new Assignment
-                    {
-                        AssignedTo = paul != null ? paul.Id : john.Id,
-                        AssignedBy = admin.Id,
-                        ProjectId = project.Id,
-                        Date = DateTime.Now.AddDays(-8),
-                        Descipriton = "Field mission - temporary devices",
-                        OnMission = true,
-                        RestoreDateLimit = DateTime.Now.AddDays(3)
-                    };
-                    context.Assignments.Add(urgentAssignment);
-
-                    await context.SaveChangesAsync(cancellationToken);
-
-                    var laptop = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Laptop", cancellationToken);
-                    var mouse = await context.Materiels.FirstOrDefaultAsync(m => m.MaterielName.Contains("Mouse"), cancellationToken);
-                    var printer = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Printer", cancellationToken);
-                    var monitor = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Monitor", cancellationToken);
-
-                    if (laptop != null)
-                    {
-                        context.AssignmentMateriels.Add(new AssignmentMateriel
+                        generatedAssignments.Add(new Assignment
                         {
-                            AssignmentId = assignment.Id,
-                            MaterielId = laptop.Id,
-                            Qte = 1
-                        });
-                    }
-
-                    if (printer != null)
-                    {
-                        context.AssignmentMateriels.Add(new AssignmentMateriel
-                        {
-                            AssignmentId = archivedAssignment.Id,
-                            MaterielId = printer.Id,
-                            Qte = 1
-                        });
-                    }
-
-                    if (monitor != null)
-                    {
-                        context.AssignmentMateriels.Add(new AssignmentMateriel
-                        {
-                            AssignmentId = urgentAssignment.Id,
-                            MaterielId = monitor.Id,
-                            Qte = 2
-                        });
-                    }
-
-                    if (mouse != null && thomas != null)
-                    {
-                        // small assignment for Thomas
-                        var personalAssignment = new Assignment
-                        {
-                            AssignedTo = thomas.Id,
+                            AssignedTo = assignee.Id,
                             AssignedBy = admin.Id,
                             ProjectId = project.Id,
-                            Date = DateTime.Now.AddDays(-12),
-                            Descipriton = "Peripheral allocation",
-                            OnMission = false,
-                            RestoreDateLimit = null
-                        };
-                        context.Assignments.Add(personalAssignment);
-                        await context.SaveChangesAsync(cancellationToken);
-
-                        context.AssignmentMateriels.Add(new AssignmentMateriel
-                        {
-                            AssignmentId = personalAssignment.Id,
-                            MaterielId = mouse.Id,
-                            Qte = 1
+                            Date = assignmentDate,
+                            Descipriton = $"{template.Description} for {assignee.Service} ({assignee.FullName})",
+                            OnMission = onMission,
+                            RestoreDateLimit = restoreLimit,
+                            RestoreDate = restoreDate
                         });
+                    }
+
+                    context.Assignments.AddRange(generatedAssignments);
+                    await context.SaveChangesAsync(cancellationToken);
+
+                    var assignmentRecords = await context.Assignments.ToListAsync(cancellationToken);
+                    foreach (var assignment in assignmentRecords)
+                    {
+                        var itemCount = rand.Next(1, 4);
+                        var chosenMateriels = materiels
+                            .OrderBy(_ => rand.Next())
+                            .Take(itemCount)
+                            .ToList();
+
+                        foreach (var materiel in chosenMateriels)
+                        {
+                            context.AssignmentMateriels.Add(new AssignmentMateriel
+                            {
+                                AssignmentId = assignment.Id,
+                                MaterielId = materiel.Id,
+                                Qte = Math.Min(rand.Next(1, 3), Math.Max(1, materiel.QuantityITStock + materiel.QuantityPDRStock))
+                            });
+                        }
                     }
 
                     await context.SaveChangesAsync(cancellationToken);
@@ -746,18 +762,18 @@ namespace ITStockM.Data
                 // Add a sample assignment that simulates a partial/damaged return (for testing notifications)
                 var partialReturnThomas = await context.Employees.FirstOrDefaultAsync(e => e.Email == "thomas.miller@asteelflash.com", cancellationToken);
                 var laptopMat = await context.Materiels.FirstOrDefaultAsync(m => m.Type == "Laptop", cancellationToken);
-                if (partialReturnThomas != null && laptopMat != null && project != null && !await context.Assignments.AnyAsync(a => a.Descipriton.Contains("Partial return example"), cancellationToken))
+                if (partialReturnThomas != null && laptopMat != null && project != null && admin != null && !await context.Assignments.AnyAsync(a => a.Descipriton.Contains("Partial return example"), cancellationToken))
                 {
                     var problemAssignment = new Assignment
                     {
                         AssignedTo = partialReturnThomas.Id,
-                        AssignedBy = admin != null ? admin.Id : partialReturnThomas.Id,
+                        AssignedBy = admin.Id,
                         ProjectId = project.Id,
-                        Date = DateTime.Now.AddDays(-40),
+                        Date = DateTime.UtcNow.AddDays(-40),
                         Descipriton = "Partial return example: 2 laptops assigned, 1 returned damaged",
                         OnMission = false,
-                        RestoreDate = DateTime.Now.AddDays(-5),
-                        RestoreDateLimit = DateTime.Now.AddDays(-10)
+                        RestoreDate = DateTime.UtcNow.AddDays(-5),
+                        RestoreDateLimit = DateTime.UtcNow.AddDays(-10)
                     };
                     context.Assignments.Add(problemAssignment);
                     await context.SaveChangesAsync(cancellationToken);
@@ -768,6 +784,219 @@ namespace ITStockM.Data
                         MaterielId = laptopMat.Id,
                         Qte = 1 // 1 still outstanding (was 2 originally)
                     });
+                    await context.SaveChangesAsync(cancellationToken);
+                }
+            }
+
+            // Maintenance tickets (for ML ticket prioritization + hardware open-ticket signal)
+            if (!await context.MaintenanceTickets.AnyAsync(cancellationToken))
+            {
+                var materiels = await context.Materiels
+                    .Include(m => m.MaintenanceTickets)
+                    .ToListAsync(cancellationToken);
+
+                // Pick a few materiels that are likely to have varied tickets (laptops/monitors/network/printers).
+                var candidates = materiels
+                    .Where(m => !string.IsNullOrWhiteSpace(m.Type))
+                    .Take(12)
+                    .ToList();
+
+                var rand = new Random(1337);
+
+                string[] critiqueKeywords =
+                [
+                    "production server down",
+                    "database crash",
+                    "erp inaccessible",
+                    "security breach",
+                    "cooling failure",
+                    "data center overheating"
+                ];
+
+                string[] hauteKeywords =
+                [
+                    "urgent: cannot connect",
+                    "network unstable",
+                    "switch connectivity issues",
+                    "laptop crash",
+                    "desktop won't boot",
+                    "system outage"
+                ];
+
+                string[] moyenneKeywords =
+                [
+                    "application slow",
+                    "monitor instability",
+                    "display artifacts",
+                    "router flapping",
+                    "intermittent disconnect",
+                    "vpn unstable"
+                ];
+
+                string[] faibleKeywords =
+                [
+                    "printer slow",
+                    "printing delays",
+                    "paper feed issue",
+                    "mouse tracking issues",
+                    "keyboard malfunction",
+                    "scanner calibration required"
+                ];
+
+                string[] suffixes =
+                [
+                    "for production operations",
+                    "impacting finance team",
+                    "all users affected",
+                    "intermittent failures",
+                    "cannot access services",
+                    "timeouts for users",
+                    "during peak hours",
+                    "before deadline",
+                    "after software update"
+                ];
+
+                string NormalizeStatus(string candidate, double probability)
+                {
+                    if (string.Equals(candidate, MaintenanceTicketStatus.Open, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return rand.NextDouble() < probability ? MaintenanceTicketStatus.Open : MaintenanceTicketStatus.Closed;
+                    }
+
+                    return MaintenanceTicketStatus.Closed;
+                }
+
+                string MakeDescription(string baseText)
+                {
+                    var suffix = suffixes[rand.Next(suffixes.Length)];
+                    return $"{baseText}. {suffix}";
+                }
+
+                // Seed enough examples to exceed MinimumTicketTrainingSamples with sensible severity variety.
+                var seeds = new List<MaintenanceTicket>(capacity: 160);
+
+                for (var i = 0; i < 160; i++)
+                {
+                    var m = candidates.Count == 0 ? materiels[rand.Next(materiels.Count)] : candidates[rand.Next(candidates.Count)];
+                    var roll = rand.NextDouble();
+
+                    string baseText;
+                    var statusProbability = 0.5;
+                    if (roll < 0.20)
+                    {
+                        baseText = critiqueKeywords[rand.Next(critiqueKeywords.Length)];
+                        statusProbability = 0.85;
+                    }
+                    else if (roll < 0.45)
+                    {
+                        baseText = hauteKeywords[rand.Next(hauteKeywords.Length)];
+                        statusProbability = 0.70;
+                    }
+                    else if (roll < 0.75)
+                    {
+                        baseText = moyenneKeywords[rand.Next(moyenneKeywords.Length)];
+                        statusProbability = 0.45;
+                    }
+                    else
+                    {
+                        baseText = faibleKeywords[rand.Next(faibleKeywords.Length)];
+                        statusProbability = 0.20;
+                    }
+
+                    var status = NormalizeStatus(MaintenanceTicketStatus.Open, statusProbability);
+                    var reporter = await context.Employees
+                        .Where(e => !string.IsNullOrWhiteSpace(e.Email))
+                        .OrderBy(_ => rand.Next())
+                        .Select(e => (int?)e.Id)
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    var reportedAt = DateTime.UtcNow.AddDays(-rand.Next(1, 180));
+                    DateTime? resolvedAt = status == MaintenanceTicketStatus.Closed
+                        ? reportedAt.AddDays(rand.Next(1, 30))
+                        : (DateTime?)null;
+
+                    seeds.Add(new MaintenanceTicket
+                    {
+                        MaterielId = m.Id,
+                        ProblemDescription = MakeDescription(baseText),
+                        Status = status,
+                        ReportedByEmployeeId = reporter,
+                        Cost = Math.Round((decimal)(rand.NextDouble() * 1400 + 30), 2),
+                        ReportedAt = reportedAt,
+                        ResolvedAt = resolvedAt,
+                        Resolution = status == MaintenanceTicketStatus.Closed
+                            ? "Resolved during scheduled maintenance"
+                            : null
+                    });
+                }
+
+                context.MaintenanceTickets.AddRange(seeds);
+                await context.SaveChangesAsync(cancellationToken);
+            }
+
+            // Extra assignments to improve hardware ML training variety (usage/open-ticket signal)
+            // Only runs when demo seeding is enabled and initial assignment count is low.
+            if (await context.Assignments.CountAsync(cancellationToken) < 25)
+            {
+                var admin = await context.Employees.FirstOrDefaultAsync(e => e.Email == "admin@asteelflash.com", cancellationToken);
+                var employees = await context.Employees.Where(e => e.Email != null)
+                    .OrderBy(e => e.Id)
+                    .ToListAsync(cancellationToken);
+
+                var project = await context.Projects.OrderBy(p => p.Id).FirstOrDefaultAsync(cancellationToken);
+                var materiels = await context.Materiels
+                    .Where(m => m.QuantityITStock > 0 || m.QuantityPDRStock > 0)
+                    .Include(m => m.MaintenanceTickets)
+                    .ToListAsync(cancellationToken);
+
+                if (admin != null && project != null && employees.Count > 0 && materiels.Count > 0)
+                {
+                    var rand = new Random(4242);
+
+                    var extraAssignments = new List<Assignment>(capacity: 18);
+
+                    for (var i = 0; i < 18; i++)
+                    {
+                        var assignedTo = employees[rand.Next(employees.Count)];
+                        var assignedBy = admin;
+                        var onMission = rand.NextDouble() < 0.65;
+
+                        var restoreDateLimit = onMission ? DateTime.UtcNow.AddDays(rand.Next(-2, 12)) : (DateTime?)null;
+                        var restoreDate = !onMission ? DateTime.UtcNow.AddDays(-rand.Next(1, 20)) : (DateTime?)null;
+
+                        extraAssignments.Add(new Assignment
+                        {
+                            AssignedTo = assignedTo.Id,
+                            AssignedBy = assignedBy.Id,
+                            ProjectId = project.Id,
+                            Date = DateTime.UtcNow.AddDays(-rand.Next(5, 160)),
+                            Descipriton = $"Auto-seed assignment {i + 1}: {assignedTo.Service} usage scenario",
+                            OnMission = onMission,
+                            RestoreDateLimit = restoreDateLimit,
+                            RestoreDate = restoreDate
+                        });
+                    }
+
+                    context.Assignments.AddRange(extraAssignments);
+                    await context.SaveChangesAsync(cancellationToken);
+
+                    // Link assignment -> 1-3 materiels per assignment
+                    foreach (var a in extraAssignments)
+                    {
+                        var count = rand.Next(1, 4);
+                        var chosen = materiels.OrderBy(_ => rand.Next()).Take(count).ToList();
+
+                        foreach (var m in chosen)
+                        {
+                            context.AssignmentMateriels.Add(new AssignmentMateriel
+                            {
+                                AssignmentId = a.Id,
+                                MaterielId = m.Id,
+                                Qte = rand.Next(1, 3)
+                            });
+                        }
+                    }
+
                     await context.SaveChangesAsync(cancellationToken);
                 }
             }

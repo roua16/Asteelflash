@@ -51,7 +51,20 @@ public class HardwareRecommendationServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new HardwareRecommendationService(context);
+        var tempModelRoot = Path.Combine(Path.GetTempPath(), "itstockm-models", "test-hardware-recommendation");
+        var mlContext = new Microsoft.ML.MLContext(42);
+        var aiArtifactManager = new ITStockM.Services.AiModelArtifactManager(
+            mlContext,
+            modelRootDirectory: tempModelRoot,
+            scopedModelDirectoryName: "hardware-recommendation",
+            maxVersionsToKeep: 2);
+
+        var artifactManager = new ITStockM.Services.HardwareRecommendationArtifactManager(aiArtifactManager);
+
+        var service = new HardwareRecommendationService(
+            context,
+            artifactManager,
+            options: null);
         var result = await service.RecommendAsync(new HardwareRecommendationRequestDto(
             Role: "Developer",
             Service: "IT",

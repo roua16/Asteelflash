@@ -187,6 +187,32 @@
             </Authorized>
         </AuthorizeView>
 
+        <AuthorizeView Roles="Admin,IT,Infrastructure">
+            <Authorized>
+        <div class="menu-group @MenuGroupStateClass(aiExpanded)">
+            <button type="button" class="menu-group-toggle" aria-expanded="@aiExpanded" @onclick='() => ToggleMenuGroup("ai")' disabled="@(!sidebarExpanded)">
+                        <span class="menu-group-meta">
+                            <span class="menu-group-icon" aria-hidden="true">
+                                <RadzenIcon Icon="smart_toy" />
+                            </span>
+                            @if (sidebarExpanded)
+                            {
+                                <span class="menu-group-title">AI INSIGHTS</span>
+                            }
+                        </span>
+                        @if (sidebarExpanded)
+                        {
+                        <span class="menu-group-chevron"><RadzenIcon Icon="@(aiExpanded ? "expand_less" : "expand_more")" /></span>
+                        }
+                    </button>
+                    <div class="menu-links">
+                        <SidebarItem Text="Hardware Recommendations" Icon="inventory_2" Path="/hardware-recommendations" Compact="@(!sidebarExpanded)" />
+                        <SidebarItem Text="Ticket Prioritization" Icon="assignment" Path="/ticket-prioritization" Compact="@(!sidebarExpanded)" />
+                        <SidebarItem Text="Asset Health Predictions" Icon="warning" Path="/asset-predictions" Roles="Admin,IT,Infrastructure" Compact="@(!sidebarExpanded)" />
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
 
     </nav>
 

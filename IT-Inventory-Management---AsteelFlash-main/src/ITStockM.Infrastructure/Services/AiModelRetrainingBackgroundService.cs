@@ -1,8 +1,10 @@
+using ITStockM.Application.Common.Models;
 using ITStockM.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 
 namespace ITStockM.Services;
 
@@ -44,6 +46,9 @@ public sealed class AiModelRetrainingBackgroundService : BackgroundService
         }
     }
 
+    private int _hardwareHighDriftConsecutive;
+    private int _ticketHighDriftConsecutive;
+
     private async Task RunCycleAsync(CancellationToken ct)
     {
         using var scope = _scopeFactory.CreateScope();
@@ -53,11 +58,35 @@ public sealed class AiModelRetrainingBackgroundService : BackgroundService
 
         try
         {
-            await recommendationService.RetrainAsync(ct);
-            await ticketService.RetrainAsync(ct);
-
             var hardwareStatus = await recommendationService.GetModelStatusAsync(ct);
             var ticketStatus = await ticketService.GetModelStatusAsync(ct);
+
+            var shouldForceHardware = ShouldForceRetrain(hardwareStatus, ref _hardwareHighDriftConsecutive, "hardware-recommendation");
+            var shouldForceTicket = ShouldForceRetrain(ticketStatus, ref _ticketHighDriftConsecutive, "ticket-prioritization");
+
+            if (shouldForceHardware)
+            {
+                _logger.LogInformation("Forcing hardware model retraining due to drift. ConsecutiveHighDrift={Count}, DriftScore={Score}", _hardwareHighDriftConsecutive, hardwareStatus.DriftScore);
+                await recommendationService.RetrainAsync(ct);
+            }
+            else
+            {
+                await recommendationService.RetrainAsync(ct);
+            }
+
+            if (shouldForceTicket)
+            {
+                _logger.LogInformation("Forcing ticket model retraining due to drift. ConsecutiveHighDrift={Count}, DriftScore={Score}", _ticketHighDriftConsecutive, ticketStatus.DriftScore);
+                await ticketService.RetrainAsync(ct);
+            }
+            else
+            {
+                await ticketService.RetrainAsync(ct);
+            }
+
+            // Refresh statuses after retraining attempt.
+            hardwareStatus = await recommendationService.GetModelStatusAsync(ct);
+            ticketStatus = await ticketService.GetModelStatusAsync(ct);
 
             LogGateStatus(hardwareStatus.ModelName, hardwareStatus.LastRetrainStatus, hardwareStatus.ValidationMetric);
             LogGateStatus(ticketStatus.ModelName, ticketStatus.LastRetrainStatus, ticketStatus.ValidationMetric);
@@ -68,6 +97,26 @@ public sealed class AiModelRetrainingBackgroundService : BackgroundService
         {
             _logger.LogError(ex, "AI model retraining cycle failed");
         }
+    }
+
+    private bool ShouldForceRetrain(AiModelStatusDto status, ref int consecutiveHighDrift, string modelName)
+    {
+        consecutiveHighDrift = string.Equals(status.DriftLevel, "high", StringComparison.OrdinalIgnoreCase)
+            ? consecutiveHighDrift + 1
+            : 0;
+
+        if (!_options.ForceRetrainOnHighDrift)
+        {
+            return false;
+        }
+
+        var forced = consecutiveHighDrift >= Math.Max(1, _options.DriftHighConsecutiveCyclesToForceRetrain);
+        if (forced)
+        {
+            _logger.LogWarning("Drift-based retrain trigger. Model={Model}, ConsecutiveHighDrift={Consecutive}, DriftScore={Score}", modelName, consecutiveHighDrift, status.DriftScore);
+        }
+
+        return forced;
     }
 
     private void LogGateStatus(string modelName, string status, double validationMetric)

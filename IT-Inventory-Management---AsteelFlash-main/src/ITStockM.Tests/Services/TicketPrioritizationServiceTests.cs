@@ -6,10 +6,28 @@ namespace ITStockM.Tests.Services;
 
 public class TicketPrioritizationServiceTests
 {
+    private static TicketPrioritizationService CreateService()
+    {
+        var tempModelRoot = Path.Combine(Path.GetTempPath(), "itstockm-models", "test-ticket-prioritization");
+        var mlContext = new Microsoft.ML.MLContext(17);
+        var aiArtifactManager = new ITStockM.Services.AiModelArtifactManager(
+            mlContext,
+            modelRootDirectory: tempModelRoot,
+            scopedModelDirectoryName: "ticket-prioritization",
+            maxVersionsToKeep: 2);
+
+        var artifactManager = new ITStockM.Services.TicketPrioritizationArtifactManager(aiArtifactManager);
+
+        return new TicketPrioritizationService(
+            context: null,
+            artifactManager: artifactManager,
+            options: null);
+    }
+
     [Fact]
     public async Task PredictPriorityAsync_CriticalSignals_ReturnsCritique()
     {
-        var service = new TicketPrioritizationService();
+        var service = CreateService();
 
         var result = await service.PredictPriorityAsync(new TicketPriorityRequestDto(
             Title: "Production server down",
@@ -28,7 +46,7 @@ public class TicketPrioritizationServiceTests
     [Fact]
     public async Task PredictPriorityAsync_MinorIssue_ReturnsFaible()
     {
-        var service = new TicketPrioritizationService();
+        var service = CreateService();
 
         var result = await service.PredictPriorityAsync(new TicketPriorityRequestDto(
             Title: "Printer slow",

@@ -1,0 +1,209 @@
+@page "/ticket-prioritization"
+@using ITStockM.Application.Features.Maintenance.DTOs
+@using ITStockM.Application.Common.Models
+@using ITStockM.Services.Interfaces
+@inject ITicketPrioritizationService TicketPrioritizationService
+@inject NotificationService NotificationService
+
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,IT,Infrastructure")]
+
+<PageTitle>Ticket Prioritization - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Ticket Prioritization</h1>
+                <p class="page-subtitle">Predict priority for maintenance requests from text + operational signals.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="content-section">
+            <div class="page-toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Title</span>
+                    <input type="text" class="input-text" placeholder="e.g., Server down" @bind="title" />
+                </div>
+
+                <div class="toolbar-group form-group-span-2">
+                    <span class="toolbar-label">Description</span>
+                    <textarea class="input-textarea" rows="5" @bind="description"></textarea>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Category (optional)</span>
+                    <input type="text" class="input-text" placeholder="e.g., Infrastructure" @bind="category" />
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Equipment Type (optional)</span>
+                    <input type="text" class="input-text" placeholder="e.g., Server / Laptop" @bind="equipmentType" />
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Urgency Level (1-5)</span>
+                    <input type="number" min="1" max="5" class="input-number" @bind="urgencyLevel" />
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Impacted Users</span>
+                    <input type="number" min="0" class="input-number" @bind="impactedUsers" />
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Equipment Criticality (1-5)</span>
+                    <input type="number" min="1" max="5" class="input-number" @bind="equipmentCriticality" />
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <RadzenButton Icon="smart_toy"
+                              Text="Predict Priority"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Shade="Shade.Lighter"
+                              Click="@RunAsync" />
+                <RadzenButton Icon="refresh"
+                              Text="Reset"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@Reset" />
+            </div>
+        </div>
+
+        <div class="content-section">
+            @if (!string.IsNullOrWhiteSpace(loadError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@loadError" />
+            }
+
+            @if (isLoading)
+            {
+                <div class="content-placeholder loading">
+                    <RadzenIcon Icon="smart_toy" Style="font-size: 42px;" />
+                    <h2>Predicting ticket priority...</h2>
+                </div>
+            }
+            else if (result is null)
+            {
+                <div class="content-placeholder">
+                    <RadzenIcon Icon="assignment" Style="font-size: 42px;" />
+                    <h2>No prediction yet</h2>
+                    <p>Fill the ticket signals and click “Predict Priority”.</p>
+                </div>
+            }
+            else
+            {
+                <div class="prediction-results">
+                    <div class="metric-card">
+                        <span class="metric-label">Predicted Priority</span>
+                        <span class="metric-value text-primary">@result.Priority</span>
+                    </div>
+
+                    <div class="metric-card">
+                        <span class="metric-label">Priority Score</span>
+                        <span class="metric-value">@result.PriorityScore.ToString("0.##")</span>
+                    </div>
+
+                    <div class="content-section">
+                        <h3 class="section-title">Matched Keywords</h3>
+                        @if (result.MatchedKeywords?.Count > 0)
+                        {
+                            <div class="keyword-list">
+                                @foreach (var kw in result.MatchedKeywords)
+                                {
+                                    <span class="chip">@kw</span>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No keywords matched.</p>
+                        }
+                    </div>
+
+                    <div class="content-section">
+                        <h3 class="section-title">Explanation</h3>
+                        <p>@result.Explanation</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string title = "Server down";
+    private string description = "Production server is unreachable. Users cannot login and services are failing.";
+    private string? category = "Infrastructure";
+    private string? equipmentType = "Server";
+    private int urgencyLevel = 5;
+    private int impactedUsers = 120;
+    private int equipmentCriticality = 5;
+
+    private bool isLoading;
+    private string? loadError;
+    private TicketPriorityPredictionDto? result;
+
+    private TicketPriorityRequestDto Request => new(
+        Title: title,
+        Description: description,
+        Category: category,
+        UrgencyLevel: urgencyLevel,
+        ImpactedUsers: impactedUsers,
+        EquipmentCriticality: equipmentCriticality,
+        EquipmentType: equipmentType);
+
+    private async Task RunAsync()
+    {
+        isLoading = true;
+        loadError = null;
+        result = null;
+
+        try
+        {
+            result = await TicketPrioritizationService.PredictPriorityAsync(Request);
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Prediction ready",
+                Detail = $"Predicted priority: {result.Priority}",
+                Duration = 3000
+            });
+        }
+        catch (Exception ex)
+        {
+            loadError = ex.Message;
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Prediction failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void Reset()
+    {
+        title = "Server down";
+        description = "Production server is unreachable. Users cannot login and services are failing.";
+        category = "Infrastructure";
+        equipmentType = "Server";
+        urgencyLevel = 5;
+        impactedUsers = 120;
+        equipmentCriticality = 5;
+
+        result = null;
+        loadError = null;
+        isLoading = false;
+    }
+}

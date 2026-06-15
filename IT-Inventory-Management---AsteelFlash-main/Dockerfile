@@ -13,6 +13,9 @@ RUN dotnet publish ./src/ITStockM.WebApi/ITStockM.WebApi.csproj -c Release -o /a
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
+# Ensure runtime model artifact directory exists (ML.NET model manifests + versioned zip artifacts).
+RUN mkdir -p /app/ml-models/hardware-recommendation /app/ml-models/ticket-prioritization
+
 # Required by System.DirectoryServices.Protocols on Linux.
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends libldap2 libsasl2-2 ca-certificates \

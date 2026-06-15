@@ -21,6 +21,8 @@ using ITStockM.Services.Requests;
 using ITStockM.Services.Suppliers;
 using ITStockM.Infrastructure.Services;
 using ITStockM.Infrastructure.Services.ActiveDirectory;
+using ITStockM.Services;
+using Microsoft.ML;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -112,7 +114,40 @@ public static class InfrastructureLayerServiceCollectionExtensions
 
         services.AddHostedService<EmailBackgroundService>();
         services.AddHostedService<AssetHealthBackgroundService>();
+        // ML model artifact managers (separate per model scope)
+        // Expose them as dedicated wrappers so services don't depend on the same storage scope.
+        services.AddSingleton<HardwareRecommendationArtifactManager>(provider =>
+        {
+            var mlContext = new MLContext(seed: 1);
+            var modelRootDirectory = Path.Combine(AppContext.BaseDirectory, "ml-models");
+            var maxVersionsToKeep = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<AiModelRetrainingOptions>>().Value.MaxModelVersionsToKeep;
+
+            var inner = new AiModelArtifactManager(
+                mlContext,
+                modelRootDirectory: modelRootDirectory,
+                scopedModelDirectoryName: "hardware-recommendation",
+                maxVersionsToKeep: maxVersionsToKeep);
+
+            return new HardwareRecommendationArtifactManager(inner);
+        });
+
+        services.AddSingleton<TicketPrioritizationArtifactManager>(provider =>
+        {
+            var mlContext = new MLContext(seed: 2);
+            var modelRootDirectory = Path.Combine(AppContext.BaseDirectory, "ml-models");
+            var maxVersionsToKeep = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<AiModelRetrainingOptions>>().Value.MaxModelVersionsToKeep;
+
+            var inner = new AiModelArtifactManager(
+                mlContext,
+                modelRootDirectory: modelRootDirectory,
+                scopedModelDirectoryName: "ticket-prioritization",
+                maxVersionsToKeep: maxVersionsToKeep);
+
+            return new TicketPrioritizationArtifactManager(inner);
+        });
+
         services.AddHostedService<AiModelRetrainingBackgroundService>();
+        services.AddHostedService<AiModelWarmupHostedService>();
 
         return services;
     }

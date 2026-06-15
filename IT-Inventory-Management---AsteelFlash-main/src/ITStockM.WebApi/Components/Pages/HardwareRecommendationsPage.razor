@@ -1,0 +1,213 @@
+@page "/hardware-recommendations"
+@using ITStockM.Application.Features.Recommendations.DTOs
+@using ITStockM.Application.Common.Models
+@using ITStockM.Domain.Enums
+@using ITStockM.Services.Interfaces
+@inject IHardwareRecommendationService HardwareRecommendationService
+@inject NotificationService NotificationService
+
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,IT,Infrastructure")]
+
+<PageTitle>Hardware Recommendations - IT Stock Management</PageTitle>
+
+<div class="page-container">
+    <div class="page-header">
+        <div class="flex-between page-header-wrap">
+            <div>
+                <h1>Hardware Recommendations</h1>
+                <p class="page-subtitle">Predict the best-fit hardware for a user profile.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="content-section">
+            <div class="page-toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Role</span>
+                    <input type="text" class="input-text" placeholder="e.g., Developer" @bind="role" />
+                </div>
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Service</span>
+                    <input type="text" class="input-text" placeholder="e.g., IT" @bind="service" />
+                </div>
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Preferred Type (optional)</span>
+                    <input type="text" class="input-text" placeholder="e.g., Laptop / Desktop / Monitor" @bind="preferredType" />
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Usage Level (1-5)</span>
+                    <input type="number" min="1" max="5" class="input-number" @bind="usageLevel" />
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Needs High Performance</span>
+                    <label class="checkbox-inline">
+                        <input type="checkbox" @bind="needsHighPerformance" />
+                        <span>Yes</span>
+                    </label>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Needs Graphics</span>
+                    <label class="checkbox-inline">
+                        <input type="checkbox" @bind="needsGraphics" />
+                        <span>Yes</span>
+                    </label>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Top N</span>
+                    <input type="number" min="1" max="10" class="input-number" @bind="topN" />
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <RadzenButton Icon="search"
+                              Text="Get Recommendations"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Shade="Shade.Lighter"
+                              Click="@RunAsync" />
+                <RadzenButton Icon="refresh"
+                              Text="Reset"
+                              ButtonStyle="ButtonStyle.Light"
+                              Shade="Shade.Lighter"
+                              Click="@Reset" />
+            </div>
+        </div>
+
+        <div class="content-section">
+            @if (!string.IsNullOrWhiteSpace(loadError))
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger"
+                             Variant="Variant.Flat"
+                             Shade="Shade.Lighter"
+                             Text="@loadError" />
+            }
+
+            @if (isLoading)
+            {
+                <div class="content-placeholder loading">
+                    <RadzenIcon Icon="smart_toy" Style="font-size: 42px;" />
+                    <h2>Computing recommendations...</h2>
+                </div>
+            }
+            else if (results.Count == 0)
+            {
+                <div class="content-placeholder">
+                    <RadzenIcon Icon="handyman" Style="font-size: 42px;" />
+                    <h2>No results yet</h2>
+                    <p>Fill the profile and request recommendations.</p>
+                </div>
+            }
+            else
+            {
+                <RadzenDataGrid Data="@results"
+                                TItem="HardwareRecommendationDto"
+                                AllowPaging="false"
+                                AllowSorting="true"
+                                Responsive="true"
+                                Class="inventory-grid">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="HardwareRecommendationDto" Title="Rank">
+                            <Template Context="row">
+                                @(@results.IndexOf(row) + 1)
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="HardwareRecommendationDto" Title="Asset">
+                            <Template Context="row">
+                                <strong>@row.MaterielName</strong><br />
+                                <span class="text-muted">@row.MaterielType</span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="HardwareRecommendationDto" Title="Match Score">
+                            <Template Context="row">
+                                <strong class="text-primary">@row.MatchScore.ToString("0.##")</strong>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="HardwareRecommendationDto" Title="Available">
+                            <Template Context="row">@row.AvailableQuantity</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="HardwareRecommendationDto" Title="Reason">
+                            <Template Context="row">@row.Reason</Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string role = "Developer";
+    private string service = "IT";
+    private int usageLevel = 4;
+    private bool needsHighPerformance = true;
+    private bool needsGraphics = false;
+    private string? preferredType;
+    private int topN = 3;
+
+    private bool isLoading;
+    private string? loadError;
+
+    private List<HardwareRecommendationDto> results = new();
+
+    private HardwareRecommendationRequestDto Request => new(
+        Role: role,
+        Service: service,
+        UsageLevel: usageLevel,
+        NeedsHighPerformance: needsHighPerformance,
+        NeedsGraphics: needsGraphics,
+        PreferredType: preferredType,
+        TopN: topN);
+
+    private async Task RunAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        try
+        {
+            var res = await HardwareRecommendationService.RecommendAsync(Request);
+            results = res.ToList();
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Recommendations ready",
+                Detail = $"Found {results.Count} asset(s).",
+                Duration = 3000
+            });
+        }
+        catch (Exception ex)
+        {
+            loadError = ex.Message;
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Recommendation failed",
+                Detail = ex.Message,
+                Duration = 5000
+            });
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void Reset()
+    {
+        role = "Developer";
+        service = "IT";
+        usageLevel = 4;
+        needsHighPerformance = true;
+        needsGraphics = false;
+        preferredType = null;
+        topN = 3;
+
+        results.Clear();
+        loadError = null;
+    }
+}

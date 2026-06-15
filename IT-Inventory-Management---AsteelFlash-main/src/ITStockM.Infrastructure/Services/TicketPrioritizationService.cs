@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using System.Text.Json;
 using ITStockM.Application.Features.Maintenance.DTOs;
 using ITStockM.Application.Common.Models;
 using ITStockM.Data;
@@ -15,35 +14,16 @@ namespace ITStockM.Services.Maintenance;
 
 public sealed class TicketPrioritizationService : ITicketPrioritizationService
 {
-    private static readonly Dictionary<string, decimal> KeywordWeights = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["down"] = 30m,
-        ["inaccessible"] = 30m,
-        ["server"] = 20m,
-        ["production"] = 20m,
-        ["security"] = 20m,
-        ["breach"] = 25m,
-        ["urgent"] = 18m,
-        ["critical"] = 22m,
-        ["cannot"] = 12m,
-        ["failed"] = 12m,
-        ["crash"] = 15m,
-        ["slow"] = 6m,
-        ["printer"] = 4m,
-        ["mouse"] = 2m,
-        ["keyboard"] = 2m
-    };
 
     private readonly ITStockManagmentContext? _context;
     private readonly AiModelRetrainingOptions _options;
     private readonly MLContext _mlContext = new(17);
     private readonly SemaphoreSlim _trainLock = new(1, 1);
 
+    private readonly TicketPrioritizationArtifactManager _artifactManager;
+
     private ITransformer? _model;
     private DateTime _lastTrainingUtc = DateTime.MinValue;
-    private static readonly string ModelDirectory = Path.Combine(AppContext.BaseDirectory, "ml-models");
-    private static readonly string ScopedModelDirectory = Path.Combine(ModelDirectory, "ticket-prioritization");
-    private static readonly string ManifestPath = Path.Combine(ScopedModelDirectory, "manifest.json");
 
     private readonly object _driftLock = new();
     private double _baselineUrgency = 3;
@@ -61,10 +41,12 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
     private string? _activeModelPath;
 
     public TicketPrioritizationService(
-        ITStockManagmentContext? context = null,
+        ITStockManagmentContext? context,
+        TicketPrioritizationArtifactManager artifactManager,
         IOptions<AiModelRetrainingOptions>? options = null)
     {
         _context = context;
+        _artifactManager = artifactManager;
         _options = options?.Value ?? new AiModelRetrainingOptions();
     }
 
@@ -80,7 +62,7 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
         var text = $"{request.Title} {request.Description} {request.Category} {request.EquipmentType}";
         var tokens = Tokenize(text);
 
-        var matchedKeywords = KeywordWeights.Keys
+        var matchedKeywords = TicketPriorityRulePolicy.KeywordWeightsPublic.Keys
             .Where(k => tokens.Contains(k, StringComparer.OrdinalIgnoreCase))
             .ToList();
 
@@ -102,25 +84,24 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
             var engine = _mlContext.Model.CreatePredictionEngine<TicketPriorityModelInput, TicketPriorityModelOutput>(_model);
             var prediction = engine.Predict(input);
             priority = string.IsNullOrWhiteSpace(prediction.PredictedLabel)
-                ? DetermineFallbackPriority(matchedKeywords, request)
+                ? TicketPriorityRulePolicy.DetermineFallbackPriority(matchedKeywords, request)
                 : prediction.PredictedLabel;
         }
         else
         {
-            priority = DetermineFallbackPriority(matchedKeywords, request);
+            priority = TicketPriorityRulePolicy.DetermineFallbackPriority(matchedKeywords, request);
         }
 
-        var keywordScore = matchedKeywords.Sum(k => KeywordWeights[k]);
+        var keywordScore = TicketPriorityRulePolicy.ComputeKeywordScore(matchedKeywords);
         score = ComputeSeverityScore(priority, request, keywordScore);
+
         var explanation = $"priority={priority}, severity={score:0.##}, keywords={keywordScore:0.##}, matched={matchedKeywords.Count}";
 
-        var response = new TicketPriorityPredictionDto(
+        return new TicketPriorityPredictionDto(
             priority,
             score,
             matchedKeywords,
             explanation);
-
-        return response;
     }
 
     public async Task RetrainAsync(CancellationToken ct = default)
@@ -242,13 +223,17 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
 
             if (shouldActivate)
             {
-                _model = candidateModel;
+                // Atomic activation: persist candidate first, then swap in memory.
+                var candidateToActivate = candidateModel;
+
                 _validationMetric = candidateMetric;
                 _trainingSampleCount = trainingRows.Count;
                 _lastRetrainStatus = "activated";
 
                 UpdateBaseline(trainingRows);
-                SaveVersionedModelToDisk(candidateModel, split.TrainSet.Schema, trainingRows, candidateMetric);
+                SaveVersionedModelToDisk(candidateToActivate, split.TrainSet.Schema, trainingRows, candidateMetric);
+
+                _model = candidateToActivate;
             }
             else
             {
@@ -265,36 +250,75 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
 
     private void TryLoadModelFromDisk()
     {
-        if (!File.Exists(ManifestPath))
+        var expectedConfigHash = ComputeConfigHash();
+
+        if (_artifactManager.TryLoadActiveModel(expectedConfigHash, out var model, out var manifest) && model is not null)
         {
+            _model = model;
+            _activeVersion = manifest?.ActiveVersion;
+            _previousVersion = manifest?.PreviousVersion;
+            _activeModelPath = manifest?.ActiveModelPath;
+
+            _lastTrainingUtc = manifest?.LastTrainedUtc ?? DateTime.MinValue;
+            _trainingSampleCount = manifest?.TrainingSampleCount ?? 0;
+            _validationMetric = manifest?.ValidationMetric ?? 0;
+            _lastRetrainStatus = manifest?.LastRetrainStatus ?? "not_trained";
+
+            _baselineUrgency = manifest?.BaselineUrgency ?? _baselineUrgency;
+            _baselineImpactedUsers = manifest?.BaselineImpactedUsers ?? _baselineImpactedUsers;
+            _baselineEquipmentCriticality = manifest?.BaselineEquipmentCriticality ?? _baselineEquipmentCriticality;
             return;
         }
 
-        try
+        if (_artifactManager.TryLoadPreviousModel(expectedConfigHash, out model, out manifest) && model is not null)
         {
-            var manifest = JsonSerializer.Deserialize<ModelManifest>(File.ReadAllText(ManifestPath));
-            if (manifest?.ActiveModelPath is null || !File.Exists(manifest.ActiveModelPath))
-            {
-                if (manifest?.PreviousModelPath is not null && File.Exists(manifest.PreviousModelPath))
-                {
-                    _model = _mlContext.Model.Load(manifest.PreviousModelPath, out _);
-                    _activeVersion = manifest.PreviousVersion;
-                    _previousVersion = null;
-                    _activeModelPath = manifest.PreviousModelPath;
-                    _lastTrainingUtc = manifest.LastTrainedUtc;
-                    _trainingSampleCount = manifest.TrainingSampleCount;
-                    _validationMetric = manifest.ValidationMetric;
-                    _lastRetrainStatus = "rolled_over_to_previous";
-                    return;
-                }
+            _model = model;
+            _activeVersion = manifest?.PreviousVersion;
+            _previousVersion = null;
+            _activeModelPath = manifest?.PreviousModelPath;
 
-                return;
-            }
+            _lastTrainingUtc = manifest?.LastTrainedUtc ?? DateTime.MinValue;
+            _trainingSampleCount = manifest?.TrainingSampleCount ?? 0;
+            _validationMetric = manifest?.ValidationMetric ?? 0;
+            _lastRetrainStatus = "rolled_over_to_previous";
 
-            _model = _mlContext.Model.Load(manifest.ActiveModelPath, out _);
+            _baselineUrgency = manifest?.BaselineUrgency ?? _baselineUrgency;
+            _baselineImpactedUsers = manifest?.BaselineImpactedUsers ?? _baselineImpactedUsers;
+            _baselineEquipmentCriticality = manifest?.BaselineEquipmentCriticality ?? _baselineEquipmentCriticality;
+        }
+    }
+
+    private void SaveVersionedModelToDisk(
+        ITransformer model,
+        DataViewSchema schema,
+        IReadOnlyCollection<TicketPriorityModelInput> trainingRows,
+        double validationMetric)
+    {
+        var datasetSnapshotId = ComputeDatasetSnapshotId(trainingRows);
+        var trainingCommit = ResolveTrainingCommit();
+        var configHash = ComputeConfigHash();
+
+        _artifactManager.SaveVersionedModel(
+            model,
+            schema,
+            trainingSampleCount: trainingRows.Count,
+            validationMetric: validationMetric,
+            lastRetrainStatus: _lastRetrainStatus,
+            driftScore: _driftScore,
+            datasetSnapshotId: datasetSnapshotId,
+            trainingCommit: trainingCommit,
+            configHash: configHash,
+            baselineUrgency: _baselineUrgency,
+            baselineImpactedUsers: _baselineImpactedUsers,
+            baselineEquipmentCriticality: _baselineEquipmentCriticality);
+
+        // Refresh pointers from persisted manifest.
+        if (_artifactManager.TryLoadActiveModel(configHash, out _, out var manifest) && manifest is not null)
+        {
             _activeVersion = manifest.ActiveVersion;
             _previousVersion = manifest.PreviousVersion;
             _activeModelPath = manifest.ActiveModelPath;
+
             _lastTrainingUtc = manifest.LastTrainedUtc;
             _trainingSampleCount = manifest.TrainingSampleCount;
             _validationMetric = manifest.ValidationMetric;
@@ -304,50 +328,6 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
             _baselineImpactedUsers = manifest.BaselineImpactedUsers;
             _baselineEquipmentCriticality = manifest.BaselineEquipmentCriticality;
         }
-        catch
-        {
-            _model = null;
-            _lastTrainingUtc = DateTime.MinValue;
-        }
-    }
-
-    private void SaveVersionedModelToDisk(ITransformer model, DataViewSchema schema, IReadOnlyCollection<TicketPriorityModelInput> trainingRows, double validationMetric)
-    {
-        Directory.CreateDirectory(ScopedModelDirectory);
-
-        var version = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-        var filePath = Path.Combine(ScopedModelDirectory, $"model_{version}.zip");
-        using (var stream = File.Create(filePath))
-        {
-            _mlContext.Model.Save(model, schema, stream);
-        }
-
-        var manifest = File.Exists(ManifestPath)
-            ? JsonSerializer.Deserialize<ModelManifest>(File.ReadAllText(ManifestPath)) ?? new ModelManifest()
-            : new ModelManifest();
-
-        manifest.PreviousVersion = manifest.ActiveVersion;
-        manifest.PreviousModelPath = manifest.ActiveModelPath;
-        manifest.ActiveVersion = version;
-        manifest.ActiveModelPath = filePath;
-        manifest.LastTrainedUtc = DateTime.UtcNow;
-        manifest.TrainingSampleCount = trainingRows.Count;
-        manifest.ValidationMetric = validationMetric;
-        manifest.BaselineUrgency = _baselineUrgency;
-        manifest.BaselineImpactedUsers = _baselineImpactedUsers;
-        manifest.BaselineEquipmentCriticality = _baselineEquipmentCriticality;
-        manifest.LastRetrainStatus = _lastRetrainStatus;
-        manifest.DatasetSnapshotId = ComputeDatasetSnapshotId(trainingRows);
-        manifest.TrainingCommit = ResolveTrainingCommit();
-        manifest.ConfigHash = ComputeConfigHash();
-
-        File.WriteAllText(ManifestPath, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
-
-        _activeVersion = manifest.ActiveVersion;
-        _previousVersion = manifest.PreviousVersion;
-        _activeModelPath = manifest.ActiveModelPath;
-
-        CleanupOldModelArtifacts(manifest);
     }
 
     private void UpdateBaseline(IReadOnlyCollection<TicketPriorityModelInput> trainingRows)
@@ -384,49 +364,6 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
         if (score >= _options.DriftHighThreshold) return "high";
         if (score >= _options.DriftMediumThreshold) return "medium";
         return "low";
-    }
-
-    private void CleanupOldModelArtifacts(ModelManifest manifest)
-    {
-        var maxVersions = Math.Max(2, _options.MaxModelVersionsToKeep);
-
-        var modelFiles = Directory
-            .GetFiles(ScopedModelDirectory, "model_*.zip", SearchOption.TopDirectoryOnly)
-            .OrderByDescending(Path.GetFileName)
-            .ToList();
-
-        if (modelFiles.Count <= maxVersions)
-        {
-            return;
-        }
-
-        var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            manifest.ActiveModelPath ?? string.Empty,
-            manifest.PreviousModelPath ?? string.Empty
-        };
-
-        foreach (var file in modelFiles.Take(maxVersions))
-        {
-            keep.Add(file);
-        }
-
-        foreach (var file in modelFiles)
-        {
-            if (keep.Contains(file))
-            {
-                continue;
-            }
-
-            try
-            {
-                File.Delete(file);
-            }
-            catch
-            {
-                // Retention cleanup is best effort and must not block serving predictions.
-            }
-        }
     }
 
     private static string ComputeDatasetSnapshotId(IEnumerable<TicketPriorityModelInput> trainingRows)
@@ -491,7 +428,7 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
                 UrgencyLevel = InferUrgencyFromText(ticket.ProblemDescription),
                 ImpactedUsers = InferImpactedUsers(ticket.ProblemDescription),
                 EquipmentCriticality = InferEquipmentCriticality(ticket.ProblemDescription),
-                Label = InferLabelFromTicket(ticket)
+                Label = TicketPriorityRulePolicy.InferLabelFromText(ticket.ProblemDescription)
             });
         }
 
@@ -500,45 +437,164 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
 
     private static List<TicketPriorityModelInput> BuildSeedData()
     {
-        return new List<TicketPriorityModelInput>
+        // Goal: richer, balanced seed data (better precision early, before enough historical tickets exist).
+        // Labels are inferred from the exact same rule policy used at runtime.
+        var rand = new Random(1337);
+
+        var templates = new List<(string LabelHint, string Category, string EquipmentType, int BaseUrgency, int BaseImpactedUsers, int BaseCriticality, string[] Variants)>
         {
-            new() { Text = "production server down inaccessible all users blocked", Category = "Infrastructure", EquipmentType = "Server", UrgencyLevel = 5, ImpactedUsers = 300, EquipmentCriticality = 5, Label = "Critique" },
-            new() { Text = "database crash cannot connect erp", Category = "Infrastructure", EquipmentType = "Server", UrgencyLevel = 5, ImpactedUsers = 220, EquipmentCriticality = 5, Label = "Critique" },
-            new() { Text = "security breach suspected urgent", Category = "Security", EquipmentType = "Firewall", UrgencyLevel = 5, ImpactedUsers = 120, EquipmentCriticality = 5, Label = "Critique" },
-            new() { Text = "pc does not start for manager", Category = "Hardware", EquipmentType = "Desktop", UrgencyLevel = 4, ImpactedUsers = 3, EquipmentCriticality = 4, Label = "Haute" },
-            new() { Text = "network unstable in accounting department", Category = "Network", EquipmentType = "Switch", UrgencyLevel = 4, ImpactedUsers = 25, EquipmentCriticality = 4, Label = "Haute" },
-            new() { Text = "laptop battery failing and random crash", Category = "Hardware", EquipmentType = "Laptop", UrgencyLevel = 4, ImpactedUsers = 2, EquipmentCriticality = 3, Label = "Haute" },
-            new() { Text = "application is slow for a few users", Category = "Application", EquipmentType = "Workstation", UrgencyLevel = 3, ImpactedUsers = 8, EquipmentCriticality = 3, Label = "Moyenne" },
-            new() { Text = "screen flickering occasionally", Category = "Hardware", EquipmentType = "Monitor", UrgencyLevel = 3, ImpactedUsers = 1, EquipmentCriticality = 2, Label = "Moyenne" },
-            new() { Text = "intermittent vpn issue", Category = "Network", EquipmentType = "Router", UrgencyLevel = 3, ImpactedUsers = 6, EquipmentCriticality = 3, Label = "Moyenne" },
-            new() { Text = "printer slow in office", Category = "Peripheral", EquipmentType = "Printer", UrgencyLevel = 1, ImpactedUsers = 1, EquipmentCriticality = 1, Label = "Faible" },
-            new() { Text = "mouse not comfortable", Category = "Peripheral", EquipmentType = "Mouse", UrgencyLevel = 1, ImpactedUsers = 1, EquipmentCriticality = 1, Label = "Faible" },
-            new() { Text = "keyboard key stuck", Category = "Peripheral", EquipmentType = "Keyboard", UrgencyLevel = 1, ImpactedUsers = 1, EquipmentCriticality = 1, Label = "Faible" },
-            new() { Text = "server room cooling failure", Category = "Infrastructure", EquipmentType = "Cooling", UrgencyLevel = 5, ImpactedUsers = 80, EquipmentCriticality = 5, Label = "Critique" },
-            new() { Text = "critical workstation gpu failed for designer", Category = "Hardware", EquipmentType = "Workstation", UrgencyLevel = 4, ImpactedUsers = 2, EquipmentCriticality = 4, Label = "Haute" },
-            new() { Text = "scanner needs maintenance", Category = "Peripheral", EquipmentType = "Scanner", UrgencyLevel = 2, ImpactedUsers = 2, EquipmentCriticality = 2, Label = "Faible" }
+            ("Critique", "Infrastructure", "Server", 5, 250, 5, ["production server down", "erp inaccessible", "database crash", "server outage"]),
+            ("Critique", "Security", "Firewall", 5, 120, 5, ["security breach suspected", "breach detected", "credential compromise", "security incident"]),
+            ("Critique", "Infrastructure", "Cooling", 5, 70, 5, ["cooling failure", "data center cooling down", "overheating risk", "thermal shutdown"]),
+            ("Haute", "Hardware", "Desktop", 4, 4, 4, ["pc does not start", "desktop won't boot", "system crash", "startup failure"]),
+            ("Haute", "Network", "Switch", 4, 25, 4, ["network unstable", "packet loss", "switch connectivity issues", "intermittent disconnect"]),
+            ("Haute", "Hardware", "Laptop", 4, 2, 3, ["laptop crash", "random freeze", "battery failing", "device restarts"]),
+            ("Moyenne", "Application", "Workstation", 3, 8, 3, ["application slow", "lag and errors", "performance degradation", "timeouts for users"]),
+            ("Moyenne", "Hardware", "Monitor", 3, 1, 2, ["screen flickering", "display artifacts", "monitor instability", "black screen"]),
+            ("Moyenne", "Network", "Router", 3, 6, 3, ["intermittent vpn issue", "vpn unstable", "router flapping", "cannot connect sometimes"]),
+            ("Faible", "Peripheral", "Printer", 1, 1, 1, ["printer slow", "printing delays", "paper feed issue", "spool lag"]),
+            ("Faible", "Peripheral", "Mouse", 1, 1, 1, ["mouse not comfortable", "tracking issues", "cursor jumps", "input device glitch"]),
+            ("Faible", "Peripheral", "Keyboard", 1, 1, 1, ["keyboard key stuck", "keys not responding", "keyboard malfunction", "typing errors"]),
+            ("Faible", "Peripheral", "Scanner", 2, 2, 2, ["scanner needs maintenance", "scans fail", "calibration required", "low quality scans"]),
         };
-    }
 
-    private static string InferLabelFromTicket(Domain.Entities.MaintenanceTicket ticket)
-    {
-        var text = ticket.ProblemDescription.ToLowerInvariant();
-        if (text.Contains("server") && (text.Contains("down") || text.Contains("inaccessible") || text.Contains("cannot")))
+        var criticalityKeywords = new Dictionary<string, string[]>
         {
-            return "Critique";
+            ["Critique"] = ["down", "inaccessible", "blocked", "cannot", "crash", "failed", "breach", "urgent", "production"],
+            ["Haute"] = ["critical", "urgent", "crash", "failed", "cannot", "unstable", "intermittent"],
+            ["Moyenne"] = ["slow", "error", "intermittent", "unstable", "timeouts"],
+            ["Faible"] = ["printer", "mouse", "keyboard", "scan", "maintenance", "occasionally", "failing"],
+        };
+
+        var extraKeywordsByCategory = new Dictionary<string, string[]>
+        {
+            ["Infrastructure"] = ["all users blocked", "erp", "database", "server room"],
+            ["Security"] = ["breach", "security", "credential", "compromised"],
+            ["Network"] = ["department", "accounting", "vpn", "switch", "router"],
+            ["Hardware"] = ["manager", "designer", "laptop", "desktop", "workstation"],
+            ["Application"] = ["users", "timeouts", "lag", "errors"],
+            ["Peripheral"] = ["office", "desk", "printing", "typing", "scanning"],
+        };
+
+        var seeds = new List<TicketPriorityModelInput>(capacity: 500);
+
+        // Generate multiple variants per template to cover keyword combinations.
+        foreach (var tpl in templates)
+        {
+            foreach (var baseVariant in tpl.Variants)
+            {
+                var baseTextParts = new List<string> { baseVariant };
+
+                // Add 1-3 keywords to make text less uniform.
+                var keywordPool = criticalityKeywords[tpl.LabelHint].Concat(extraKeywordsByCategory[tpl.Category]).ToArray();
+                var chosen = keywordPool.OrderBy(_ => rand.Next()).Distinct().Take(3).ToArray();
+
+                // Add explicit operational words to ensure rule coverage.
+                var operational = tpl.LabelHint switch
+                {
+                    "Critique" => new[] { "production", "down", "cannot" },
+                    "Haute" => new[] { "urgent", "critical" },
+                    "Moyenne" => new[] { "slow", "intermittent" },
+                    _ => new[] { "occasionally", "maintenance" }
+                };
+
+                var allTokens = chosen.Concat(operational).Distinct().ToArray();
+
+                baseTextParts.Add(string.Join(" ", allTokens));
+
+                var text = string.Join(" ", baseTextParts).Trim();
+
+                var label = TicketPriorityRulePolicy.InferLabelFromText(text);
+
+                // Correlate numeric features with the inferred severity to help early model quality.
+                int urgency = tpl.BaseUrgency + rand.Next(-1, 2);
+                int impacted = tpl.BaseImpactedUsers + rand.Next(-Math.Max(1, tpl.BaseImpactedUsers / 10), Math.Max(2, tpl.BaseImpactedUsers / 8));
+                int crit = tpl.BaseCriticality + rand.Next(-1, 2);
+
+                urgency = (int)Math.Clamp(urgency, 1, 5);
+                impacted = (int)Math.Clamp(impacted, 0, 10_000);
+                crit = (int)Math.Clamp(crit, 1, 5);
+
+                // Ensure label agrees with rule policy, and skip if inference produced unexpected label (safety).
+                if (!string.Equals(label, tpl.LabelHint, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                seeds.Add(new TicketPriorityModelInput
+                {
+                    Text = text,
+                    Category = tpl.Category,
+                    EquipmentType = tpl.EquipmentType,
+                    UrgencyLevel = urgency,
+                    ImpactedUsers = impacted,
+                    EquipmentCriticality = crit,
+                    Label = label
+                });
+
+                // Add small controlled variations by appending synonyms.
+                var synonymAppend = tpl.LabelHint switch
+                {
+                    "Critique" => new[] { "inaccessible", "blocked", "all users" },
+                    "Haute" => new[] { "failed", "crash", "unstable" },
+                    "Moyenne" => new[] { "timeouts", "slow", "intermittent" },
+                    _ => new[] { "maintenance", "occasionally", "low impact" }
+                };
+
+                foreach (var syn in synonymAppend)
+                {
+                    if (seeds.Count >= 600) break;
+
+                    var text2 = $"{baseVariant} {syn} {string.Join(" ", chosen.Take(2))}".Trim();
+                    var label2 = TicketPriorityRulePolicy.InferLabelFromText(text2);
+
+                    if (!string.Equals(label2, tpl.LabelHint, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    seeds.Add(new TicketPriorityModelInput
+                    {
+                        Text = text2,
+                        Category = tpl.Category,
+                        EquipmentType = tpl.EquipmentType,
+                        UrgencyLevel = Math.Clamp(urgency + rand.Next(-1, 2), 1, 5),
+                        ImpactedUsers = Math.Clamp(impacted + rand.Next(-5, 6), 0, 10_000),
+                        EquipmentCriticality = Math.Clamp(crit + rand.Next(-1, 2), 1, 5),
+                        Label = label2
+                    });
+                }
+
+                if (seeds.Count >= 600) break;
+            }
+
+            if (seeds.Count >= 600) break;
         }
 
-        if (text.Contains("critical") || text.Contains("urgent") || text.Contains("crash") || text.Contains("failed"))
+        // Final cap to keep training fast.
+        // Also ensure at least a minimal balanced size exists even if skipping reduced count.
+        if (seeds.Count < 250)
         {
-            return "Haute";
+            // Fallback to the original tiny set (safety).
+            seeds.AddRange(new[]
+            {
+                new TicketPriorityModelInput { Text = "production server down inaccessible all users blocked", Category = "Infrastructure", EquipmentType = "Server", UrgencyLevel = 5, ImpactedUsers = 300, EquipmentCriticality = 5, Label = "Critique" },
+                new TicketPriorityModelInput { Text = "database crash cannot connect erp", Category = "Infrastructure", EquipmentType = "Server", UrgencyLevel = 5, ImpactedUsers = 220, EquipmentCriticality = 5, Label = "Critique" },
+                new TicketPriorityModelInput { Text = "security breach suspected urgent", Category = "Security", EquipmentType = "Firewall", UrgencyLevel = 5, ImpactedUsers = 120, EquipmentCriticality = 5, Label = "Critique" },
+                new TicketPriorityModelInput { Text = "pc does not start for manager", Category = "Hardware", EquipmentType = "Desktop", UrgencyLevel = 4, ImpactedUsers = 3, EquipmentCriticality = 4, Label = "Haute" },
+                new TicketPriorityModelInput { Text = "printer slow in office", Category = "Peripheral", EquipmentType = "Printer", UrgencyLevel = 1, ImpactedUsers = 1, EquipmentCriticality = 1, Label = "Faible" },
+                new TicketPriorityModelInput { Text = "application is slow for a few users", Category = "Application", EquipmentType = "Workstation", UrgencyLevel = 3, ImpactedUsers = 8, EquipmentCriticality = 3, Label = "Moyenne" },
+            });
         }
 
-        if (text.Contains("slow") || text.Contains("unstable") || text.Contains("intermittent"))
-        {
-            return "Moyenne";
-        }
-
-        return "Faible";
+        // Ensure deterministic order for snapshot hash stability.
+        return seeds
+            .OrderBy(x => x.Label, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(x => x.Category, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(x => x.EquipmentType, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(x => x.Text, StringComparer.OrdinalIgnoreCase)
+            .Take(600)
+            .ToList();
     }
 
     private static float InferUrgencyFromText(string text)
@@ -586,29 +642,9 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
     }
 
     private static IReadOnlyList<string> Tokenize(string text)
-    {
-        return Regex.Matches(text.ToLowerInvariant(), "[a-z0-9]+")
+        => Regex.Matches(text.ToLowerInvariant(), "[a-z0-9]+")
             .Select(m => m.Value)
             .ToList();
-    }
-
-    private static string DetermineFallbackPriority(IReadOnlyList<string> matchedKeywords, TicketPriorityRequestDto request)
-    {
-        var keywordScore = matchedKeywords.Sum(k => KeywordWeights[k]);
-        var urgencyScore = Math.Clamp(request.UrgencyLevel, 1, 5) * 10m;
-        var impactScore = (decimal)Math.Log10(Math.Max(request.ImpactedUsers, 1)) * 5m;
-        var criticalityScore = (Math.Clamp(request.EquipmentCriticality, 1, 5) - 3) * 6m;
-
-        var total = keywordScore + urgencyScore + impactScore + criticalityScore;
-
-        return total switch
-        {
-            >= 95m => "Critique",
-            >= 70m => "Haute",
-            >= 45m => "Moyenne",
-            _ => "Faible",
-        };
-    }
 
     private sealed class TicketPriorityModelInput
     {
@@ -625,23 +661,5 @@ public sealed class TicketPrioritizationService : ITicketPrioritizationService
     {
         public string PredictedLabel { get; set; } = string.Empty;
         public float[] Score { get; set; } = Array.Empty<float>();
-    }
-
-    private sealed class ModelManifest
-    {
-        public string? ActiveVersion { get; set; }
-        public string? PreviousVersion { get; set; }
-        public string? ActiveModelPath { get; set; }
-        public string? PreviousModelPath { get; set; }
-        public DateTime LastTrainedUtc { get; set; }
-        public int TrainingSampleCount { get; set; }
-        public double ValidationMetric { get; set; }
-        public double BaselineUrgency { get; set; } = 3;
-        public double BaselineImpactedUsers { get; set; } = 10;
-        public double BaselineEquipmentCriticality { get; set; } = 3;
-        public string LastRetrainStatus { get; set; } = "not_trained";
-        public string DatasetSnapshotId { get; set; } = string.Empty;
-        public string TrainingCommit { get; set; } = "unknown";
-        public string ConfigHash { get; set; } = string.Empty;
     }
 }

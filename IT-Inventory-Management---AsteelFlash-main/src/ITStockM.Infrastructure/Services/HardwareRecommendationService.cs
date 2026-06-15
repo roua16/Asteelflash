@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 
 namespace ITStockM.Services.Recommendations;
 
@@ -25,11 +24,10 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
     private readonly MLContext _mlContext = new(42);
     private readonly SemaphoreSlim _trainLock = new(1, 1);
 
+    private readonly HardwareRecommendationArtifactManager _artifactManager;
+
     private ITransformer? _model;
     private DateTime _lastTrainingUtc = DateTime.MinValue;
-    private static readonly string ModelDirectory = Path.Combine(AppContext.BaseDirectory, "ml-models");
-    private static readonly string ScopedModelDirectory = Path.Combine(ModelDirectory, "hardware-recommendation");
-    private static readonly string ManifestPath = Path.Combine(ScopedModelDirectory, "manifest.json");
 
     private readonly object _driftLock = new();
     private double _baselineUsageLevel = 3;
@@ -48,9 +46,11 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
 
     public HardwareRecommendationService(
         ITStockManagmentContext context,
+        HardwareRecommendationArtifactManager artifactManager,
         IOptions<AiModelRetrainingOptions>? options = null)
     {
         _context = context;
+        _artifactManager = artifactManager;
         _options = options?.Value ?? new AiModelRetrainingOptions();
     }
 
@@ -240,33 +240,70 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
 
     private void TryLoadModelFromDisk()
     {
-        if (!File.Exists(ManifestPath))
+        // Config-hash guard (caller decides how/when to force retrain).
+        var expectedConfigHash = ComputeConfigHash();
+
+        if (_artifactManager.TryLoadActiveModel(expectedConfigHash, out var model, out var manifest) && model is not null)
         {
+            _model = model;
+            _activeVersion = manifest?.ActiveVersion;
+            _previousVersion = manifest?.PreviousVersion;
+            _activeModelPath = manifest?.ActiveModelPath;
+            _lastTrainingUtc = manifest?.LastTrainedUtc ?? DateTime.MinValue;
+            _trainingSampleCount = manifest?.TrainingSampleCount ?? 0;
+            _validationMetric = manifest?.ValidationMetric ?? 0;
+            _lastRetrainStatus = manifest?.LastRetrainStatus ?? "not_trained";
+
+            _baselineUsageLevel = manifest?.BaselineUsageLevel ?? _baselineUsageLevel;
+            _baselineNeedsHighPerformance = manifest?.BaselineNeedsHighPerformance ?? _baselineNeedsHighPerformance;
+            _baselineNeedsGraphics = manifest?.BaselineNeedsGraphics ?? _baselineNeedsGraphics;
             return;
         }
 
-        try
+        if (_artifactManager.TryLoadPreviousModel(expectedConfigHash, out model, out manifest) && model is not null)
         {
-            var manifest = JsonSerializer.Deserialize<ModelManifest>(File.ReadAllText(ManifestPath));
-            if (manifest?.ActiveModelPath is null || !File.Exists(manifest.ActiveModelPath))
-            {
-                if (manifest?.PreviousModelPath is not null && File.Exists(manifest.PreviousModelPath))
-                {
-                    _model = _mlContext.Model.Load(manifest.PreviousModelPath, out _);
-                    _activeVersion = manifest.PreviousVersion;
-                    _previousVersion = null;
-                    _activeModelPath = manifest.PreviousModelPath;
-                    _lastTrainingUtc = manifest.LastTrainedUtc;
-                    _trainingSampleCount = manifest.TrainingSampleCount;
-                    _validationMetric = manifest.ValidationMetric;
-                    _lastRetrainStatus = "rolled_over_to_previous";
-                    return;
-                }
+            _model = model;
+            _activeVersion = manifest?.PreviousVersion;
+            _previousVersion = null;
+            _activeModelPath = manifest?.PreviousModelPath;
+            _lastTrainingUtc = manifest?.LastTrainedUtc ?? DateTime.MinValue;
+            _trainingSampleCount = manifest?.TrainingSampleCount ?? 0;
+            _validationMetric = manifest?.ValidationMetric ?? 0;
+            _lastRetrainStatus = "rolled_over_to_previous";
 
-                return;
-            }
+            _baselineUsageLevel = manifest?.BaselineUsageLevel ?? _baselineUsageLevel;
+            _baselineNeedsHighPerformance = manifest?.BaselineNeedsHighPerformance ?? _baselineNeedsHighPerformance;
+            _baselineNeedsGraphics = manifest?.BaselineNeedsGraphics ?? _baselineNeedsGraphics;
+        }
+    }
 
-            _model = _mlContext.Model.Load(manifest.ActiveModelPath, out _);
+    private void SaveVersionedModelToDisk(
+        ITransformer model,
+        DataViewSchema schema,
+        IReadOnlyCollection<RecommendationModelInput> trainingSet,
+        double validationMetric)
+    {
+        var datasetSnapshotId = ComputeDatasetSnapshotId(trainingSet);
+        var trainingCommit = ResolveTrainingCommit();
+        var configHash = ComputeConfigHash();
+
+        _artifactManager.SaveVersionedModel(
+            model,
+            schema,
+            trainingSampleCount: trainingSet.Count,
+            validationMetric: validationMetric,
+            lastRetrainStatus: _lastRetrainStatus,
+            driftScore: _driftScore,
+            datasetSnapshotId: datasetSnapshotId,
+            trainingCommit: trainingCommit,
+            configHash: configHash,
+            baselineUsageLevel: _baselineUsageLevel,
+            baselineNeedsHighPerformance: _baselineNeedsHighPerformance,
+            baselineNeedsGraphics: _baselineNeedsGraphics);
+
+        // Refresh pointers from persisted manifest.
+        if (_artifactManager.TryLoadActiveModel(configHash, out _, out var manifest) && manifest is not null)
+        {
             _activeVersion = manifest.ActiveVersion;
             _previousVersion = manifest.PreviousVersion;
             _activeModelPath = manifest.ActiveModelPath;
@@ -279,51 +316,6 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
             _baselineNeedsHighPerformance = manifest.BaselineNeedsHighPerformance;
             _baselineNeedsGraphics = manifest.BaselineNeedsGraphics;
         }
-        catch
-        {
-            _model = null;
-            _lastTrainingUtc = DateTime.MinValue;
-        }
-    }
-
-    private void SaveVersionedModelToDisk(ITransformer model, DataViewSchema schema, IReadOnlyCollection<RecommendationModelInput> trainingSet, double validationMetric)
-    {
-        Directory.CreateDirectory(ScopedModelDirectory);
-
-        var version = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-        var filePath = Path.Combine(ScopedModelDirectory, $"model_{version}.zip");
-
-        using (var stream = File.Create(filePath))
-        {
-            _mlContext.Model.Save(model, schema, stream);
-        }
-
-        var manifest = File.Exists(ManifestPath)
-            ? JsonSerializer.Deserialize<ModelManifest>(File.ReadAllText(ManifestPath)) ?? new ModelManifest()
-            : new ModelManifest();
-
-        manifest.PreviousVersion = manifest.ActiveVersion;
-        manifest.PreviousModelPath = manifest.ActiveModelPath;
-        manifest.ActiveVersion = version;
-        manifest.ActiveModelPath = filePath;
-        manifest.LastTrainedUtc = DateTime.UtcNow;
-        manifest.TrainingSampleCount = trainingSet.Count;
-        manifest.ValidationMetric = validationMetric;
-        manifest.BaselineUsageLevel = _baselineUsageLevel;
-        manifest.BaselineNeedsHighPerformance = _baselineNeedsHighPerformance;
-        manifest.BaselineNeedsGraphics = _baselineNeedsGraphics;
-        manifest.LastRetrainStatus = _lastRetrainStatus;
-        manifest.DatasetSnapshotId = ComputeDatasetSnapshotId(trainingSet);
-        manifest.TrainingCommit = ResolveTrainingCommit();
-        manifest.ConfigHash = ComputeConfigHash();
-
-        File.WriteAllText(ManifestPath, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
-
-        _activeVersion = manifest.ActiveVersion;
-        _previousVersion = manifest.PreviousVersion;
-        _activeModelPath = manifest.ActiveModelPath;
-
-        CleanupOldModelArtifacts(manifest);
     }
 
     private void UpdateBaseline(IReadOnlyCollection<RecommendationModelInput> trainingSet)
@@ -363,48 +355,6 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
         return "low";
     }
 
-    private void CleanupOldModelArtifacts(ModelManifest manifest)
-    {
-        var maxVersions = Math.Max(2, _options.MaxModelVersionsToKeep);
-
-        var modelFiles = Directory
-            .GetFiles(ScopedModelDirectory, "model_*.zip", SearchOption.TopDirectoryOnly)
-            .OrderByDescending(Path.GetFileName)
-            .ToList();
-
-        if (modelFiles.Count <= maxVersions)
-        {
-            return;
-        }
-
-        var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            manifest.ActiveModelPath ?? string.Empty,
-            manifest.PreviousModelPath ?? string.Empty
-        };
-
-        foreach (var file in modelFiles.Take(maxVersions))
-        {
-            keep.Add(file);
-        }
-
-        foreach (var file in modelFiles)
-        {
-            if (keep.Contains(file))
-            {
-                continue;
-            }
-
-            try
-            {
-                File.Delete(file);
-            }
-            catch
-            {
-                // Retention cleanup is best effort and must not block serving predictions.
-            }
-        }
-    }
 
     private static string ComputeDatasetSnapshotId(IEnumerable<RecommendationModelInput> trainingSet)
     {
@@ -532,6 +482,7 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
         }
 
         // Bootstrap rows keep the model trainable even with sparse historical assignments.
+        // Upgrade: generate multiple role/service variants per materiel for better early precision.
         foreach (var materiel in materiels)
         {
             var text = $"{materiel.MaterielName} {materiel.Type}".ToLowerInvariant();
@@ -539,9 +490,50 @@ public sealed class HardwareRecommendationService : IHardwareRecommendationServi
             var graphics = ContainsAny(text, GraphicsTokens);
             var office = ContainsAny(text, OfficeTokens);
 
-            training.Add(BuildTrainingRow(materiel, "Developer", "IT", 5f, label: highPerf));
-            training.Add(BuildTrainingRow(materiel, "Designer", "Marketing", 4f, label: graphics));
-            training.Add(BuildTrainingRow(materiel, "HR", "RH", 2f, label: office || !highPerf));
+            bool recommendForHighPerfRoles = highPerf;
+            bool recommendForGraphicsRoles = graphics;
+            bool recommendForOfficeRoles = office && !highPerf && !graphics;
+
+            // label=True means "Recommended" (positive class)
+            var variants = new List<(string role, string service, float usageLevel, bool label)>(capacity: 16);
+
+            // High-performance / compute-heavy roles
+            variants.Add(("Developer", "IT", 5f, recommendForHighPerfRoles));
+            variants.Add(("Engineer", "IT", 5f, recommendForHighPerfRoles));
+            variants.Add(("Software", "IT", 4.5f, recommendForHighPerfRoles));
+            variants.Add(("Platform Engineer", "IT", 4.5f, recommendForHighPerfRoles));
+            variants.Add(("IT Operations Lead", "IT", 4f, recommendForHighPerfRoles));
+
+            // Graphics / rendering roles
+            variants.Add(("Designer", "Marketing", 4f, recommendForGraphicsRoles));
+            variants.Add(("Animator", "Marketing", 4f, recommendForGraphicsRoles));
+            variants.Add(("Creative Engineer", "IT", 4f, recommendForGraphicsRoles));
+            variants.Add(("3D Artist", "Marketing", 4f, recommendForGraphicsRoles));
+            variants.Add(("Content Creator", "Marketing", 3.5f, recommendForGraphicsRoles));
+
+            // Mixed roles: slightly reduced usage + label guided by the same heuristics
+            variants.Add(("Manager", "General", 3.5f, office ? recommendForOfficeRoles : (highPerf || graphics)));
+            variants.Add(("Analyst", "Finance", 3f, office ? recommendForOfficeRoles : (highPerf || (!graphics && highPerf))));
+            variants.Add(("Team Lead", "IT", 4f, office ? recommendForOfficeRoles : highPerf));
+
+            // Office roles
+            variants.Add(("HR", "RH", 2f, recommendForOfficeRoles));
+            variants.Add(("Admin", "Operations", 2.5f, recommendForOfficeRoles));
+            variants.Add(("Reception", "General", 2f, recommendForOfficeRoles));
+            variants.Add(("Support", "ServiceDesk", 2.5f, recommendForOfficeRoles));
+
+            foreach (var v in variants)
+            {
+                training.Add(BuildTrainingRow(materiel, v.role, v.service, v.usageLevel, label: v.label));
+            }
+
+            // Strengthen separation for office-only gear: avoid recommending office-only materiels for high-perf/graphics roles.
+            if (office && !highPerf && !graphics)
+            {
+                training.Add(BuildTrainingRow(materiel, "Developer", "IT", 4.5f, label: false));
+                training.Add(BuildTrainingRow(materiel, "Designer", "Marketing", 4f, label: false));
+                training.Add(BuildTrainingRow(materiel, "Engineer", "IT", 4.5f, label: false));
+            }
         }
 
         return training;

@@ -1,26 +1,8 @@
-# TODO.md - Fix PDR Stock Operation EF Tracking Error
-
-## Completed: 0/5
-
-### 1. Create TODO.md [✅ COMPLETED]
-
-### 2. Implement AsNoTracking in MaterielService.GetMateriels() [✅ COMPLETED]
-- Edit \`src/ITStockM.Infrastructure/Services/MaterielService.cs\`
-- Override \`GetAll()\` to force \`.AsNoTracking()\` on queries for UI grids
-
-### 3. Refactor BaseCrudService.Update() to merge pattern [✅ COMPLETED]
-- Edit \`src/ITStockM.Infrastructure/Services/BaseCrudService.cs\`
-- Change Update: load existing → copy properties from DTO → Update(existing)
-
-### 4. Enable EF sensitive logging in appsettings [✅ COMPLETED]
-- Edit \`src/ITStockM.WebApi/appsettings.Development.json\`
-- Added EF Core detailed logging for debugging
-
-### 5. Test & Verify
-- Navigate to \`/materials-view-interface-pdr\`
-- Perform all PDR operations (ReceiveToPdr, DistributeToIt, SendToRepair, MarkIrreparable, RepairToPdr)
-- Confirm no tracking errors
-- Verify data updates correctly
-- Test grid reloads properly
-- Mark complete & attempt_completion
-
+- [x] Create AI warmup hosted service to retrain ML models on startup if artifacts are missing.
+- [x] Register AiModelWarmupHostedService in Infrastructure DI.
+- [ ] Add Blazor page: HardwareRecommendationsPage (@/hardware-recommendations) calling IHardwareRecommendationService.
+- [ ] Add Blazor page: TicketPrioritizationPage (@/ticket-prioritization) calling ITicketPrioritizationService.
+- [ ] Wire new pages into SideLayout navigation (AI INSIGHTS group).
+- [x] Expand demo seeding in DatabaseInitializer.cs (more Materiels/Assignments/maintenance tickets) to satisfy ML minimum training sample thresholds.
+- [x] Update Dockerfile to ensure runtime directory ml-models exists (so artifact manager has a place to write).
+- [ ] Build verification: docker build succeeds; container starts; hitting new pages returns predictions.
